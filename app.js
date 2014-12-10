@@ -97,7 +97,7 @@ var app = new Vue({
             // reset newTodo
             this.newTodo = {
                 dayType:'0',
-                date : _date,
+                //date : _date,
                 text: '',
                 done: false
             }

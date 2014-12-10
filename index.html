@@ -31,6 +31,7 @@
                                 "
                             >
                             <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
+                            <input type="reset" class="m-reset iconfont" value="&#xe60e;" />
                         </div>
                     </div>
                     <div 
@@ -72,7 +73,7 @@
             <!--todolist-->
             <div class="bw-timeline"> 
                 <ul class= "m-cell m-cell-list bw-day"
-                    v-repeat="timeline | orderBy 'date' "
+                    v-repeat="timeline | orderBy 'key'"
                     v-transition
                 >
                     <li class="m-cell-header">
@@ -111,7 +112,6 @@
                                 "
                                 value="{{text}}"
                                 v-on="focus:editTodo"
-
                             >
                             <a 
                                 class="iconfont bw-delete" 
