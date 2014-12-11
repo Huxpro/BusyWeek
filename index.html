@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html id="app">
     <head>
-        <title> Todo </title>
+        <title v-text="appName"> BusyWeek! </title>
         <meta charset="utf-8">
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
         <meta content="yes" name="apple-mobile-web-app-capable" />
@@ -11,64 +11,62 @@
         <script src="vue.js"></script>
     </head>
     <body>
-        <div id="app">
+        <div >
             <!-- appbar -->
-            <div class="">
-                <form 
-                    id="form" 
-                    class="m-cell m-cell-list bw-new" 
-                    v-on="submit:addTodo"
+            <form 
+                id="form" 
+                class="m-cell m-cell-list bw-new" 
+                v-on="submit:addTodo"
+            >
+                <div class="m-cell-item ">
+                    <div class="m-cell-ctrl m-cell-txt">
+                        <input 
+                            class="m-txtinput bw-input"
+                            placeholder="又有事情忙啦？"
+                            v-model="newTodo.text" 
+                            v-on ="
+                                focus:enterInputMode,
+                                blur:exitInputMode
+                            "
+                        >
+                        <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
+                        <input type="reset" class="m-reset iconfont" value="&#xe60e;" />
+                    </div>
+                </div>
+                <div 
+                    class="m-cell-item bw-new-picker"
+                    v-if="inputMode"
+                    v-transition
                 >
-                    <div class="m-cell-item ">
-                        <div class="m-cell-ctrl m-cell-txt">
-                            <input 
-                                class="m-txtinput bw-input"
-                                placeholder="又有事情忙啦？"
-                                v-model="newTodo.text" 
-                                v-on ="
-                                    focus:enterInputMode,
-                                    blur:exitInputMode
-                                "
-                            >
-                            <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
-                            <input type="reset" class="m-reset iconfont" value="&#xe60e;" />
-                        </div>
+                    <div class="m-cell-center">
+                        <select 
+                            class="bw-daypicker"
+                            v-model="newTodo.dayType"
+                        >
+                          <option value="0">&nbsp;今天</option>
+                          <option value="1">&nbsp;明天</option>
+                          <option value="2">&nbsp;后天</option>
+                          <option value="3">大后天</option>
+                          <option value="4">第五天</option>
+                          <option value="5">第六天</option>
+                          <option value="6">第七天</option>
+                          <option value="7">下周今日</option>
+                        </select>
                     </div>
-                    <div 
-                        class="m-cell-item bw-new-picker"
-                        v-if="inputMode"
-                        v-transition
-                    >
-                        <div class="m-cell-center">
-                            <select 
-                                class="bw-daypicker"
-                                v-model="newTodo.dayType"
-                            >
-                              <option value="0">&nbsp;今天</option>
-                              <option value="1">&nbsp;明天</option>
-                              <option value="2">&nbsp;后天</option>
-                              <option value="3">大后天</option>
-                              <option value="4">第五天</option>
-                              <option value="5">第六天</option>
-                              <option value="6">第七天</option>
-                              <option value="7">下周今日</option>
-                            </select>
-                        </div>
-                        <div class="m-cell-center m-cell-wider">
-                            <input 
-                                class="bw-datepicker"
-                                v-model="newTodo.date" 
-                                type = 'date'>
-                        </div>
-                        <div class="m-cell-center " >
-                            <input 
-                                type="submit" 
-                                class="iconfont bw-newbtn"
-                                value="添加">
-                        </div>
+                    <div class="m-cell-center m-cell-wider">
+                        <input 
+                            class="bw-datepicker"
+                            v-model="newTodo.date" 
+                            type = 'date'>
                     </div>
-                </form>
-            </div>
+                    <div class="m-cell-center " >
+                        <input 
+                            type="submit" 
+                            class="iconfont bw-newbtn"
+                            value="添加">
+                    </div>
+                </div>
+            </form>
 
             <!--todolist-->
             <div class="bw-timeline"> 

@@ -29,6 +29,7 @@ Vue.filter('getDayType', function (_dateStr) {
 var app = new Vue({
     el: '#app',
     data: {
+        appName: "BusyWeek!",
         inputMode: true,
         flagDate:'',
         newTodo: {
@@ -48,25 +49,34 @@ var app = new Vue({
         },
         timeline:todoStorage.fetch()
     },
-    // ready 生命周期
-    ready: function () {
+    // Lifecycle created
+    created: function(){
+        // detect language
+        var _nav = navigator;
+        var _lang = (_nav.language || _nav.browserLanguage || _nav.userLanguage || "").substr(0,2);
 
+        if (_lang = "zh"){
+            this.appName = "好忙啊";
+        }
+    },
+    // Lifecycle ready 
+    ready: function () {
+        // locStorage _timeline
         this.$watch('timeline', function (_timeline) {
             todoStorage.save(_timeline);
         }, true);
 
+        // vue 11+ 解决了死循环 watch 的稳定问题 (oldVal = newVal && break;)
         this.$watch('newTodo.dayType',function(_dayType, _dayType_old){
 
             var _dateStr = getDiffDate(_dayType);
             this.newTodo.date = _dateStr;
         });
-
-        //会触发 循环 watch 
         this.$watch('newTodo.date',function(_date, _date_old){
 
             var _diff = getDateDiff(_date, getTodayDate());
             if(_diff >= 0 && _diff<=7){
-                this.newTodo.dayType = _diff;
+                this.newTodo.dayType = String(_diff);
             }
         });
 
@@ -97,7 +107,7 @@ var app = new Vue({
             // reset newTodo
             this.newTodo = {
                 dayType:'0',
-                //date : _date,
+                date : _date,
                 text: '',
                 done: false
             }
