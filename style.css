@@ -801,7 +801,8 @@ body {
   z-index: 900;
   width: 100%;
   border: none;
-  background-color: #03A9F4; }
+  background-color: #03A9F4;
+  opacity: 0.95; }
   .bw-new .m-cell-item, .bw-new .bw-timeline .m-cell-header, .bw-timeline .bw-new .m-cell-header {
     border: none; }
   .bw-new .bw-input {
@@ -813,7 +814,7 @@ body {
     background-color: #03A9F4;
     -webkit-user-select: text; }
     .bw-new .bw-input::-webkit-input-placeholder {
-      color: rgba(255, 255, 0, 0.5); }
+      color: #fff; }
     .bw-new .bw-input:active {
       background-color: rgba(115, 130, 155, 0.1) !important; }
   .bw-new .m-reset {

@@ -55,7 +55,7 @@ var app = new Vue({
         var _nav = navigator;
         var _lang = (_nav.language || _nav.browserLanguage || _nav.userLanguage || "").substr(0,2);
 
-        if (_lang = "zh"){
+        if (_lang == "zh"){
             this.appName = "好忙啊";
         }
     },
@@ -63,6 +63,7 @@ var app = new Vue({
     ready: function () {
         // locStorage _timeline
         this.$watch('timeline', function (_timeline) {
+            //console.log(JSON.stringify(_timeline));
             todoStorage.save(_timeline);
         }, true);
 

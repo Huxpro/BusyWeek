@@ -63,6 +63,8 @@ body{
     width:100%;
     border: none;
     background-color: #03A9F4;
+    // try 
+    opacity: 0.95;
     .m-cell-item{
         border:none;
     }
@@ -75,7 +77,7 @@ body{
         background-color: #03A9F4;
         @include selectable;
         &::-webkit-input-placeholder{
-            color: rgba(255, 255, 0, 0.5);
+            color: #fff;
         }
         &:active{
           background-color:rgba(115, 130, 155, 0.1) !important;

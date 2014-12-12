@@ -4,8 +4,14 @@
         <title v-text="appName"> BusyWeek! </title>
         <meta charset="utf-8">
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
-        <meta content="yes" name="apple-mobile-web-app-capable" />
-        <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <link rel="apple-touch-icon" href="icon/iPhone.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="icon/iPad.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="icon/iPhone@2x.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
+        
         <meta content="telephone=no" name="format-detection" />
         <link rel="stylesheet" type="text/css" href="style.css">
         <script src="vue.js"></script>
@@ -105,6 +111,7 @@
                             <input 
                                 type="text" 
                                 class="m-txtinput" 
+                                v-model = "text"
                                 v-class="
                                     done : done
                                 "
