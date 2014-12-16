@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html id="app">
+    <head>
+        <title v-text="appName"> BusyWeek! </title>
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <link rel="apple-touch-icon" href="icon/iPhone.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="icon/iPad.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="icon/iPhone@2x.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
+        
+        <meta content="telephone=no" name="format-detection" />
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+        <script src="js/vue.js"></script>
+    </head>
+    <body>
+        <div >
+            <!-- appbar -->
+            <form 
+                id="form" 
+                class="m-cell m-cell-list bw-new" 
+                v-on="submit:addTodo"
+            >
+                <div class="m-cell-item ">
+                    <div class="m-cell-ctrl m-cell-txt">
+                        <input 
+                            class="m-txtinput bw-input"
+                            placeholder="又有事情忙啦？"
+                            v-model="newTodo.text" 
+                            v-on ="
+                                focus:enterInputMode,
+                                blur:exitInputMode
+                            "
+                        >
+                        <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
+                        <input type="reset" class="m-reset iconfont" value="&#xe60e;" />
+                    </div>
+                </div>
+                <div 
+                    class="m-cell-item bw-new-picker"
+                    v-if="inputMode"
+                    v-transition
+                >
+                    <div class="m-cell-center">
+                        <select 
+                            class="bw-daypicker"
+                            v-model="newTodo.dayType"
+                        >
+                          <option value="0">&nbsp;今天</option>
+                          <option value="1">&nbsp;明天</option>
+                          <option value="2">&nbsp;后天</option>
+                          <option value="3">大后天</option>
+                          <option value="4">第五天</option>
+                          <option value="5">第六天</option>
+                          <option value="6">第七天</option>
+                          <option value="7">下周今日</option>
+                        </select>
+                    </div>
+                    <div class="m-cell-center m-cell-wider">
+                        <input 
+                            class="bw-datepicker"
+                            v-model="newTodo.date" 
+                            type = 'date'>
+                    </div>
+                    <div class="m-cell-center " >
+                        <input 
+                            type="submit" 
+                            class="iconfont bw-newbtn"
+                            value="添加">
+                    </div>
+                </div>
+            </form>
+
+            <!--todolist-->
+            <div class="bw-timeline"> 
+                <ul class= "m-cell m-cell-list bw-day"
+                    v-repeat="timeline | orderBy 'key'"
+                    v-transition
+                >
+                    <li class="m-cell-header">
+                        <em 
+                            v-class="today : ifToday($key)"
+                        > 
+                            {{$key | getDayType}} 
+                        </em>
+                        <span>
+                            {{$key}} {{$key | getDay}}
+                        </span>
+                        
+                    </li>
+                    <li 
+                        class="m-cell-item bw-todo" 
+                        v-repeat="todos" 
+                        v-transition
+                    >
+                        <div 
+                            class="bw-checkbox" 
+                            v-on = "click:checkTodo(this)"
+                        >
+                            <span 
+                                v-class = " 
+                                    check : done;
+                                "
+                                class="m-checkbox"    
+                            </span>
+                        </div>
+                        <div class="m-cell-ctrl m-cell-txt">
+                            <input 
+                                type="text" 
+                                class="m-txtinput" 
+                                v-model = "text"
+                                v-class="
+                                    done : done
+                                "
+                                value="{{text}}"
+                                v-on="focus:editTodo"
+                            >
+                            <a 
+                                class="iconfont bw-delete" 
+                                v-on="click:removeTodo(this)">&#xe60e;</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            
+        </div>
+        <script src="js/store.js"></script>
+        <script src="js/app.js"></script>
+        <script type="text/javascript" src="js/fastclick.js"></script>
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                FastClick.attach(document.body);
+            }, false);
+        </script>
+    </body>
+</html>

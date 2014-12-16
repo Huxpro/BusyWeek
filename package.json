@@ -1,0 +1,34 @@
+{
+  "name": "busyWeek",
+  "version": "1.0.0",
+  "description": "A time based Todo-list App",
+  "main": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Huxpro/BusyWeek.git"
+  },
+  "keywords": [
+    "busyWeek",
+    "todo",
+    "hux"
+  ],
+  "author": "Hux",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Huxpro/BusyWeek/issues"
+  },
+  "homepage": "https://github.com/Huxpro/BusyWeek",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-concat": "",
+    "grunt-contrib-connect": "^0.9.0",
+    "grunt-contrib-copy": "^0.7.0",
+    "grunt-contrib-cssmin": "",
+    "grunt-contrib-sass": "^0.8.1",
+    "grunt-contrib-uglify": ""
+  }
+}
