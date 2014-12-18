@@ -11,8 +11,7 @@ module.exports = function (grunt) {
               options: {
                 port: 9000,
                 hostname:'*',
-                base: 'src',
-                
+                base: 'src',    
                 keepalive: true
               }
             },
@@ -128,7 +127,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
-
+    //grunt.loadNpmTasks('grunt-usemin');
 
 
     // 注册任务

@@ -6,3 +6,4 @@ npm-debug.log
 .sw*
 .sass-cache/
 */.sass-cache/
+*.css.map

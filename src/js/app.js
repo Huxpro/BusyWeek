@@ -1,3 +1,4 @@
+"use strict";
 
 // filter.js
 Vue.filter('getDay', function (_dateStr) {
@@ -30,6 +31,7 @@ var app = new Vue({
     el: '#app',
     data: {
         appName: "BusyWeek!",
+        loaded:false,
         inputMode: true,
         flagDate:'',
         newTodo: {
@@ -83,6 +85,11 @@ var app = new Vue({
 
     },
     methods: {
+        //loading
+        onLoaded: function(e){
+            this.loaded = true;
+        },
+        // todo
         addTodo: function (e) {
             e.preventDefault()    
 

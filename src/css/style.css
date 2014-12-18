@@ -793,6 +793,36 @@ body {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.26); }
 
 /* BusyWeek Style */
+/* loading */
+#loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  z-index: 999;
+  transition: all 1s ease;
+  -webkit-transform: translate3d(0, 0, 0); }
+  #loading.v-enter, #loading.v-leave {
+    -webkit-transform: translate3d(0, -100%, 0);
+    background: #03A9F4; }
+  #loading .content {
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 77px;
+    height: 100px; }
+    #loading .content p {
+      text-align: center;
+      color: #03A9F4; }
+  #loading img {
+    width: 77px;
+    height: 77px; }
+
 /* newView */
 .bw-new {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.26);
