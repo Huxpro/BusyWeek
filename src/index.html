@@ -18,18 +18,6 @@
     </head>
     <body>
         <div >
-            <!-- loading image -->
-            <div 
-                id="loading"
-                v-show="!loaded"
-                v-transition
-            >   
-                <div class="content">
-                    <img src="icon/iPad@2x.png">
-                    <p> 加载中... </p>    
-                </div>
-                
-            </div>
             <!-- appbar -->
             <form 
                 id="form" 
@@ -145,11 +133,6 @@
             document.addEventListener('DOMContentLoaded', function(e) {
                 FastClick.attach(document.body);
             }, false);
-
-            window.addEventListener('load',function(e){
-                window.app.loaded = true;
-            })
-
         </script>
     </body>
 </html>

@@ -31,7 +31,6 @@ var app = new Vue({
     el: '#app',
     data: {
         appName: "BusyWeek!",
-        loaded:false,
         inputMode: true,
         flagDate:'',
         newTodo: {
