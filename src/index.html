@@ -92,7 +92,7 @@
                     v-repeat="timeline | orderBy 'key'"
                     v-transition
                 >
-                    <li class="m-cell-header">
+                    <li class="m-cell-header sticky">
                         <em 
                             v-class="today : ifToday($key)"
                         > 
@@ -119,7 +119,7 @@
                                 class="m-checkbox"    
                             </span>
                         </div>
-                        <div class="m-cell-ctrl m-cell-txt">
+                        <div class="m-cell-ctropl m-cell-txt">
                             <input 
                                 type="text" 
                                 class="m-txtinput" 

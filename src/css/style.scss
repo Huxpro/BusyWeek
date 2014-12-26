@@ -15,9 +15,6 @@
         background-color:rgba(115, 130, 155, 0.1);
     }
 }
-@mixin selectable{
-    -webkit-user-select: text;
-}
 @mixin absolute-center{
     margin: auto;
     position: absolute;
@@ -26,9 +23,11 @@
     bottom: 0;
     right: 0;
 }
-
+@mixin selectable{
+    -webkit-user-select: text;
+}
 /* global */
-*{
+body{
     -webkit-touch-callout: none;
     -webkit-user-select: none;
 }
@@ -217,6 +216,16 @@ body{
         color : #aaa;
         background: #F0F0F0;
         font-size: 12px;
+        opacity: 0.9;
+        &.sticky{
+            position: -webkit-sticky;
+            position: -moz-sticky;
+            position: -ms-sticky;
+            position: -o-sticky;
+            top: 104; 
+        }
+        
+
         em{
             font-size: 14px;
             padding-right: 10px;

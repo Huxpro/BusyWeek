@@ -763,7 +763,7 @@ loading.scss
 
 /* mixin - shadow */
 /* global */
-* {
+body {
   -webkit-touch-callout: none;
   -webkit-user-select: none; }
 
@@ -918,7 +918,14 @@ body {
     padding: 10px 10px 10px 20px;
     color: #aaa;
     background: #F0F0F0;
-    font-size: 12px; }
+    font-size: 12px;
+    opacity: 0.9; }
+    .bw-timeline .m-cell-header.sticky {
+      position: -webkit-sticky;
+      position: -moz-sticky;
+      position: -ms-sticky;
+      position: -o-sticky;
+      top: 104; }
     .bw-timeline .m-cell-header em {
       font-size: 14px;
       padding-right: 10px;
