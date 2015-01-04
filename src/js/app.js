@@ -161,6 +161,7 @@ var app = new Vue({
 function getDateStr(_date){
     var _y = _date.getFullYear(),
         _m = _date.getMonth()+1,    //  好坑，从0开始
+        _m = _m < 10 ? "0"+_m : _m,
         _d = _date.getDate(),
         _d = _d < 10 ? "0"+_d : _d,
         _s = _y+"-"+_m+"-"+_d;
