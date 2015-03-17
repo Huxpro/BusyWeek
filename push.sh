@@ -1,2 +1,2 @@
 git push origin master; 
-git push origin master:gh-pages;
+git push --force origin master:gh-pages;
