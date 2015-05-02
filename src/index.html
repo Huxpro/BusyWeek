@@ -39,6 +39,7 @@
                 <section class="app-bar-actions">
                      <button 
                          class="bw-action-add iconfont icon-tianjia"
+                         v-class = " delete-mode : (state == 'INPUT') "
                          v-on = "click:onActionAdd";
                          >
                      </button>
@@ -52,6 +53,7 @@
                 class="m-cell m-cell-list bw-new" 
                 v-on="submit:addTodo"
                 v-show = "state == 'INPUT'"
+                v-transition
             >
                 <textarea
                     class="m-txtinput bw-input"
@@ -67,8 +69,7 @@
 <!--                <input type="reset" class="m-reset iconfont icon-delete" />-->
                  
                 <div 
-                    class="m-cell-item bw-new-picker"
-                    v-transition
+                    class="m-cell-item bw-new-picker"                   
                 >
                     <div class="m-cell-center">
                         <select 

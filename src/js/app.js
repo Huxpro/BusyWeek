@@ -88,6 +88,9 @@ var app = new Vue({
                 this.newTodo.dayType = String(_diff);
             }
         });
+        
+        // catch DOM
+        this.$body =  document.querySelector("body");
     },
     
     methods: {
@@ -97,16 +100,21 @@ var app = new Vue({
         },
         
         onActionAdd: function(e){
-            console.log(this.state);
-            this.state = states.INPUT;
-             console.log(this.state);
+            this.state = (this.state == "LIST" ) ? states.INPUT : states.LIST;
         },
         
         // todo
         addTodo: function (e) {
             e.preventDefault()
             
+            // change state and update view
             this.state = states.LIST;
+            
+            // jump to the bottom (here is a hack)
+            setTimeout(function(){ 
+                scroll(0,document.body.scrollHeight);
+            },16)
+            
 
             if (!this.newTodo.text) {
                 this.newTodo.text = "写点啥呀！"
