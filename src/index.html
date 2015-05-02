@@ -13,6 +13,7 @@
         <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
         
         <meta content="telephone=no" name="format-detection" />
+        <link rel="stylesheet" href="iconfont/iconfont.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
         <script src="js/vue.js"></script>
     </head>
@@ -31,29 +32,42 @@
                 
             </div>
             <!-- appbar -->
+            <header class="app-bar promote-layer">
+              <div class="app-bar-container">
+                <button class="bw-action-nav iconfont icon-hamburgermenu"></button>
+                <h1 class="logo">BusyWeek!</h1>
+                <section class="app-bar-actions">
+                     <button 
+                         class="bw-action-add iconfont icon-tianjia"
+                         v-on = "click:onActionAdd";
+                         >
+                     </button>
+                </section>
+              </div>
+            </header>
+            
+            <!-- inputView -->
             <form 
                 id="form" 
                 class="m-cell m-cell-list bw-new" 
                 v-on="submit:addTodo"
+                v-show = "state == 'INPUT'"
             >
-                <div class="m-cell-item ">
-                    <div class="m-cell-ctrl m-cell-txt">
-                        <input 
-                            class="m-txtinput bw-input"
-                            placeholder="又有事情忙啦？"
-                            v-model="newTodo.text" 
-                            v-on ="
-                                focus:enterInputMode,
-                                blur:exitInputMode
-                            "
-                        >
-                        <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
-                        <input type="reset" class="m-reset iconfont" value="&#xe60e;" />
-                    </div>
-                </div>
+                <textarea
+                    class="m-txtinput bw-input"
+                    placeholder="又有事情忙啦？"
+                    v-model="newTodo.text" 
+                    v-on ="
+                        focus:enterInputMode,
+                        blur:exitInputMode
+                    "
+                >
+                </textarea>
+                <!-- <input type="reset" class="m-reset iconfont" value="&#xe60e;" /> -->
+<!--                <input type="reset" class="m-reset iconfont icon-delete" />-->
+                 
                 <div 
                     class="m-cell-item bw-new-picker"
-                    v-if="inputMode"
                     v-transition
                 >
                     <div class="m-cell-center">
@@ -87,7 +101,7 @@
             </form>
 
             <!-- timeline -->
-            <div class="bw-timeline"> 
+            <div class="bw-timeline" v-show="state == 'LIST'"> 
                 <ul class= "m-cell m-cell-list bw-day"
                     v-repeat="timeline | orderBy 'key'"
                     v-transition
@@ -131,8 +145,8 @@
                                 v-on="focus:editTodo"
                             >
                             <a 
-                                class="iconfont bw-delete" 
-                                v-on="click:removeTodo(this)">&#xe60e;</a>
+                                class="iconfont icon-delete bw-delete" 
+                                v-on="click:removeTodo(this)"></a>
                         </div>
                     </li>
                 </ul>

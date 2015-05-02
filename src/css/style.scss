@@ -93,25 +93,28 @@ body{
 }
 
 
-/* newView */
+/* newView -> inputView */
+
 .bw-new{
     @include shadow-2;
     position: fixed;
     top: 0px;
     z-index: 900;
     width:100%;
+    height:100%;
     border: none;
     background-color: #03A9F4;
+    padding-top:58px;
     // try 
-    opacity: 0.95;
+    
     .m-cell-item{
         border:none;
     }
     .bw-input{
         outline: 0;
         color: #FFFF00;
-        height: 56px;
-        padding: 0 30px 0 15px;
+        height: 50%;
+        padding: 20px;
         font-size: 18px;
         background-color: #03A9F4;
         @include selectable;
@@ -136,13 +139,16 @@ body{
 .bw-new-picker{
     font-size: 16px;
     padding: 0px;
+    width:100%;
+    position:fixed;
+    bottom:0px;
     //display:none;
-    transition: all .25s ease;
-    -webkit-transform : translate3d(0,0,0);
-    &.v-enter, &.v-leave {
-        -webkit-transform : translate3d(0,-100%,0);
-        height:0px;
-    }
+//    transition: all .25s ease;
+//    -webkit-transform : translate3d(0,0,0);
+//    &.v-enter, &.v-leave {
+//        -webkit-transform : translate3d(0,-100%,0);
+//        height:0px;
+//    }
     .m-cell-center{
         width:25%;
         text-align: center;
@@ -196,7 +202,7 @@ body{
 
 .bw-timeline{
     padding-bottom:20px;
-    -webkit-transform: translateY(104px);
+    -webkit-transform: translateY(58px);
     .m-txtinput{
         font-size:16px;
         color: #222222;
@@ -299,4 +305,88 @@ body{
 
 
 
-/* MPI_CSS Customization */
+/* Lighten CSS */
+
+.app-bar {
+    display: block;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #03A9F4;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+    overflow: hidden;
+    z-index: 902;
+}
+
+.app-bar-container {
+    display: -webkit-flex;
+    display: flex;
+    width: 100%;
+    height: 58px;
+    position: relative;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    margin: 0 auto;
+}
+
+.app-bar.open {
+    -webkit-transform: translate(250px, 0);
+    transform: translate(250px, 0);
+}
+
+.app-bar .logo {
+    -webkit-flex: 1;
+    flex: 1;
+    font-size: 20px;
+    line-height: 58px;
+    margin: 0px;
+    padding: 0;
+    color: #fefefe;
+    float: none;
+    max-width: none;
+    font-family: 'Roboto Condensed', 'Helvetica Neue', Helvetica, sans-serif;
+    font-weight: 300;
+    a{
+        text-decoration: none;
+        color: inherit;
+        font-weight: normal;
+    }
+}
+
+.app-bar-actions {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    z-index: 2;
+}
+
+.app-bar button {
+    width: 58px;
+    height: 58px;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    transition: background-color 0.2s ease-out;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+    // for iconfont
+    font-size:26px;
+    color:white;
+}
+
+.app-bar-actions button {
+    color:yellow;
+}
+/*.app-bar button:hover {*/
+/*  background-color: rgba(255, 255, 255, 0.1);*/
+/*}*/
+
+.app-bar button:focus {
+    /*background-color: rgba(255, 255, 255, 0.2);*/
+    outline: 0;
+}
+/*.app-bar button:active {*/
+/*  background-color: rgba(255, 255, 255, 0.4);*/
+/*}*/
