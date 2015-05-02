@@ -978,7 +978,7 @@ body {
 /*  background-color: rgba(255, 255, 255, 0.4);*/
 /*}*/
 .bw-action-add {
-  transition: all 0.2s ease-out !important;
+  transition: all 0.25s ease-out !important;
   -webkit-transform: rotate(0deg); }
   .bw-action-add.delete-mode {
     -webkit-transform: rotate(-45deg); }
