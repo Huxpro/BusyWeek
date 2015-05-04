@@ -159,7 +159,7 @@ var app = new Vue({
             console.log(position);
             console.log(scrollY);
             
-            // jump to the bottom at NEXT View Update
+            // jump to the target Scroll Position at NEXT View Update
             // this method falls back to setTimeout(fn, 0)
             Vue.nextTick(function(){ 
                 scroll(0,scrollY);
