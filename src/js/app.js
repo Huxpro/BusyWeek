@@ -146,7 +146,7 @@ var app = new Vue({
             })()
             
             var scrollY = (function(){
-                var edge = window.screen.height;
+                var edge = window.innerHeight || window.screen.availHeight;
                 
                 if(position < edge){
                     return 0;
@@ -155,14 +155,22 @@ var app = new Vue({
                 }
             })()
             
-            console.log(before);
-            console.log(position);
-            console.log(scrollY);
+//            console.log(before);
+//            console.log("position:"+ position);
+//            console.log("scrollTo:"+ scrollY);
+            
             
             // jump to the target Scroll Position at NEXT View Update
             // this method falls back to setTimeout(fn, 0)
             Vue.nextTick(function(){ 
                 scroll(0,scrollY);
+                
+//                console.log("document.body.clientHeight"+document.body.clientHeight);
+//                console.log("document.body.offsetHeight"+document.body.offsetHeight);
+//                console.log("window.innerHeight"+window.innerHeight);
+//                console.log("window.outerHeight"+window.outerHeight);
+//                console.log("window.screen.height"+window.screen.height);
+//                console.log("window.screen.availHeight"+window.screen.availHeight);
             })
             
             
