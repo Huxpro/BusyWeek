@@ -55,8 +55,6 @@ var app = new Vue({
         },
         timeline: todoStorage.fetch()
     },
-    
-    // Lifecycle created
     created: function () {
         // detect language
         var _nav = navigator;
@@ -66,8 +64,6 @@ var app = new Vue({
             this.appName = "好忙啊";
         }
     },
-    
-    // Lifecycle ready 
     ready: function () {
         // store _timeline
         this.$watch('timeline', function (_timeline) {
@@ -92,7 +88,6 @@ var app = new Vue({
         // catch DOM
         this.$body =  document.querySelector("body");
     },
-    
     methods: {
 
         onLoaded: function (e) {
@@ -103,28 +98,80 @@ var app = new Vue({
             this.state = (this.state == "LIST" ) ? states.INPUT : states.LIST;
         },
         
-        // todo
+        // Todo 
         addTodo: function (e) {
             e.preventDefault()
+            
+            var _new = this.newTodo,
+                _date = _new.date,
+                _dayType = _new.dayType,
+                _timeline = this.timeline; 
             
             // change state and update view
             this.state = states.LIST;
             
-            // jump to the bottom (here is a hack)
-            setTimeout(function(){ 
-                scroll(0,document.body.scrollHeight);
-            },16)
+            // calculate the newTodo position
+            var sorted = (function(){
+                var arr = [];
+                for(var key in _timeline){
+                    arr.push(key);
+                }
+                return arr.sort(function(a,b){
+                    return a === b ? 0 : a > b ? 1 : -1
+                })
+            })()
             
-
+            var before = (function(){
+                var arr = [];
+                sorted.forEach(function(val){
+                    if(val <= _date){
+                        arr.push(val);
+                    }
+                })
+                return arr;
+            })()
+            
+            var position = (function(){
+                var day = before.length,
+                    items = 0;
+                
+                before.forEach(function (date) {
+                    var dayList = _timeline[date];
+                    items += dayList.todos.length;
+                }) 
+                
+                console.log("day:"+day+" items:"+items);
+                
+                return day*36+(items+2)*48+58;
+            })()
+            
+            var scrollY = (function(){
+                var edge = window.screen.height;
+                
+                if(position < edge){
+                    return 0;
+                }else{
+                    return position - edge;
+                }
+            })()
+            
+            console.log(before);
+            console.log(position);
+            console.log(scrollY);
+            
+            // jump to the bottom at NEXT View Update
+            // this method falls back to setTimeout(fn, 0)
+            Vue.nextTick(function(){ 
+                scroll(0,scrollY);
+            })
+            
+            
+            // set default todo text 
             if (!this.newTodo.text) {
                 this.newTodo.text = "写点啥呀！"
             }
 
-            // get newTodo
-            var _date = this.newTodo.date,
-                _timeline = this.timeline;
-
-            // new dayObject in timeline
+            // create new dayObject in timeline
             if (!_timeline[_date]) {
                 _timeline.$add(_date, {
                     date: _date,
@@ -137,13 +184,11 @@ var app = new Vue({
 
             // reset newTodo
             this.newTodo = {
-                dayType: '0',
-                date: _date,
+                dayType: _dayType,   //
+                date: _date,    // save date 
                 text: '',
                 done: false
             }
-
-            this.newTodo.date = _date;
 
         },
         removeTodo: function (todo) {

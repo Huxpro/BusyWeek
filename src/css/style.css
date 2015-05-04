@@ -746,9 +746,11 @@ body {
   transition: all .25s ease;
   -webkit-transform: translate3d(0, 0, 0); }
   .bw-new.v-enter {
-    -webkit-transform: translate3d(0, -100%, 0); }
+    opacity: 0;
+    -webkit-transform: translate3d(0, -20%, 0); }
   .bw-new.v-leave {
-    opacity: 0; }
+    opacity: 0;
+    -webkit-transform: translate3d(0, -20%, 0); }
   .bw-new .m-cell-item, .bw-new .bw-timeline .m-cell-header, .bw-timeline .bw-new .m-cell-header {
     border: none; }
   .bw-new .bw-input {
