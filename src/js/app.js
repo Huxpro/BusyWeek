@@ -140,9 +140,9 @@ var app = new Vue({
                     items += dayList.todos.length;
                 }) 
                 
-                console.log("day:"+day+" items:"+items);
+                //console.log("day:"+day+" items:"+items);
                 
-                return day*36+(items+2)*48+58;
+                return day*36+(items+7)*48+58;
             })()
             
             var scrollY = (function(){
