@@ -1,2 +1,2 @@
-/*! busyWeek 2015-05-02 */
+/*! busyWeek 2015-05-04 */
 !function(a){"use strict";var b="busyWeek";a.todoStorage={fetch:function(){return JSON.parse(localStorage.getItem(b)||"{}")},save:function(a){localStorage.setItem(b,JSON.stringify(a))}}}(window);
