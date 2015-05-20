@@ -228,6 +228,10 @@ var app = new Vue({
                 return true;
             }
             return false;
+        },
+        // export to scope
+        getDiffDate: function(_dayType){
+            return getDiffDate(_dayType)
         }
 
     }
@@ -275,6 +279,6 @@ function getDiffDate(_dayType) {
 
     _date.setTime(_time);
 
-    return getDateStr(_date);;
+    return getDateStr(_date);
 }
 
