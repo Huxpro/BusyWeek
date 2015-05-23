@@ -75,14 +75,14 @@
                             class="bw-daypicker"
                             v-model="newTodo.dayType"
                         >
-                          <option value="0">&nbsp;今天</option>
-                          <option value="1">&nbsp;明天</option>
-                          <option value="2">&nbsp;后天</option>
-                          <option value="3">大后天</option>
-                          <option value="4">第五天</option>
-                          <option value="5">第六天</option>
-                          <option value="6">第七天</option>
-                          <option value="7">下周今日</option>
+                          <option value="0">&nbsp;今天（{{getDiffDate(0) | getDay }}）</option>
+                          <option value="1">&nbsp;明天（{{getDiffDate(1) | getDay }}）</option>
+                          <option value="2">&nbsp;后天（{{getDiffDate(2) | getDay }}）</option>
+                          <option value="3">大后天（{{getDiffDate(3) | getDay }}）</option>
+                          <option value="4">第五天（{{getDiffDate(4) | getDay }}）</option>
+                          <option value="5">第六天（{{getDiffDate(5) | getDay }}）</option>
+                          <option value="6">第七天（{{getDiffDate(6) | getDay }}）</option>
+                          <option value="7">下周今天（{{getDiffDate(7) | getDay }}）</option>
                         </select>
                     </div>
                     <div class="m-cell-center m-cell-wider">
