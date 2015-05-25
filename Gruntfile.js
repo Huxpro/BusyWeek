@@ -132,7 +132,7 @@ module.exports = function (grunt) {
 
     // 注册任务
     grunt.registerTask('server',['connect:server_src']);
-    grunt.registerTask('preview',['connect:server_dist']);
+    grunt.registerTask('demo',['connect:server_dist']);
     grunt.registerTask('build',[ 'clean','copy','sass','uglify','cssmin']);
 
 };
