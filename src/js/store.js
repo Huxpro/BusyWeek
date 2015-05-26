@@ -3,7 +3,7 @@
 (function (exports) {
 
     'use strict';
-
+    console.log('store..');
     var STORAGE_KEY = 'busyWeek';
 
     exports.todoStorage = {
