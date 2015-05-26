@@ -2,13 +2,13 @@ require( [
     'js/lib/vue.js',
     'http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min.js',
     'js/store.js',
-    'js/filter.js',
     'js/util.js'
 ], function(Vue, FastClick, Store) {   
     'use strict';
+    console.log("app..");
     
     
-     // Vue filters
+    // Filters
     Vue.filter('getDay', function (_dateStr) {
         var _date = new Date(_dateStr),
             _day = _date.getDay(),
@@ -29,47 +29,55 @@ require( [
     });
     
     
-    console.log("app..");
-    // State Enum
+    /**
+     * App 的全局状态
+     *
+     * @enum state
+     */
     var states = {
         INPUT : "INPUT",
         LIST  : "LIST"
     }
     
-    // app.js
+    /**
+     * App 
+     * 
+     * app.js
+     */    
     var app = new Vue({
         el: '#app',
         data: {
             appName: "BusyWeek!",
             loaded: false,
             state:states.LIST,
+            
+            /**
+             * Todo 类
+             *
+             * @class todo
+             */
             newTodo: {
+                date: getTodayDate(),
                 dayType: '0',
-                date: getTodayDate(),
-                text: '',
-                done: false
+                done: false,
+                text: ''
             },
-            _todos: [{
-                text: '这个只是代码示例哦～',
-                done: false
-            }],
-            _day: {
-                dayType: '0', // 没用，因为需要渲染时 update 
-                date: getTodayDate(),
-                //todos: app._todos
-            },
+            
+            /**
+             * 时间轴 Map 对象
+             *
+             * @object Timeline  { date: {DayObject} }        
+             * @object DayObject { date: {Date}, todolist: [{Todo}] }
+             * @object Todo      { date: {Date}, dayType: {Number}, done: {Bool}, text:{String}}
+             */
             timeline: todoStorage.fetch()
+
         },
         created: function () {
-            // detect language
-            var _nav = navigator;
-            var _lang = (_nav.language || _nav.browserLanguage || _nav.userLanguage || "").substr(0, 2);
-    
-            if (_lang == "zh") {
-                this.appName = "好忙啊";
-            }
+            this.detectLanguage();
         },
         ready: function () {
+            
             // store _timeline
             this.$watch('timeline', function (_timeline) {
                 //console.log(JSON.stringify(_timeline));
@@ -78,23 +86,19 @@ require( [
     
             // vue 11+ 解决了死循环 watch 的稳定问题 (oldVal = newVal && break;)
             this.$watch('newTodo.dayType', function (_dayType, _dayType_old) {
-    
                 var _dateStr = getDiffDate(_dayType);
                 this.newTodo.date = _dateStr;
             });
+            
             this.$watch('newTodo.date', function (_date, _date_old) {
-    
                 var _diff = getDateDiff(_date, getTodayDate());
                 if (_diff >= 0 && _diff <= 7) {
                     this.newTodo.dayType = String(_diff);
                 }
             });
-            
-            // catch DOM
-            this.$body =  document.querySelector("body");
         },
         methods: {
-    
+
             onLoaded: function (e) {
                 this.loaded = true;
             },
@@ -237,12 +241,25 @@ require( [
             // export to scope
             getDiffDate: function(_dayType){
                 return getDiffDate(_dayType)
+            },
+            detectLanguage: function(){
+                var _nav = navigator;
+                var _lang = (_nav.language || _nav.browserLanguage || _nav.userLanguage || "").substr(0, 2);
+            
+                if (_lang == "zh") {
+                    this.appName = "好忙啊";
+                }
             }
+            
     
         }
     })
     
 
+    // export app to global
+    window.vue = Vue;
+    window.app = this;
+    
     // deal with load
     console.log('loaded..');
     app.loaded = true;
