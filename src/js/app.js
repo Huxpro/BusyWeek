@@ -244,14 +244,12 @@ require( [
     
 
     // deal with load
-     window.addEventListener('load',function(e){
-        app.loaded = true;
-    })   
+    console.log('loaded..');
+    app.loaded = true;
     
     // FastClick
-    document.addEventListener('DOMContentLoaded', function(e) {
-        FastClick.attach(document.body);
-    }, false);
+    FastClick.attach(document.body);
+    console.log("fastclick...");
 });
 
 
