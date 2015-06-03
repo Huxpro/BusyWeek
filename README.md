@@ -1,29 +1,83 @@
 # BusyWeek! 
 
 > A time-based Todo-list App with simple design, which is a side-project of mine
-> 
-> 一个基于时间的“待办事项”应用，是我的一个业余项目
 
 
+## What is BusyWeek!
 
-### How it works?  它是干嘛的？
+BusyWeek! is a **time-based** Todo-list App with simple, elegant design, which can help you manage your schedule by automatically convert time between 
+
+- *What is the date that day?* 
+- *What day is it that day?* 
+- *How many days before/after that day?*
+
+and present a Todo-list **sorted by date** to you.
 
 
-In my opinion, a person is hard to plan too far. Many times, I just want to know what should be done in **today, tomorrow, at most the day next week.** It's enough!  
+## Expectation
 
-Sometimes, someone told you **"You should do something at XXDate"**, but this is too far! what we need is may well **"How many days before that day?"**
+*(The Droid - feature is only for Android Version)*
 
-So I create this app, which can convert data between **the date** and **the days-diff**, and put a list to you by time-based order.
-
-(Until now, many todo app is either too light or too heavy...so i develop one for myself)
-
+* Out of the box
+* No annoying
+* Cloud sync
+* Droid - Material Design
 
 ---
 
-在我看来，人照顾不到太远的事情。很多时候，我能大概得安排下 **今天、明天、最多到下周的今天** 需要完成哪些事情，就足够了！  
+# Changelog
 
-有时，人们会说**“XX月XX号有什么事情要做”**，但因为它太遥远了，我更想知道的是 **这个日期距离我还有几天？**
+## V1.3.0
 
-所以我做了这个 App ，可以自动将**日期**和**距离几天**进行转换，并且按时间优先级排序给你。
+##### New
 
-（目前，大部分已有的 Todo 应用，要么过轻没有此功能，要么过重引入了日历，所以自己写了一个给自己用。）
+* Migrate to RequireJS as JS module loader
+* Using Gulp as workflow tool now
+* Using Require.js Optimizer as build tool now
+
+##### Change
+
+* We will no longer using Grunt
+
+
+
+## V1.2.2
+
+##### New
+
+* Add weekdays display for newTodoView
+
+## V1.2.1
+
+#### Fix
+
+* Since `window.screen.height != window.innerHeight` in iOS Safari, use `window.innerHeight` to fix intelliScroll issues
+
+## V1.2.0
+
+##### New
+
+* **IntelliScroll!**: we create a *postion system* to calculate to where should the list scroll when a new todo is added in.
+
+#### Change
+
+* Motion improvement
+
+
+## V1.1.0
+
+##### New
+
+* NewTodoView now display in fullscreen, to fix the input & keyboard issues 
+* Add `push.sh` for master and gh-pages branch sync
+
+##### Change
+
+* Fastclick now support by CDN
+
+## V1.0.0
+
+* First release!
+* Using Vue.js as MVVM framework
+* Using NPM as module management
+* Using Grunt as task runner
