@@ -11,11 +11,9 @@
         <link rel="apple-touch-icon" sizes="76x76" href="icon/iPad.png">
         <link rel="apple-touch-icon" sizes="120x120" href="icon/iPhone@2x.png">
         <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
-        
-        <meta content="telephone=no" name="format-detection" />
+<!--        <meta content="telephone=no" name="format-detection" />-->
         <link rel="stylesheet" href="iconfont/iconfont.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
-        
     </head>
     <body>
         <div >
@@ -152,25 +150,16 @@
                 </ul>
             </div>
         </div>
-        <script src="js/vue.js"></script>
-        <script src="js/store.js"></script>
+        <script src="js/lib/require.js"></script>        
         <script async src="js/app.js"></script>
-        <!--
-        <script type="text/javascript" src="js/fastclick.js"></script>
-        --> <!-- Use CDN -->
-        <script async type="text/javascript" src="http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min.js"></script>
-
-        <script type="text/javascript">
+        <script>
+             window.addEventListener('load',function(e){
+                console.log('LOAD');
+            })   
+            
             document.addEventListener('DOMContentLoaded', function(e) {
-                FastClick.attach(document.body);
-                console.log("DOM-ready(DOMContentLoaded)");
+                console.log("DOMContentLoaded");
             }, false);
-
-            window.addEventListener('load',function(e){
-                window.app.loaded = true;
-                console.log('LOAD')
-            })
-
         </script>
     </body>
 </html>
