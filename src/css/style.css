@@ -1072,7 +1072,7 @@ body {
 
 /* Timeline */
 .bw-timeline {
-  padding-bottom: 36px;
+  margin-bottom: 36px;
   padding-top: 58px; }
   .bw-timeline .m-txtinput {
     font-size: 16px;
@@ -1127,15 +1127,17 @@ body {
       -webkit-background-size: auto 11px; }
   .bw-timeline .bw-day {
     margin-bottom: 0px;
-    background: #fff !important;
-    border-top: none;
+    background: none;
+    border: none;
+    min-height: 0px;
     transition: all .25s ease;
     -webkit-transform: translate3d(0%, 0, 0); }
     .bw-timeline .bw-day.v-enter, .bw-timeline .bw-day.v-leave {
       -webkit-transform: translate3d(-100%, 0, 0); }
   .bw-timeline .bw-todo {
     border: none;
-    transition: all .25s ease;
+    background: #fff !important;
+    transition: all .35s ease;
     -webkit-transform: translate3d(0%, 0, 0); }
     .bw-timeline .bw-todo.v-enter, .bw-timeline .bw-todo.v-leave {
       -webkit-transform: translate3d(-100%, 0, 0); }
