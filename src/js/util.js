@@ -2,7 +2,8 @@ define([],function(){
     
 
     /* Util Method */
-    console.log('util..');
+    console.log('module util loaded..');
+    
     function getDateStr(_date) {
         var _y = _date.getFullYear(),
             _m = _date.getMonth() + 1,    //  好坑，从0开始

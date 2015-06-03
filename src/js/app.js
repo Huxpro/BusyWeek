@@ -5,7 +5,7 @@ require( [
     'js/util.js'
 ], function(Vue, FastClick, Store) {   
     'use strict';
-    console.log("app..");
+    console.log("module app loaded..");
     
     
     // Filters
@@ -96,12 +96,12 @@ require( [
                     this.newTodo.dayType = String(_diff);
                 }
             });
+            
+            // App.loaded 
+            console.log("vue working...");
+            this.loaded = true;
         },
         methods: {
-
-            onLoaded: function (e) {
-                this.loaded = true;
-            },
             
             onActionAdd: function(e){
                 this.state = (this.state == "LIST" ) ? states.INPUT : states.LIST;
@@ -261,12 +261,11 @@ require( [
     window.app = this;
     
     // deal with load
-    console.log('loaded..');
-    app.loaded = true;
+    //app.loaded = true;
     
     // FastClick
     FastClick.attach(document.body);
-    console.log("fastclick...");
+    console.log("fastclick working...");
 });
 
 
