@@ -18,7 +18,7 @@ gulp.task('serve', function() {
 
 // compile scss
 gulp.task('sass', function() {
-    exec(['sass src/css/sass/style.scss src/css/style.css'].join(' '), function(error, stdout, stderr) {
+    exec(['sass src/css/style.scss src/css/style.css'].join(' '), function(error, stdout, stderr) {
         console.log('finish build sass');
     });
 });
