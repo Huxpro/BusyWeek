@@ -2,7 +2,8 @@ require( [
     'js/lib/vue.js',
     'http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min.js',
     'js/store.js',
-    'js/util.js'
+    'js/util.js',
+    'js/nav.js'
 ], function(Vue, FastClick, Store) {   
     'use strict';
     console.log("module app loaded..");
@@ -67,10 +68,19 @@ require( [
              * 时间轴 Map 对象
              *
              * @object Timeline  { date: {DayObject} }        
-             * @object DayObject { date: {Date}, todolist: [{Todo}] }
+             * @object DayObject { date: {Date}, todos: [{Todo}] }
              * @object Todo      { date: {Date}, dayType: {Number}, done: {Bool}, text:{String}}
              */
-            timeline: todoStorage.fetch()
+            timeline: todoStorage.fetch(),
+            
+            /**
+             * 当前过滤器
+             * 
+             * @param {string} all
+             * @param {string} done
+             * @param {string} active
+             */
+             activeFilter: "all"
 
         },
         created: function () {
@@ -101,6 +111,7 @@ require( [
             console.log("vue working...");
             this.loaded = true;
         },
+        
         methods: {
             
             onActionAdd: function(e){
@@ -238,6 +249,48 @@ require( [
                 }
                 return false;
             },
+            // if todo show in activeFilter
+            ifTodoShow: function(done){
+                if (this.activeFilter == "active"){
+                    return !done;
+                }else if(this.activeFilter == "done"){
+                    return done;
+                }else{
+                    return true;
+                }
+                
+            },
+            // if day show in activeFilter
+            ifDayShow: function(todos){
+                
+                var activeTodos = todos.filter(function(todo){
+                    return !todo.done
+                })
+                
+                // 完成数与活动数
+                var actives = activeTodos.length;
+                var dones = todos.length - actives;
+               
+                // 只要有未完成的，今天就需要显示
+                if (this.activeFilter == "active"){
+                    if(actives > 0){
+                        return true;
+                    }else{
+                        return false;
+                    }
+                
+                // 只要有完成的，今天就需要展示
+                }else if(this.activeFilter == "done"){
+                    if (dones > 0) {
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }else{
+                    return true;
+                }
+               
+            },
             // export to scope
             getDiffDate: function(_dayType){
                 return getDiffDate(_dayType)
@@ -258,7 +311,7 @@ require( [
 
     // export app to global
     window.vue = Vue;
-    window.app = this;
+    window.app = app;
     
     // deal with load
     //app.loaded = true;
