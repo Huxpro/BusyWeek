@@ -23,7 +23,6 @@ and present a Todo-list **sorted by date** to you.
 * Cloud sync
 * Droid - Material Design
 
----
 
 # Changelog
 
