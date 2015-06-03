@@ -1,6 +1,7 @@
 @charset "UTF-8";
 
 @import "mpi.scss";
+@import "nav.scss";
 
 /* mixin - shadow */
 @mixin shadow-1{
@@ -213,8 +214,9 @@ body{
 /* Timeline */
 
 .bw-timeline{
-    padding-bottom:36px;
+    margin-bottom:36px;
     padding-top:58px;
+//    border-bottom:1px solid rgba(32, 35, 37, 0.15);
     .m-txtinput{
         font-size:16px;
         color: #222222;
@@ -235,6 +237,8 @@ body{
         background: #F0F0F0;
         font-size: 12px;
         opacity: 0.9;
+//        border-top: 1px solid rgba(32, 35, 37, 0.15);
+ 
         &.sticky{
             position: -webkit-sticky;
             position: -moz-sticky;
@@ -280,8 +284,9 @@ body{
     }
     .bw-day{
         margin-bottom: 0px;
-        background: #fff !important;
-        border-top: none;
+        background: none;
+        border: none;
+        min-height: 0px;
         transition: all .25s ease;
         -webkit-transform : translate3d(0%,0,0);
         &.v-enter, &.v-leave {
@@ -290,7 +295,8 @@ body{
     }
     .bw-todo {
         border: none;
-        transition: all .25s ease;
+        background: #fff !important;
+        transition: all .35s ease;
         -webkit-transform : translate3d(0%,0,0);
 
         &.v-enter, &.v-leave {
@@ -302,6 +308,7 @@ body{
         &:focus {
             @include shadow-1;
         }
+      
         .done{
             text-decoration: line-through;
             color: #ccc;
