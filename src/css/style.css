@@ -1072,7 +1072,7 @@ body {
 
 /* Timeline */
 .bw-timeline {
-  margin-bottom: 36px;
+  padding-bottom: 36px;
   padding-top: 58px; }
   .bw-timeline .m-txtinput {
     font-size: 16px;
