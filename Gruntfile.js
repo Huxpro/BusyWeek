@@ -1,3 +1,8 @@
+/**
+ * Gruntfile 用于旧版打包
+ *           用于本地 Server 环境
+ */
+
 module.exports = function (grunt) {
 
     // 配置 Grunt Modules 的参数
@@ -17,7 +22,7 @@ module.exports = function (grunt) {
             },
             server_dist: {
               options: {
-                port: 9000,
+                port: 9001,
                 hostname:'*',
                 base: 'dist',
                 keepalive: true
@@ -132,7 +137,7 @@ module.exports = function (grunt) {
 
     // 注册任务
     grunt.registerTask('server',['connect:server_src']);
-    grunt.registerTask('preview',['connect:server_dist']);
+    grunt.registerTask('demo',['connect:server_dist']);
     grunt.registerTask('build',[ 'clean','copy','sass','uglify','cssmin']);
 
 };
