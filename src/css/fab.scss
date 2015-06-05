@@ -1,0 +1,25 @@
+.FAB{
+	position: fixed;
+	cursor: pointer;
+	z-index: 3;
+	bottom: 23px;
+	right: 23px;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	box-shadow: 0 2px 5px 0 rgba(0,0,0,.26);
+	background-color: #FF5B45;
+	color: white;
+	line-height: 52px;
+	font-size: 26px;
+	text-align: center;
+    
+    &:active{
+    	/*background-color: rgb(219, 234, 71);*/
+    	box-shadow: 0px 5px 10px 2px rgba(0,0,0,.20);
+    }
+    &:hover{
+    	/*background-color: rgb(219, 234, 71);*/
+    	box-shadow: 0px 5px 10px 2px rgba(0,0,0,.20);
+    }
+}
