@@ -146,7 +146,7 @@ ol {
 }
 
 .navdrawer-container {
-    z-index: 1;
+    z-index: 4;
     position: fixed;
     top: 0;
     bottom: 0;
@@ -243,7 +243,7 @@ main {
     .app-bar-container {
         display: block;
         height: 80px;
-        padding: 0 40px;
+        padding: 0 10px;
         box-sizing: border-box;
     }
     .app-bar .logo {
@@ -271,6 +271,7 @@ main {
     }
     nav {
         display: block;
+        margin-top: 58px;
     }
     main {
         /* margin-left:260px;*/
@@ -283,10 +284,10 @@ main {
     }
     .navdrawer-container {
         height: auto;
-        margin-top: 80px;
-        -webkit-transform: translate(0, 0);
-        transform: translate(0, 0);
-        transition: none;
+        //margin-top: 80px;
+        //-webkit-transform: translate(0, 0);
+        //transform: translate(0, 0);
+        //transition: none;
     }
 }
 
@@ -294,4 +295,12 @@ main {
     main {
         margin: 0 auto;
     }
+}
+
+// Todo: 整理为 SCSS
+
+nav li i{
+    padding-right: 10px;
+    font-size: 20px;
+    vertical-align: -2px;
 }

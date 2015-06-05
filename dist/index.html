@@ -11,13 +11,13 @@
         <link rel="apple-touch-icon" sizes="76x76" href="icon/iPad.png">
         <link rel="apple-touch-icon" sizes="120x120" href="icon/iPhone@2x.png">
         <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
-<!--        <meta content="telephone=no" name="format-detection" />-->
-        <link rel="stylesheet" href="iconfont/iconfont.css">
+		<!--<meta content="telephone=no" name="format-detection" />-->
+        <link rel="stylesheet" href="icomoon/style.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
     </head>
     <body>
-        <div >
-            <!-- loading image -->
+        <div>
+            <!-- Splash Screen -->
             <div 
                 id="loading"
                 v-show="!loaded"
@@ -29,32 +29,56 @@
                 </div>
             </div>
             
-            <!-- appbar -->
+            
+            <!-- App Bar -->
             <header class="app-bar promote-layer">
               <div class="app-bar-container">
-                <button class="bw-action-nav iconfont icon-hamburgermenu navdrawer-menu"></button>
+                <button class="bw-action-nav icon-menu navdrawer-menu"
+                        v-show = "state == 'LIST'"
+                ></button>
+                <button class="icon-arrow_back"
+                        v-show = "state == 'INPUT'"
+                        v-on = "click:onActionAdd";
+                ></button>
                 <h1 class="logo">BusyWeek!</h1>
                 <section class="app-bar-actions">
                      <button 
-                         class="bw-action-add iconfont icon-tianjia"
-                         v-class = " delete-mode : (state == 'INPUT') "
-                         v-on = "click:onActionAdd";
+                         class="bw-action-add icon-more_vert"
                          >
                      </button>
                 </section>
               </div>
             </header>
             
-            <!--nav-->
+            
+            <!-- Navigation Drawer -->
             <nav class="navdrawer-container promote-layer">
               <h4></h4>
               <ul>
-                <li v-on = "click:activeFilter = 'all'"><a href="#all">全部事项</a></li>
-                <li v-on = "click:activeFilter = 'done'"><a href="#done">完成事项</a></li>
-                <li v-on = "click:activeFilter = 'active'"><a href="#active">活动事项</a></li>
-                <li v-on = "click:activeFilter = 'about'"><a href="#about">关于</a></li>
+                <li v-on = "click:activeFilter = 'all'">
+                    <a href="#all"><i class="icon-event_note"></i>全部事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'done'">
+                    <a href="#done"><i class="icon-event_available"></i>完成事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'active'">
+                    <a href="#active"><i class="icon-event_busy"></i>在忙事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'about'">
+                    <a href="#about"><i class="icon-person"></i>关于</a>
+                </li>
               </ul>
             </nav>
+            
+            
+            <!-- FAB: floating action button -->
+            <div class="FAB bw-action-add" 
+                 v-class = " delete-mode : (state == 'INPUT') "
+                 v-on = "click:onActionAdd";
+            >
+                +
+            </div>
+            
             
             <!-- inputView -->
             <form 
@@ -75,7 +99,6 @@
                 >
                 </textarea>
                 <!-- <input type="reset" class="m-reset iconfont icon-delete" />-->
-                 
                 <div 
                     class="m-cell-item bw-new-picker"                   
                 >
@@ -109,8 +132,11 @@
                 </div>
             </form>
 
-            <!-- timeline -->
-            <div class="bw-timeline navdrawer-mask" v-show="state == 'LIST'"> 
+
+            <!-- Timeline: the main ListView -->
+            <div class="bw-timeline navdrawer-mask" 
+            	v-class=" on-input-mode : state !== 'LIST'"
+            > 
                 <!-- day -->
                 <ul class= "m-cell m-cell-list bw-day"
                     v-repeat="timeline | orderBy 'key'"
@@ -160,7 +186,7 @@
                                 v-on="focus:editTodo"
                             >
                             <a 
-                                class="iconfont icon-delete bw-delete" 
+                                class="icon-close bw-delete" 
                                 v-on="click:removeTodo(this)"></a>
                         </div>
                     </li>

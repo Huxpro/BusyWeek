@@ -1,15 +1,15 @@
 
-css/mpi-min.css
-----------------
-css/mpi-min.css
-
-css/mpi.css
-----------------
-css/mpi.css
-
 css/style.css
 ----------------
 css/style.css
+
+icomoon/demo-files/demo.css
+----------------
+icomoon/demo-files/demo.css
+
+icomoon/style.css
+----------------
+icomoon/style.css
 
 iconfont/iconfont.css
 ----------------
