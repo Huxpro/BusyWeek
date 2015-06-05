@@ -271,6 +271,7 @@ main {
     }
     nav {
         display: block;
+        margin-top: 58px;
     }
     main {
         /* margin-left:260px;*/
@@ -294,4 +295,12 @@ main {
     main {
         margin: 0 auto;
     }
+}
+
+// Todo: 整理为 SCSS
+
+nav li i{
+    padding-right: 10px;
+    font-size: 20px;
+    vertical-align: -2px;
 }
