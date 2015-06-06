@@ -16,7 +16,6 @@
         <link rel="stylesheet" type="text/css" href="css/style.css">
     </head>
     <body>
-        <div>
             <!-- Splash Screen -->
             <div 
                 id="loading"
@@ -72,12 +71,10 @@
             
             
             <!-- FAB: floating action button -->
-            <div class="FAB bw-action-add" 
+            <div class="FAB bw-action-add icon-add" 
                  v-class = " delete-mode : (state == 'INPUT') "
-                 v-on = "click:onActionAdd";
-            >
-                +
-            </div>
+                 v-on = "click:onActionAdd"
+            ></div>
             
             
             <!-- inputView -->
@@ -132,9 +129,10 @@
                 </div>
             </form>
 
-
+            <div class="navdrawer-mask">
+                
             <!-- Timeline: the main ListView -->
-            <div class="bw-timeline navdrawer-mask" 
+            <div class="bw-timeline " 
             	v-class=" on-input-mode : state !== 'LIST'"
             > 
                 <!-- day -->
@@ -211,7 +209,7 @@
                     </li>
                 </ul>
             </div>
-        </div>
+            </div>
         <script src="js/lib/require.js"></script>        
         <script async src="js/app.js"></script>
         <script>
