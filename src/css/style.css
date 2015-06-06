@@ -887,6 +887,7 @@ body {
       color: #ccc; }
 
 .bw-delete {
+  display: inline-block;
   color: #FF5B45;
   font-size: 19px;
   padding: 10px;
