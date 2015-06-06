@@ -707,11 +707,13 @@ body {
     .bw-new {
       width: 500px;
       height: 60%;
-      position: absolute;
+      position: fixed;
       right: 86px;
       bottom: 63px;
       top: auto;
-      padding-top: 0px; } }
+      padding-top: 0px;
+      overflow: hidden;
+      border-radius: 3px; } }
   .bw-new.v-enter {
     opacity: 0;
     -webkit-transform: translate3d(0, -20%, 0); }
@@ -770,7 +772,7 @@ body {
   .bw-new-picker .bw-datepicker {
     text-align: center;
     font-size: 15px; }
-    .bw-new-picker .bw-datepicker::-webkit-inner-spin-button, .bw-new-picker .bw-datepicker::-webkit-calendar-picker-indicator, .bw-new-picker .bw-datepicker::-webkit-clear-button {
+    .bw-new-picker .bw-datepicker::-webkit-inner-spin-button, .bw-new-picker .bw-datepicker::-webkit-clear-button {
       display: none; }
     .bw-new-picker .bw-datepicker::-webkit-datetime-edit-fields-wrapper {
       padding: 0px; }
@@ -806,7 +808,8 @@ body {
     -webkit-user-select: text; }
   .bw-timeline .m-cell-item, .bw-timeline .m-cell-header {
     margin-left: 0px;
-    padding-left: 10px; }
+    padding-left: 10px;
+    padding-right: 4px; }
   .bw-timeline .m-cell-header {
     border: none;
     min-height: 16px;
@@ -881,6 +884,12 @@ body {
   .bw-delete:active {
     background-color: rgba(115, 130, 155, 0.1); }
 
+@media all and (min-width: 800px) {
+  .bw-todo:hover .bw-delete {
+    display: block; }
+
+  .bw-delete {
+    display: none; } }
 /* Lighten CSS */
 .app-bar {
   display: block;
