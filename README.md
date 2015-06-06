@@ -49,7 +49,7 @@ and present a Todo-list **sorted by date** to you.
 
 ##### New
 
-[Keep optimize Desktop Experience](https://github.com/Huxpro/BusyWeek/commit/3ab63ceb90b5438a71447611785161e7196aee44)
+* [Keep optimize Desktop Experience](https://github.com/Huxpro/BusyWeek/commit/3ab63ceb90b5438a71447611785161e7196aee44)
 
 
 
