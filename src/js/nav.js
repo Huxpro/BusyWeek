@@ -11,6 +11,14 @@
  */
  
  
+// User Agent
+
+var ua = navigator.userAgent;
+
+var isAndroid = ua.indexOf('Android') > -1 || ua.indexOf('Linux') > -1; 
+var isiOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); 
+  
+ 
 (function() {
     'use strict';
 
@@ -86,9 +94,15 @@
     function onDrawerStart(e) {
         drawer.addEventListener('touchmove', onDrawerMove);
         drawer.addEventListener('touchend', onDrawerEnd);
-        drawer.classList.add("touching");
         initPoint.x = e.targetTouches[0].clientX;
         console.log("touchstart");
+        
+        if(isAndroid){
+            return;
+        }else{
+            drawer.classList.add("touching");
+        }
+        
     }
 
     function onDrawerMove(e) {
@@ -119,10 +133,16 @@
     function onDrawerEnd(e) {
         drawer.removeEventListener('touchmove', onDrawerMove);
         drawer.removeEventListener('touchend', onDrawerEnd);
-        drawer.classList.remove("touching");
         isAnimating = false;
         console.log('touchend');
         checkPosition();
+        
+        if(isAndroid){
+            return;
+        }else{
+            drawer.classList.remove("touching");
+        }
+        
     }
 
     function limitValue(target) {
