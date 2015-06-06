@@ -64,6 +64,8 @@ require( [
                 text: ''
             },
             
+            editingTodo: null,
+            
             /**
              * 时间轴 Map 对象
              *
@@ -110,6 +112,19 @@ require( [
             // App.loaded 
             console.log("vue working...");
             this.loaded = true;
+        },
+        
+        // supported by Vue-TodoMVC
+        directives: {
+            'todo-focus': function (value) {
+                if (!value) {
+                    return;
+                }
+                var el = this.el;
+                setTimeout(function () {
+                    el.focus();
+                }, 0);
+            }
         },
         
         methods: {
@@ -232,7 +247,21 @@ require( [
                 todo.done = !todo.done;
             },
             editTodo: function (todo) {
-    
+                this.editingTodo = todo;
+            },
+            doneEdit: function (todo) {
+                if (!this.editingTodo) {
+                    return;
+                }
+                this.editingTodo = null;
+                todo.text = todo.text.trim();
+                if (!todo.text) {
+                    this.removeTodo(todo);
+                }
+            },
+            cancelEdit: function (todo) {
+                this.editingTodo = null;
+                //todo.title = this.beforeEditCache;
             },
             hackCheckbox: function (e) {
                 return false;

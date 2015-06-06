@@ -138,6 +138,7 @@
             	v-class=" on-input-mode : state !== 'LIST'"
             > 
                 <!-- day -->
+                <!-- This template traverse "app.timeline" and this = "day" here -->
                 <ul class= "m-cell m-cell-list bw-day"
                     v-repeat="timeline | orderBy 'key'"
                     v-show="ifDayShow(todos)"
@@ -157,38 +158,56 @@
                         
                     </li>
                     <!-- todo -->
+                    <!-- This template traverse "day.todos" and this = "todo" here -->
                     <li 
-                        class="m-cell-item bw-todo" 
+                        class="m-cell-item bw-todo"
                         v-repeat="todos" 
+                        v-class="editing : this == editingTodo" 
                         v-show="ifTodoShow(done)"
                         v-transition
                     >
+                        <!-- checkbox -->
                         <div 
                             class="bw-checkbox" 
                             v-on = "click:checkTodo(this)"
                         >
                             <span 
-                                v-class = " 
-                                    check : done;
-                                "
+                                v-class = "check : done" 
                                 class="m-checkbox"    
                             </span>
                         </div>
-                        <div class="m-cell-ctrl m-cell-txt">
+                        
+                        <!-- text -->
+                        <div class="m-cell-ctrl m-cell-txt" v-class="editing : this == editingTodo" >
+                            <!-- regular view -->
+                            <div 
+                                class="m-txtinput view" 
+                                v-class="done : done"
+                                value="{{text}}"
+                                v-on="click:editTodo(this)"
+                            >
+                                {{text}}
+                            </div>
+                            <!-- edit view -->
                             <input 
                                 type="text" 
-                                class="m-txtinput" 
+                                class="m-txtinput edit" 
                                 v-model = "text"
-                                v-class="
-                                    done : done
-                                "
+                                v-todo-focus="this == editingTodo"
                                 value="{{text}}"
-                                v-on="focus:editTodo"
+                                v-on="
+                                    blur  : doneEdit(this),
+                                    keyup : doneEdit(this) | key enter,
+                                    keyup : cancelEdit(this) | key esc
+                                "
                             >
-                            <a 
-                                class="icon-close bw-delete" 
-                                v-on="click:removeTodo(this)"></a>
                         </div>
+                        
+                        <!-- delete button -->
+                        <a 
+                            class="icon-close bw-delete" 
+                            v-on="click:removeTodo(this)">
+                        </a>
                     </li>
                 </ul>
             </div>

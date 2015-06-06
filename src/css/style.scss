@@ -247,6 +247,12 @@ body{
         background: none;
         -webkit-box-flex: 1;
         @include selectable;
+        
+        // multi-lines support
+        line-height: 20px;
+        padding:8px 0;
+        min-height: 36px;
+        height: auto;
     }
     .m-cell-item{
         margin-left: 0px;
@@ -323,7 +329,20 @@ body{
         background: #fff !important;
         transition: all .35s ease;
         -webkit-transform : translate3d(0%,0,0);
-
+        
+        
+        &.editing{
+            .view{
+                display: none;
+            }
+            .edit{
+                display: block;
+            }
+        }
+        .edit{
+            display: none;
+        }
+        
         &.v-enter, &.v-leave {
             -webkit-transform : translate3d(-100%,0,0);
         }
@@ -341,6 +360,7 @@ body{
     }   
 }
 .bw-delete{
+    display: inline-block;
     color: #FF5B45;
     font-size: 19px;
     padding: 10px;

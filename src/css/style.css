@@ -805,7 +805,11 @@ body {
     color: #222222;
     background: none;
     -webkit-box-flex: 1;
-    -webkit-user-select: text; }
+    -webkit-user-select: text;
+    line-height: 20px;
+    padding: 8px 0;
+    min-height: 36px;
+    height: auto; }
   .bw-timeline .m-cell-item, .bw-timeline .m-cell-header {
     margin-left: 0px;
     padding-left: 10px;
@@ -866,6 +870,12 @@ body {
     background: #fff !important;
     transition: all .35s ease;
     -webkit-transform: translate3d(0%, 0, 0); }
+    .bw-timeline .bw-todo.editing .view {
+      display: none; }
+    .bw-timeline .bw-todo.editing .edit {
+      display: block; }
+    .bw-timeline .bw-todo .edit {
+      display: none; }
     .bw-timeline .bw-todo.v-enter, .bw-timeline .bw-todo.v-leave {
       -webkit-transform: translate3d(-100%, 0, 0); }
     .bw-timeline .bw-todo:active {
