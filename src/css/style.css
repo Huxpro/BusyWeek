@@ -326,7 +326,7 @@ a {
 input[type="button"], input[type="submit"] {
   -webkit-appearance: button; }
 
-input[type="text"], input[type="textarea"], input[type="radio"], input[type="reset"] {
+input[type="text"], textarea, input[type="radio"], input[type="reset"] {
   outline: none;
   border: 0 none;
   -webkit-appearance: none;
@@ -506,6 +506,10 @@ main {
   transition: -webkit-transform 0.2s ease-out;
   transition: transform 0.2s ease-out; }
 
+.navdrawer-container.touching {
+  transition: -webkit-transform 0.1s ease-out;
+  transition: transform 0.1s ease-out; }
+
 .navdrawer-container h4,
 .navdrawer-container ul li a {
   height: 58px;
@@ -625,7 +629,7 @@ nav li i {
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
   background-color: #FF5B45;
   color: white;
-  line-height: 52px;
+  line-height: 56px;
   font-size: 26px;
   text-align: center; }
   .FAB:active {
@@ -869,7 +873,8 @@ body {
     border: none;
     background: #fff !important;
     transition: all .35s ease;
-    -webkit-transform: translate3d(0%, 0, 0); }
+    -webkit-transform: translate3d(0%, 0, 0);
+    word-break: break-all; }
     .bw-timeline .bw-todo.editing .view {
       display: none; }
     .bw-timeline .bw-todo.editing .edit {

@@ -329,7 +329,7 @@ body{
         background: #fff !important;
         transition: all .35s ease;
         -webkit-transform : translate3d(0%,0,0);
-        
+        word-break:break-all;
         
         &.editing{
             .view{

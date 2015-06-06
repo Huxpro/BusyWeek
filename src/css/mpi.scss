@@ -315,7 +315,7 @@ a {
 input[type="button"], input[type="submit"] {
   -webkit-appearance: button; }
 
-input[type="text"], input[type="textarea"], input[type="radio"], input[type="reset"] {
+input[type="text"], textarea, input[type="radio"], input[type="reset"] {
   outline: none;
   border: 0 none;
   -webkit-appearance: none;

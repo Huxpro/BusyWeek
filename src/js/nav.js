@@ -19,7 +19,9 @@
     var menuBtn = document.querySelector('.navdrawer-menu');
     var main = document.querySelector('.navdrawer-mask');
 
-    function closeMenu() {
+    function closeMenu(e) {
+        console.log(e);
+        e.preventDefault();
         // appbarElement.classList.remove('open');
         navdrawerContainer.classList.remove('open');
         clearStyle();
@@ -46,7 +48,7 @@
         navdrawerContainer.style.transform = transformStyle;
     }
 
-    main.addEventListener('touchstart', closeMenu);
+    //main.addEventListener('touchstart', closeMenu);
     main.addEventListener('click', closeMenu);
     menuBtn.addEventListener('touchstart', touchMenu);
     menuBtn.addEventListener('click', toggleMenu);
@@ -86,9 +88,9 @@
     function onDrawerStart(e) {
         drawer.addEventListener('touchmove', onDrawerMove);
         drawer.addEventListener('touchend', onDrawerEnd);
+        drawer.classList.add("touching");
         initPoint.x = e.targetTouches[0].clientX;
         console.log("touchstart");
-
     }
 
     function onDrawerMove(e) {
@@ -119,6 +121,7 @@
     function onDrawerEnd(e) {
         drawer.removeEventListener('touchmove', onDrawerMove);
         drawer.removeEventListener('touchend', onDrawerEnd);
+        drawer.classList.remove("touching");
         isAnimating = false;
         console.log('touchend');
         checkPosition();
