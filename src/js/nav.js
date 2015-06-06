@@ -46,7 +46,7 @@
         navdrawerContainer.style.transform = transformStyle;
     }
 
-    //main.addEventListener('touchstart', closeMenu);
+    main.addEventListener('touchstart', closeMenu);
     main.addEventListener('click', closeMenu);
     menuBtn.addEventListener('touchstart', touchMenu);
     menuBtn.addEventListener('click', toggleMenu);
