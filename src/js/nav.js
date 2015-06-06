@@ -20,8 +20,6 @@
     var main = document.querySelector('.navdrawer-mask');
 
     function closeMenu(e) {
-        console.log(e);
-        e.preventDefault();
         // appbarElement.classList.remove('open');
         navdrawerContainer.classList.remove('open');
         clearStyle();

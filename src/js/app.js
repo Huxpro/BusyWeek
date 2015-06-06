@@ -121,9 +121,9 @@ require( [
                     return;
                 }
                 var el = this.el;
-                setTimeout(function () {
+                Vue.nextTick(function(){ 
                     el.focus();
-                }, 0);
+                })
             }
         },
         
