@@ -16,12 +16,11 @@ and present a Todo-list **sorted by date** to you.
 
 ## Expectation
 
-*(The Droid - feature is only for Android Version)*
 
 * Out of the box
 * No annoying
 * Cloud sync
-* Droid - Material Design
+* Material Design
 
 
 # Changelog
