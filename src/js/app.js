@@ -59,7 +59,7 @@ require( [
              */
             newTodo: {
                 date: getTodayDate(),
-                dayType: '0',
+                dayType: '0',   // dayType 与 Option 绑定，但只在运行时有用
                 done: false,
                 text: ''
             },
@@ -96,16 +96,25 @@ require( [
                 todoStorage.save(_timeline);
             }, true);
     
-            // vue 11+ 解决了死循环 watch 的稳定问题 (oldVal = newVal && break;)
+            // vue 11+ 解决了循环 watch 的稳定问题 (oldVal = newVal && break;)
             this.$watch('newTodo.dayType', function (_dayType, _dayType_old) {
+                
+                if( _dayType == "8"){
+                    document.querySelector('.bw-datepicker').focus();
+                }
+                
                 var _dateStr = getDiffDate(_dayType);
                 this.newTodo.date = _dateStr;
             });
             
             this.$watch('newTodo.date', function (_date, _date_old) {
                 var _diff = getDateDiff(_date, getTodayDate());
+                console.log(_diff);
+                
                 if (_diff >= 0 && _diff <= 7) {
                     this.newTodo.dayType = String(_diff);
+                }else {
+                    this.newTodo.dayType = "8";
                 }
             });
             
@@ -145,69 +154,8 @@ require( [
                 // change state and update view
                 this.state = states.LIST;
                 
-                // calculate the newTodo position
-                var sorted = (function(){
-                    var arr = [];
-                    for(var key in _timeline){
-                        arr.push(key);
-                    }
-                    return arr.sort(function(a,b){
-                        return a === b ? 0 : a > b ? 1 : -1
-                    })
-                })()
-                
-                var before = (function(){
-                    var arr = [];
-                    sorted.forEach(function(val){
-                        if(val <= _date){
-                            arr.push(val);
-                        }
-                    })
-                    return arr;
-                })()
-                
-                var position = (function(){
-                    var day = before.length,
-                        items = 0;
-                    
-                    before.forEach(function (date) {
-                        var dayList = _timeline[date];
-                        items += dayList.todos.length;
-                    }) 
-                    
-                    //console.log("day:"+day+" items:"+items);
-                    
-                    return day*36+(items+7)*48+58;
-                })()
-                
-                var scrollY = (function(){
-                    var edge = window.innerHeight || window.screen.availHeight;
-                    
-                    if(position < edge){
-                        return 0;
-                    }else{
-                        return position - edge;
-                    }
-                })()
-                
-//                console.log(before);
-//                console.log("position:"+ position);
-//                console.log("scrollTo:"+ scrollY);
-                
-                
-                // jump to the target Scroll Position at NEXT View Update
-                // this method falls back to setTimeout(fn, 0)
-                Vue.nextTick(function(){ 
-                    scroll(0,scrollY);
-                    
-//                    console.log("document.body.clientHeight"+document.body.clientHeight);
-//                    console.log("document.body.offsetHeight"+document.body.offsetHeight);
-//                    console.log("window.innerHeight"+window.innerHeight);
-//                    console.log("window.outerHeight"+window.outerHeight);
-//                    console.log("window.screen.height"+window.screen.height);
-//                    console.log("window.screen.availHeight"+window.screen.availHeight);
-                })
-                
+                // scroll to Todo
+                scrollToTodo(_timeline, _date);
                 
                 // set default todo text 
                 if (!this.newTodo.text) {
@@ -227,7 +175,7 @@ require( [
     
                 // reset newTodo
                 this.newTodo = {
-                    dayType: _dayType,  //
+                    dayType: _dayType,  // save dayType
                     date: _date,        // save date 
                     text: '',
                     done: false
@@ -262,15 +210,6 @@ require( [
             cancelEdit: function (todo) {
                 this.editingTodo = null;
                 //todo.title = this.beforeEditCache;
-            },
-            hackCheckbox: function (e) {
-                return false;
-            },
-            enterInputMode: function (e) {
-                //this.inputMode = true;
-            },
-            exitInputMode: function (e) {
-                //this.inputMode = false;
             },
             ifToday: function (_dateStr) {
                 if (_dateStr == getTodayDate()) {
@@ -332,8 +271,6 @@ require( [
                     this.appName = "好忙啊";
                 }
             }
-            
-    
         }
     })
     
@@ -348,6 +285,80 @@ require( [
     // FastClick
     FastClick.attach(document.body);
     console.log("fastclick working...");
+    
+    
+    /**
+     * calculate the newTodo position and Scroll to!
+     */ 
+    function scrollToTodo(_timeline, _date){
+       
+        // 把 timeline.key 做一次排序
+        var sorted = (function(){
+            var arr = [];
+            for(var key in _timeline){
+                arr.push(key);
+            }
+            return arr.sort(function(a,b){
+                return a === b ? 0 : a > b ? 1 : -1
+            })
+        })()
+        
+        // 拿到 _date 之前的 key
+        var before = (function(){
+            var arr = [];
+            sorted.forEach(function(val){
+                if(val <= _date){
+                    arr.push(val);
+                }
+            })
+            return arr;
+        })()
+        
+        // 根据之前的 key 算出 items 数和位置
+        var position = (function(){
+            var day = before.length,
+                items = 0;
+            
+            before.forEach(function (date) {
+                var dayList = _timeline[date];
+                items += dayList.todos.length;
+            }) 
+            
+            //console.log("day:"+day+" items:"+items);
+            
+            return day*36+(items+7)*48+58;
+        })()
+        
+        // 根据位置算出 ScrollY
+        var scrollY = (function(){
+            var edge = window.innerHeight || window.screen.availHeight;
+            
+            if(position < edge){
+                return 0;
+            }else{
+                return position - edge;
+            }
+        })()
+        
+        // jump to the target Scroll Position at NEXT View Update
+        // this method falls back to setTimeout(fn, 0)
+        Vue.nextTick(function(){ 
+            scroll(0,scrollY);
+        })
+        
+//      console.log(before);
+//      console.log("position:"+ position);
+//      console.log("scrollTo:"+ scrollY);
+
+//      console.log("document.body.clientHeight"+document.body.clientHeight);
+//      console.log("document.body.offsetHeight"+document.body.offsetHeight);
+//      console.log("window.innerHeight"+window.innerHeight);
+//      console.log("window.outerHeight"+window.outerHeight);
+//      console.log("window.screen.height"+window.screen.height);
+//      console.log("window.screen.availHeight"+window.screen.availHeight);
+      
+    }
+    
 });
 
 

@@ -46,8 +46,6 @@ button, html input[type="button"], input[type="reset"], input[type="submit"] {
   -webkit-appearance: button; }
 
 input[type="search"] {
-  -webkit-box-sizing: content-box;
-  -moz-box-sizing: content-box;
   box-sizing: content-box;
   -webkit-appearance: textfield; }
 
@@ -406,12 +404,14 @@ main h3 {
 
 .app-bar-container {
   display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
   width: 100%;
   height: 58px;
   position: relative;
   -webkit-flex-direction: row;
-  flex-direction: row;
+  -ms-flex-direction: row;
+      flex-direction: row;
   margin: 0 auto; }
 
 .app-bar.open {
@@ -420,7 +420,8 @@ main h3 {
 
 .app-bar .logo {
   -webkit-flex: 1;
-  flex: 1;
+  -ms-flex: 1;
+      flex: 1;
   font-size: 20px;
   line-height: 58px;
   margin: 0px;
@@ -438,9 +439,11 @@ main h3 {
 
 .app-bar-actions {
   display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
   -webkit-flex-direction: row;
-  flex-direction: row;
+  -ms-flex-direction: row;
+      flex-direction: row;
   z-index: 2; }
 
 .app-bar button {
@@ -564,53 +567,45 @@ main {
 @media all and (min-width: 1200px) {
   .app-bar {
     /*position: relative;*/ }
-
   .app-bar-container {
     display: block;
     height: 80px;
     padding: 0 10px;
     box-sizing: border-box; }
-
   .app-bar .logo {
     float: left;
     margin: 0;
     padding: 0;
     line-height: 80px;
     font-size: 26px; }
-
   .app-bar-actions {
     float: right; }
-
   .navdrawer-container h4 {
     display: none; }
-
   .app-bar:after {
     content: ' ';
     display: block;
     height: 0;
     overflow: hidden;
     clear: both; }
-
   button.menu {
     display: none; }
-
   nav {
     display: block;
     margin-top: 58px; }
-
   main {
     /* margin-left:260px;*/
     padding-top: 85px;
     min-height: initial; }
-
   body {
     overflow-y: scroll; }
-
   .navdrawer-container {
     height: auto; } }
+
 @media all and (min-width: 1400px) {
   main {
     margin: 0 auto; } }
+
 nav li i {
   padding-right: 10px;
   font-size: 20px;
@@ -704,7 +699,7 @@ body {
   border: none;
   background-color: #03A9F4;
   padding-top: 58px;
-  transition: all .25s ease;
+  transition: all 0.25s ease;
   -webkit-transform: translate3d(0, 0, 0); }
   @media all and (min-width: 640px) {
     .bw-new {
@@ -752,29 +747,52 @@ body {
   padding: 0px;
   width: 100%;
   position: fixed;
-  bottom: 0px; }
-  .bw-new-picker .m-cell-center {
-    width: 25%;
+  bottom: 0px;
+  min-height: 56px;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center; }
+  .bw-new-picker > div {
+    -webkit-flex-grow: 1;
+        -ms-flex-positive: 1;
+            flex-grow: 1;
+    -webkit-flex-basis: 0;
+        -ms-flex-preferred-size: 0;
+            flex-basis: 0;
     text-align: center; }
-    .bw-new-picker .m-cell-center > * {
+    .bw-new-picker > div:nth-of-type(1) {
+      -webkit-flex-grow: 3;
+          -ms-flex-positive: 3;
+              flex-grow: 3; }
+    .bw-new-picker > div:nth-of-type(2) {
+      -webkit-flex-grow: 4;
+          -ms-flex-positive: 4;
+              flex-grow: 4; }
+    .bw-new-picker > div:nth-of-type(3) {
+      -webkit-flex-grow: 2;
+          -ms-flex-positive: 2;
+              flex-grow: 2; }
+    .bw-new-picker > div > * {
       font-weight: lighter;
       outline: 0;
       color: #fff;
       padding: 10px;
       line-height: 20px; }
-    .bw-new-picker .m-cell-center > *:active {
+    .bw-new-picker > div > *:active {
       background-color: rgba(115, 130, 155, 0.1) !important; }
-  .bw-new-picker .m-cell-wider {
-    width: 49%; }
   .bw-new-picker .bw-daypicker, .bw-new-picker .bw-datepicker {
     -webkit-appearance: none;
     background: none;
     border: none;
-    max-width: 120px;
     text-align: center; }
   .bw-new-picker .bw-datepicker {
     text-align: center;
     font-size: 15px; }
+    .bw-new-picker .bw-datepicker:focus {
+      color: yellow; }
     .bw-new-picker .bw-datepicker::-webkit-inner-spin-button, .bw-new-picker .bw-datepicker::-webkit-clear-button {
       display: none; }
     .bw-new-picker .bw-datepicker::-webkit-datetime-edit-fields-wrapper {
@@ -864,14 +882,14 @@ body {
     background: none;
     border: none;
     min-height: 0px;
-    transition: all .25s ease;
+    transition: all 0.25s ease;
     -webkit-transform: translate3d(0%, 0, 0); }
     .bw-timeline .bw-day.v-enter, .bw-timeline .bw-day.v-leave {
       -webkit-transform: translate3d(-100%, 0, 0); }
   .bw-timeline .bw-todo {
     border: none;
     background: #fff !important;
-    transition: all .35s ease;
+    transition: all 0.35s ease;
     -webkit-transform: translate3d(0%, 0, 0);
     word-break: break-all; }
     .bw-timeline .bw-todo.editing .view {
@@ -902,9 +920,9 @@ body {
 @media all and (min-width: 800px) {
   .bw-todo:hover .bw-delete {
     display: block; }
-
   .bw-delete {
     display: none; } }
+
 /* Lighten CSS */
 .app-bar {
   display: block;
@@ -919,12 +937,14 @@ body {
 
 .app-bar-container {
   display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
   width: 100%;
   height: 58px;
   position: relative;
   -webkit-flex-direction: row;
-  flex-direction: row;
+  -ms-flex-direction: row;
+      flex-direction: row;
   margin: 0 auto; }
 
 .app-bar.open {
@@ -933,7 +953,8 @@ body {
 
 .app-bar .logo {
   -webkit-flex: 1;
-  flex: 1;
+  -ms-flex: 1;
+      flex: 1;
   font-size: 20px;
   line-height: 58px;
   margin: 0px;
@@ -950,9 +971,11 @@ body {
 
 .app-bar-actions {
   display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
   -webkit-flex-direction: row;
-  flex-direction: row;
+  -ms-flex-direction: row;
+      flex-direction: row;
   z-index: 2; }
 
 .app-bar button {
@@ -989,5 +1012,3 @@ body {
   -webkit-transform: rotate(0deg); }
   .bw-action-add.delete-mode {
     -webkit-transform: rotate(-45deg); }
-
-/*# sourceMappingURL=style.css.map */
