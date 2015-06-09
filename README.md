@@ -26,6 +26,19 @@ and present a Todo-list **sorted by date** to you.
 # Changelog
 
 
+## V1.6.2
+
+##### New
+
+* DayPicker in newTodoView now support "选个日期" as the option out of range
+* Using Autoprefixer as one task of the CSS pre-compile, mainly for Flexbox. 
+
+##### Fix
+
+* Fix layout of the 3 pickers in newTodoView, by re-write the Flexbox style
+* Code Optimization
+
+
 ## V1.6.1
 
 ##### Fix

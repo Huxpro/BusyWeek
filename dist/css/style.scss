@@ -161,16 +161,26 @@ body{
     width:100%;
     position:fixed;
     bottom:0px;
-    //display:none;
-//    transition: all .25s ease;
-//    -webkit-transform : translate3d(0,0,0);
-//    &.v-enter, &.v-leave {
-//        -webkit-transform : translate3d(0,-100%,0);
-//        height:0px;
-//    }
-    .m-cell-center{
-        width:25%;
+    min-height: 56px;
+    
+    display: flex;
+    align-items:center;
+    
+    &>div{
+        flex-grow:1;
+        flex-basis: 0;
         text-align: center;
+        
+        &:nth-of-type(1){
+            flex-grow: 3;
+        }
+        &:nth-of-type(2){
+            flex-grow: 4;
+        }
+        &:nth-of-type(3){
+            flex-grow: 2;
+        }
+        
         &>*{
           font-weight: lighter;
           outline:0; 
@@ -182,21 +192,21 @@ body{
           background-color:rgba(115, 130, 155, 0.1) !important;
         }
     }
-    .m-cell-wider{
-        width:49%;
-    }
-    
+   
     .bw-daypicker{
         -webkit-appearance: none; 
         background: none;
         border: none;
-        max-width: 120px;
         text-align:center;
     }
     .bw-datepicker{
         @extend .bw-daypicker;
         text-align: center;
         font-size:15px;
+        
+        &:focus{
+            color: yellow;
+        }
         // &::-webkit-calendar-picker-indicator,
         &::-webkit-inner-spin-button, &::-webkit-clear-button{
             display:none;
