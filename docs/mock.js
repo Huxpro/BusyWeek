@@ -12,9 +12,9 @@
     },
     
     "data": {
-        "2015-06-10": {                 // @field {object} <yyyy-mm-dd>  
-            "date": "2015-06-10",       // @field {string} date
-            "todos": [                  // @field {array}  todos
+        "2015-06-10": {                                 // @field {object} <yyyy-mm-dd>  
+            "date": "2015-06-10",                       // @field {string} date
+            "todos": [                                  // @field {array}  todos
                 {   
                     // universal
                     "id" : "",                          // 缺省，未来用于 md5 加密
@@ -39,11 +39,11 @@ this JSON is designed to be Semantic, you can fetch your data like that:
 
 var data = json.data;
 
-data["2015-06-10"]                                  // get DayObject
-data["2015-06-10"].todos                            // get Todos
-data["2015-06-10"].todos[1]                         // get the first todo of that day
-data["2015-06-10"].todos[1].text                    // get text of the first todo
-data["2015-06-10"].todos[1].date == "2015-06-10"    // true
+data["2015-06-10"]                                      // get DayObject
+data["2015-06-10"].todos                                // get Todos
+data["2015-06-10"].todos[1]                             // get the first todo of that day
+data["2015-06-10"].todos[1].text                        // get text of the first todo
+data["2015-06-10"].todos[1].date == "2015-06-10"        // true
 
 **/
 
