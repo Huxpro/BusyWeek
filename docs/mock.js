@@ -47,3 +47,57 @@ data["2015-06-10"].todos[1].text                    // get text of the first tod
 data["2015-06-10"].todos[1].date == "2015-06-10"    // true
 
 **/
+
+
+
+/**
+ *  a real, more complex example
+ */
+ 
+ 
+{
+    "version": {
+        "android": "12",    
+        "web": "3",      
+    },
+    
+    "data": {
+        "2015-06-10": {                 g
+            "date": "2015-06-10",      
+            "todos": [                  
+                {   
+                    "id" : "",                          
+                    "createdTime" : "1433919615081",    
+                    "modifiedTime" : "1563919615091",    
+                    "date": "2015-06-10",                
+                    "done": true,                       
+                    "text": "今天写点啥啊",               
+                    "dayType": "0",                     
+                }
+            ]
+        },
+        "2015-06-11": {                 
+            "date": "2015-06-11",       
+            "todos": [                  
+                {   
+                    "id" : "",                          
+                    "createdTime" : "1433919615221",    
+                    "modifiedTime" : "1563919615351",   
+                    "date": "2015-06-11",               
+                    "done": false,                      
+                    "text": "明天的第一条 todo,
+                    "dayType": "1",                     
+                },
+                {   
+                    "id" : "",                          
+                    "createdTime" : "1433919615071",    
+                    "modifiedTime" : "1563919615071",   
+                    "date": "2015-06-11",               
+                    "done": false,                      
+                    "text": "明天的第二条 todo",               
+                    "dayType": "1",                     
+                }
+            ]
+        }
+    }
+}
