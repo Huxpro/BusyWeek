@@ -8,7 +8,7 @@
 {
     "version": {
         "android": "0",    
-        "web": "0",      
+        "web": "0"   
     },
     
     "data": {
@@ -25,7 +25,7 @@
                     "text": "今天写点啥啊",               // Todo 文字内容
                     
                     // web-only
-                    "dayType": "1",                     // 运行时需要
+                    "dayType": "1"                      // 运行时需要
                     
                     // android-only
                 }
@@ -55,7 +55,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"        // true
 {
     "version": {
         "android": "12",    
-        "web": "3",      
+        "web": "3"  
     },
     
     "data": {
@@ -69,7 +69,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"        // true
                     "date": "2015-06-10",                
                     "done": true,                       
                     "text": "今天写点啥啊",               
-                    "dayType": "0",                     
+                    "dayType": "0"                    
                 }
             ]
         },
@@ -83,7 +83,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"        // true
                     "date": "2015-06-11",               
                     "done": false,                      
                     "text": "明天的第一条 todo",
-                    "dayType": "1",                     
+                    "dayType": "1"                  
                 },
                 {   
                     "id" : "",                          
@@ -92,7 +92,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"        // true
                     "date": "2015-06-11",               
                     "done": false,                      
                     "text": "明天的第二条 todo",               
-                    "dayType": "1",                     
+                    "dayType": "1"                    
                 }
             ]
         }
