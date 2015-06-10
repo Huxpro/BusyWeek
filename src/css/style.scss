@@ -65,25 +65,73 @@ body{
     width:100%;
     height:100%;
     background:white;
+    opacity: 1;
     z-index: 999;
-    transition: all 1s ease;
-    transform : translate3d(0,0,0);
+    transition: transform 1s ease, opacity 1s ease;
+    transform : scale3d(1,1,1);
     &.v-enter, &.v-leave {
-        transform : translate3d(0,-100%,0);
-        background:#03A9F4;
+        transform : scale3d(10,10,1);
+        //background:#03A9F4;
+        opacity: 0;
+        p{
+            display: none;
+        }
     }
     .content{
         @include absolute-center;
-        width: 77px;
-        height:100px;
+        width: 70px;
+        height:70px;
         p{
             text-align:center;
             color: #03A9F4;
+            text-indent: 10px;
         }
     }
     img{
         width: 77px;
         height: 77px;
+    }
+    // http://tobiasahlin.com/spinkit/
+    .spinner {
+      width: 70px;
+      height: 70px;
+    
+      position: relative;
+      margin: 0 auto 16px auto;
+    }
+    
+    .double-bounce1, .double-bounce2 {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: #03A9F4;
+      opacity: 0.6;
+      position: absolute;
+      top: 0;
+      left: 0;
+      
+      -webkit-animation: bounce 2.0s infinite ease-in-out;
+      animation: bounce 2.0s infinite ease-in-out;
+    }
+    
+    .double-bounce2 {
+      -webkit-animation-delay: -1.0s;
+      animation-delay: -1.0s;
+    }
+    
+    @-webkit-keyframes bounce {
+      0%, 100% { -webkit-transform: scale(0.0) }
+      50% { -webkit-transform: scale(1.0) }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { 
+        transform: scale(0.0);
+        -webkit-transform: scale(0.0);
+      } 50% { 
+        transform: scale(1.0);
+        -webkit-transform: scale(1.0);
+      }
     }
 }
 
