@@ -82,7 +82,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"    // true
                     "modifiedTime" : "1563919615351",   
                     "date": "2015-06-11",               
                     "done": false,                      
-                    "text": "明天的第一条 todo,
+                    "text": "明天的第一条 todo",
                     "dayType": "1",                     
                 },
                 {   
