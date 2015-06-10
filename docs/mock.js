@@ -35,7 +35,6 @@
 }
 
 /**
-
 this JSON is designed to be Semantic, you can fetch your data like that:
 
 var data = json.data;
@@ -53,8 +52,6 @@ data["2015-06-10"].todos[1].date == "2015-06-10"    // true
 /**
  *  a real, more complex example
  */
- 
- 
 {
     "version": {
         "android": "12",    
@@ -62,7 +59,7 @@ data["2015-06-10"].todos[1].date == "2015-06-10"    // true
     },
     
     "data": {
-        "2015-06-10": {                 g
+        "2015-06-10": {                 
             "date": "2015-06-10",      
             "todos": [                  
                 {   
