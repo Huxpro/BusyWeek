@@ -67,9 +67,9 @@ body{
     background:white;
     z-index: 999;
     transition: all 1s ease;
-    -webkit-transform : translate3d(0,0,0);
+    transform : translate3d(0,0,0);
     &.v-enter, &.v-leave {
-        -webkit-transform : translate3d(0,-100%,0);
+        transform : translate3d(0,-100%,0);
         background:#03A9F4;
     }
     .content{
@@ -116,14 +116,14 @@ body{
     
     // motion
     transition: all .25s ease;
-    -webkit-transform : translate3d(0,0,0);
+    transform : translate3d(0,0,0);
     &.v-enter {
         opacity: 0;
-        -webkit-transform : translate3d(0,-20%,0);
+        transform : translate3d(0,-20%,0);
     }
     &.v-leave {
         opacity: 0;
-        -webkit-transform : translate3d(0,-20%,0);
+        transform : translate3d(0,-20%,0);
     }
     
     .m-cell-item{
@@ -255,7 +255,7 @@ body{
         font-size:16px;
         color: #222222;
         background: none;
-        -webkit-box-flex: 1;
+        flex:1;
         @include selectable;
         
         // multi-lines support
@@ -320,7 +320,7 @@ body{
         .check {
             border-color: #03A9F4;
             background: #03A9F4 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB8AAAAWBAMAAADKj1rCAAAAHlBMVEUAAAD///////////////////////////////////8kfJuVAAAACXRSTlMA5ynxOgvCiWKZ3EdUAAAAV0lEQVQY02NAAUxFDKhAcWIAqgLJyagCijNN0BU4UEcBRwqaAk2IOMKEQKAETAFcBk7BpGAkQgmYQLYfhFEc4ARRgFBiCFGAUDIThy8QSoQd0MIyFMEEAPDjG3xrfBzoAAAAAElFTkSuQmCC) no-repeat center;
-            -webkit-background-size: auto 11px; 
+            background-size: auto 11px; 
         }
     }
     .bw-day{
@@ -329,16 +329,16 @@ body{
         border: none;
         min-height: 0px;
         transition: all .25s ease;
-        -webkit-transform : translate3d(0%,0,0);
+        transform : translate3d(0%,0,0);
         &.v-enter, &.v-leave {
-            -webkit-transform : translate3d(-100%,0,0);
+            transform : translate3d(-100%,0,0);
         }
     }
     .bw-todo {
         border: none;
         background: #fff !important;
         transition: all .35s ease;
-        -webkit-transform : translate3d(0%,0,0);
+        transform : translate3d(0%,0,0);
         word-break:break-all;
         
         &.editing{
@@ -354,7 +354,7 @@ body{
         }
         
         &.v-enter, &.v-leave {
-            -webkit-transform : translate3d(-100%,0,0);
+            transform : translate3d(-100%,0,0);
         }
         &:active {
             background-color:rgba(115, 130, 155, 0.1);
@@ -404,23 +404,20 @@ body{
 }
 
 .app-bar-container {
-    display: -webkit-flex;
     display: flex;
     width: 100%;
     height: 58px;
     position: relative;
-    -webkit-flex-direction: row;
     flex-direction: row;
     margin: 0 auto;
 }
 
 .app-bar.open {
-    -webkit-transform: translate(250px, 0);
+    transform: translate(250px, 0);
     transform: translate(250px, 0);
 }
 
 .app-bar .logo {
-    -webkit-flex: 1;
     flex: 1;
     font-size: 20px;
     line-height: 58px;
@@ -439,9 +436,7 @@ body{
 }
 
 .app-bar-actions {
-    display: -webkit-flex;
     display: flex;
-    -webkit-flex-direction: row;
     flex-direction: row;
     z-index: 2;
 }
@@ -479,9 +474,9 @@ body{
 
 .bw-action-add{
     transition: all 0.25s ease-out !important;
-    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
     &.delete-mode{
-        -webkit-transform: rotate(-45deg);
+        transform: rotate(-45deg);
     }
 }
 

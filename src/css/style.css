@@ -667,9 +667,11 @@ body {
   background: white;
   z-index: 999;
   transition: all 1s ease;
-  -webkit-transform: translate3d(0, 0, 0); }
+  -webkit-transform: translate3d(0, 0, 0);
+          transform: translate3d(0, 0, 0); }
   #loading.v-enter, #loading.v-leave {
     -webkit-transform: translate3d(0, -100%, 0);
+            transform: translate3d(0, -100%, 0);
     background: #03A9F4; }
   #loading .content {
     margin: auto;
@@ -700,7 +702,8 @@ body {
   background-color: #03A9F4;
   padding-top: 58px;
   transition: all 0.25s ease;
-  -webkit-transform: translate3d(0, 0, 0); }
+  -webkit-transform: translate3d(0, 0, 0);
+          transform: translate3d(0, 0, 0); }
   @media all and (min-width: 640px) {
     .bw-new {
       width: 500px;
@@ -714,10 +717,12 @@ body {
       border-radius: 3px; } }
   .bw-new.v-enter {
     opacity: 0;
-    -webkit-transform: translate3d(0, -20%, 0); }
+    -webkit-transform: translate3d(0, -20%, 0);
+            transform: translate3d(0, -20%, 0); }
   .bw-new.v-leave {
     opacity: 0;
-    -webkit-transform: translate3d(0, -20%, 0); }
+    -webkit-transform: translate3d(0, -20%, 0);
+            transform: translate3d(0, -20%, 0); }
   .bw-new .m-cell-item, .bw-new .bw-timeline .m-cell-header, .bw-timeline .bw-new .m-cell-header {
     border: none; }
   .bw-new .bw-input {
@@ -825,7 +830,9 @@ body {
     font-size: 16px;
     color: #222222;
     background: none;
-    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+        -ms-flex: 1;
+            flex: 1;
     -webkit-user-select: text;
     line-height: 20px;
     padding: 8px 0;
@@ -876,21 +883,24 @@ body {
     .bw-timeline .bw-checkbox .check {
       border-color: #03A9F4;
       background: #03A9F4 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB8AAAAWBAMAAADKj1rCAAAAHlBMVEUAAAD///////////////////////////////////8kfJuVAAAACXRSTlMA5ynxOgvCiWKZ3EdUAAAAV0lEQVQY02NAAUxFDKhAcWIAqgLJyagCijNN0BU4UEcBRwqaAk2IOMKEQKAETAFcBk7BpGAkQgmYQLYfhFEc4ARRgFBiCFGAUDIThy8QSoQd0MIyFMEEAPDjG3xrfBzoAAAAAElFTkSuQmCC) no-repeat center;
-      -webkit-background-size: auto 11px; }
+      background-size: auto 11px; }
   .bw-timeline .bw-day {
     margin-bottom: 0px;
     background: none;
     border: none;
     min-height: 0px;
     transition: all 0.25s ease;
-    -webkit-transform: translate3d(0%, 0, 0); }
+    -webkit-transform: translate3d(0%, 0, 0);
+            transform: translate3d(0%, 0, 0); }
     .bw-timeline .bw-day.v-enter, .bw-timeline .bw-day.v-leave {
-      -webkit-transform: translate3d(-100%, 0, 0); }
+      -webkit-transform: translate3d(-100%, 0, 0);
+              transform: translate3d(-100%, 0, 0); }
   .bw-timeline .bw-todo {
     border: none;
     background: #fff !important;
     transition: all 0.35s ease;
     -webkit-transform: translate3d(0%, 0, 0);
+            transform: translate3d(0%, 0, 0);
     word-break: break-all; }
     .bw-timeline .bw-todo.editing .view {
       display: none; }
@@ -899,7 +909,8 @@ body {
     .bw-timeline .bw-todo .edit {
       display: none; }
     .bw-timeline .bw-todo.v-enter, .bw-timeline .bw-todo.v-leave {
-      -webkit-transform: translate3d(-100%, 0, 0); }
+      -webkit-transform: translate3d(-100%, 0, 0);
+              transform: translate3d(-100%, 0, 0); }
     .bw-timeline .bw-todo:active {
       background-color: rgba(115, 130, 155, 0.1); }
     .bw-timeline .bw-todo:focus {
@@ -943,18 +954,20 @@ body {
   height: 58px;
   position: relative;
   -webkit-flex-direction: row;
-  -ms-flex-direction: row;
-      flex-direction: row;
+      -ms-flex-direction: row;
+          flex-direction: row;
   margin: 0 auto; }
 
 .app-bar.open {
   -webkit-transform: translate(250px, 0);
-  transform: translate(250px, 0); }
+          transform: translate(250px, 0);
+  -webkit-transform: translate(250px, 0);
+          transform: translate(250px, 0); }
 
 .app-bar .logo {
   -webkit-flex: 1;
-  -ms-flex: 1;
-      flex: 1;
+      -ms-flex: 1;
+          flex: 1;
   font-size: 20px;
   line-height: 58px;
   margin: 0px;
@@ -974,8 +987,8 @@ body {
   display: -ms-flexbox;
   display: flex;
   -webkit-flex-direction: row;
-  -ms-flex-direction: row;
-      flex-direction: row;
+      -ms-flex-direction: row;
+          flex-direction: row;
   z-index: 2; }
 
 .app-bar button {
@@ -1009,6 +1022,8 @@ body {
 /*}*/
 .bw-action-add {
   transition: all 0.25s ease-out !important;
-  -webkit-transform: rotate(0deg); }
+  -webkit-transform: rotate(0deg);
+          transform: rotate(0deg); }
   .bw-action-add.delete-mode {
-    -webkit-transform: rotate(-45deg); }
+    -webkit-transform: rotate(-45deg);
+            transform: rotate(-45deg); }
