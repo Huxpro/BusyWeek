@@ -25,6 +25,20 @@ and present a Todo-list **sorted by date** to you.
 
 # Changelog
 
+## V1.7.0
+
+##### New
+
+* Brand new Loading Screen! Gorgeous splash animation
+
+##### Fix
+
+* After using Require.js as the module loader, I put all `<script>` tag at the end of `<body>`, which expose the rendering process in desktop ( Mobile will be waiting all script ready then render)
+* The second reason help to trigger this problem is that desktop will perform all "transition" at the beginning if you set `transiton: all`
+* So I fixed this issue by hack the CSS of Loading Screen
+* If you try to use `display:none` to hidden all UI except Loading, It is truly expensive. 
+
+
 
 ## V1.6.2
 
@@ -37,6 +51,7 @@ and present a Todo-list **sorted by date** to you.
 
 * Fix layout of the 3 pickers in newTodoView, by re-write the Flexbox style
 * Code Optimization
+
 
 
 ## V1.6.1
