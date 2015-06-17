@@ -25,6 +25,33 @@ and present a Todo-list **sorted by date** to you.
 
 # Changelog
 
+
+## V1.7.2
+
+
+##### New
+
+* Using new vanilla-node `server.js` instead of `grunt-connect` to local used server
+* Add `gulp serve` to exec the `supervisor server.js` (need supervisor installed globally)
+
+##### Change
+
+* `mpi.scss` shrink down
+* `Gruntfile.js` move to the `outdated` dir
+* Drop all grunt-dependencies in `package.json`
+
+
+
+## V1.7.1
+
+##### Change
+
+* Try best to load all js file more async
+    * Add `async` `defer` attr to the script tag load require.js
+    * And using require.js `data-main` attr to load entry js file asynchronously
+
+
+
 ## V1.7.0
 
 ##### New
