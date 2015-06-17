@@ -47,6 +47,12 @@ gulp.task('build', ['sass', 'prefix'], function() {
 });
 
 
+// server
+gulp.task('serve', function(){
+    exec('supervisor server.js', function(error, stdout, stderr){
+        console.log("server running at port: 9000");
+    })
+})
 
 
 // default
