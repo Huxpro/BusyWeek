@@ -18,6 +18,8 @@ iconfont/iconfont.css
 js/app.js
 ----------------
 js/lib/vue.js
+js/lib/iscroll.js
+js/lib/fastclick.js
 js/store.js
 js/util.js
 js/nav.js
