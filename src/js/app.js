@@ -1,10 +1,34 @@
+require.config({
+    baseUrl: "js/",
+    paths: {
+        FastClick: "http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min",
+        IScroll: "lib/iscroll",
+        Router: "lib/director",
+        Vue: "lib/vue"
+    },
+    shim: {
+        'IScroll': {
+            exports: "IScroll"
+        },
+        'Router': {
+            exports: "Router"
+        }
+    }
+})
+
 require( [
-    'js/lib/vue.js',
-    'http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min.js',
-    'js/store.js',
-    'js/util.js',
-    'js/nav.js'
-], function(Vue, FastClick, Store) {   
+    'Vue',
+    'IScroll',
+    'FastClick',
+    'store',
+    'util',
+    'nav'
+], function(
+    Vue, 
+    IScroll,
+    FastClick, 
+    Store
+) {   
     'use strict';
     console.log("module app loaded..");
     
