@@ -17,6 +17,7 @@ gulp.task('serve', function() {
     });
 });
 
+
 // compile sass
 var sass = require('gulp-sass');
 gulp.task('sass', function() {
@@ -25,10 +26,11 @@ gulp.task('sass', function() {
         .pipe(gulp.dest('./src/css/'))
 });
 
-// PostCSS
+// prefix by PostCSS
 var postcss = require('gulp-postcss');
 var autoprefixer = require('autoprefixer-core');
-gulp.task('prefix',['sass'], function () {
+
+gulp.task('css', ['sass'], function () {
     return gulp.src('./src/css/style.css')
         .pipe(postcss([ autoprefixer({ browsers: ['last 2 version'] }) ]))
         .pipe(gulp.dest('./src/css/')); // 修改源文件
@@ -54,6 +56,11 @@ gulp.task('serve', function(){
     })
 })
 
+// watch
+gulp.task('watch', ['css', 'serve'], function(){
+    // watch JSX and SASS
+    gulp.watch('src/css/*.scss', ['css']);
+})
 
 // default
-gulp.task('default', ['serve']);
+gulp.task('default', ['watch']);
