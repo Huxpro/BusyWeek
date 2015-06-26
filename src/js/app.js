@@ -1,10 +1,35 @@
+require.config({
+    baseUrl: "js/",
+    paths: {
+        //FastClick: "http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min",
+        FastClick: "lib/fastclick",
+        IScroll: "lib/iscroll",
+        Router: "lib/director",
+        Vue: "lib/vue"
+    },
+    shim: {
+        'IScroll': {
+            exports: "IScroll"
+        },
+        'Router': {
+            exports: "Router"
+        }
+    }
+})
+
 require( [
-    'js/lib/vue.js',
-    'http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min.js',
-    'js/store.js',
-    'js/util.js',
-    'js/nav.js'
-], function(Vue, FastClick, Store) {   
+    'Vue',
+    'IScroll',
+    'FastClick',
+    'store',
+    'util',
+    'nav'
+], function(
+    Vue, 
+    IScroll,
+    FastClick, 
+    Store
+) {   
     'use strict';
     console.log("module app loaded..");
     
@@ -49,6 +74,7 @@ require( [
         el: '#app',
         data: {
             appName: "BusyWeek!",
+            standalone: false,
             loaded: false,
             state:states.LIST,
             
@@ -90,10 +116,20 @@ require( [
         },
         ready: function () {
             
+            this.initScroll();
+            this.isStandAlone();
+
+            // watch filter to refresh IScroll
+            this.$watch('activeFilter', function(_filter){
+                console.log(_filter);
+                this.refreshScroll();
+            })
+
             // store _timeline
             this.$watch('timeline', function (_timeline) {
                 //console.log(JSON.stringify(_timeline));
                 todoStorage.save(_timeline);
+                this.refreshScroll();
             }, true);
     
             // vue 11+ 解决了循环 watch 的稳定问题 (oldVal = newVal && break;)
@@ -185,11 +221,12 @@ require( [
             removeTodo: function (todo) {
                 // remove todo
                 this.timeline[todo.date].todos.$remove(todo.$data);
-    
+            
                 // if day empty
                 if (this.timeline[todo.date].todos.length == 0) {
                     this.timeline.$delete(todo.date);
                 }
+                this.refreshScroll();
             },
             checkTodo: function (todo) {
                 todo.done = !todo.done;
@@ -270,6 +307,48 @@ require( [
                 if (_lang == "zh") {
                     this.appName = "好忙啊";
                 }
+            },
+            // IScroll function
+            initScroll: function(){
+                this.BWScroll = new IScroll('.bw-scroller', { 
+                    mouseWheel: true, 
+                    bindToWrapper: true,
+                    preventDefault:  iScrollClick(),
+                    tap: iScrollClick(),
+                    click: iScrollClick(),
+                });
+
+                function iScrollClick(){
+                    if (/iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent)) return false;
+                    if (/Chrome/i.test(navigator.userAgent)) return (/Android/i.test(navigator.userAgent));
+                    if (/Silk/i.test(navigator.userAgent)) return false;
+                    if (/Android/i.test(navigator.userAgent)) 
+                    {
+                      var s=navigator.userAgent.substr(navigator.userAgent.indexOf('Android')+8,3);
+                      return parseFloat(s[0]+s[3]) < 44 ? false : true
+                    }
+                }
+            },
+            refreshScroll: function(){
+                var self = this;
+
+                if(this.BWScroll){
+                    Vue.nextTick(function(){ 
+                        self.BWScroll.refresh();
+                        setTimeout(function () {
+                            self.BWScroll.refresh();
+                        }, 300);
+                    })  
+                }
+            },
+            // standalone
+            isStandAlone: function(){
+                var _isIPhone = navigator.userAgent.indexOf('iPhone') != -1;
+                var _isStandalone = window.navigator.standalone == true;
+                
+                if( _isIPhone && _isStandalone ){    
+                    this.standalone = true
+                }                 
             }
         }
     })
@@ -284,8 +363,10 @@ require( [
     
     // FastClick
     FastClick.attach(document.body);
+    document.addEventListener('touchmove', function (e) { e.preventDefault(); }, false);
     console.log("fastclick working...");
     
+        
     
     /**
      * calculate the newTodo position and Scroll to!
@@ -326,7 +407,7 @@ require( [
             
             //console.log("day:"+day+" items:"+items);
             
-            return day*36+(items+7)*48+58;
+            return day*36+(items+7)*48;
         })()
         
         // 根据位置算出 ScrollY
@@ -343,7 +424,8 @@ require( [
         // jump to the target Scroll Position at NEXT View Update
         // this method falls back to setTimeout(fn, 0)
         Vue.nextTick(function(){ 
-            scroll(0,scrollY);
+            //scroll(0, scrollY);
+            BWScroll.scrollTo(0, -scrollY)
         })
         
 //      console.log(before);
