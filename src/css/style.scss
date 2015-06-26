@@ -30,11 +30,20 @@
 }
 /* global */
 body{
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-}
-body{
     background:#F0F0F0;
+
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0; 
 }
 
 .bw-card{
@@ -52,6 +61,19 @@ body{
 .bw-card-2{
     @extend .bw-card;
     @include shadow-2;
+}
+
+/* Stand Alone */
+.standalone{
+    .app-bar-container, .navdrawer-container{
+        margin-top: 20px;
+    }
+    .bw-scroller, {
+        top: 78px;
+    }
+    .bw-new{
+        padding-top: 78px;
+    }
 }
 
 // --------------------------------------------------
@@ -279,8 +301,7 @@ body{
 /* Timeline */
 
 .bw-timeline{
-    padding-bottom:36px;
-    padding-top:58px;
+    padding-bottom:76px;
 //    border-bottom:1px solid rgba(32, 35, 37, 0.15);
 
 	&.on-input-mode {
@@ -526,5 +547,20 @@ body{
     &.delete-mode{
         transform: rotate(-45deg);
     }
+}
+
+//IScroll Wrapper
+
+.bw-scroller{
+    position: absolute;
+    top: 58px;
+    bottom: 0px;
+    overflow-x: hidden;
+    width: 100%;
+}
+.scroller{
+    transform: translateZ(0);
+    text-size-adjust: none;
+    user-select: none;
 }
 

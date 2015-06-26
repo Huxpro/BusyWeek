@@ -95,7 +95,7 @@ var isiOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
         drawer.addEventListener('touchmove', onDrawerMove);
         drawer.addEventListener('touchend', onDrawerEnd);
         initPoint.x = e.targetTouches[0].clientX;
-        console.log("touchstart");
+        //console.log("touchstart");
         
         if(isAndroid){
             return;
@@ -110,7 +110,7 @@ var isiOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
         lastPoint.x = e.targetTouches[0].clientX;
         isAnimating = true;
         window.requestAnimFrame(onDrawerAnimate);
-        console.log('touchmove');
+        //console.log('touchmove');
     }
 
     function onDrawerAnimate() {
@@ -134,7 +134,7 @@ var isiOS = !!ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
         drawer.removeEventListener('touchmove', onDrawerMove);
         drawer.removeEventListener('touchend', onDrawerEnd);
         isAnimating = false;
-        console.log('touchend');
+        //console.log('touchend');
         checkPosition();
         
         if(isAndroid){
