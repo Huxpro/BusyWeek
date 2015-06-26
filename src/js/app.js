@@ -313,9 +313,10 @@ require( [
                 this.BWScroll = new IScroll('.bw-scroller', { 
                     mouseWheel: true, 
                     bindToWrapper: true,
-                    preventDefault:  iScrollClick(),
-                    tap: iScrollClick(),
                     click: iScrollClick(),
+                    //tap: iScrollClick(),
+                    //preventDefault:  iScrollClick(),
+                    
                 });
 
                 function iScrollClick(){
