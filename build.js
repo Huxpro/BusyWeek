@@ -1,6 +1,6 @@
 ({
-    appDir: './src',
-    baseUrl: './js',
+    appDir: './src/',
+    baseUrl: './js/',
     dir: './dist',
     modules: [
         {
@@ -11,15 +11,18 @@
     optimizeCss: 'standard',
     removeCombined: true,
     paths: {
-//        zepto: 'lib/zepto',
-//        jHash: 'lib/jhash',
-//        handlebars: 'lib/handlebars',
-//        underscore: 'lib/underscore',
-//        Deferred: 'lib/deferred',
-//        DataCenter: 'model/datacenter',
-//        iscroll: 'lib/iscroll',
-//        fastclick: 'lib/fastclick',
-//        wxstat: 'util/wxstat',
-//        overthrow: 'lib/overthrow'
+        //FastClick: "http://cdn.bootcss.com/fastclick/1.0.3/fastclick.min",
+        FastClick: "lib/fastclick",
+        IScroll: "lib/iscroll",
+        Router: "lib/director",
+        Vue: "lib/vue"
     },
+    shim: {
+        'IScroll': {
+            exports: "IScroll"
+        },
+        'Router': {
+            exports: "Router"
+        }
+    }
 })

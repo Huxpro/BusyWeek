@@ -39,7 +39,7 @@ gulp.task('css', ['sass'], function () {
 
 
 // build
-gulp.task('build', ['sass', 'prefix'], function() {
+gulp.task('build', ['css'], function() {
     var build = 'node r.js -o build.js';
     
     exec(build, function callback(error, stdout, stderr){

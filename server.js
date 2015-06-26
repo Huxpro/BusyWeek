@@ -49,7 +49,7 @@ var server = http.createServer(function (request, response) {
     
     // 静态文件
     var baseURL = "src";
-    var realPath = "src" + pathname;
+    var realPath = baseURL + pathname;
     
     fs.exists(realPath, function(exists){
         if(!exists){

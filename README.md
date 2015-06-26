@@ -26,8 +26,22 @@ and present a Todo-list **sorted by date** to you.
 # Changelog
 
 
-## V1.7.2
+## V1.8.0
 
+##### New
+
+* Using [iScroll](http://iscrolljs.com/) to fake native scrolling now!
+* iOS `standalone` style support! (and Hybrid is ready!)
+
+##### Change
+
+* `require.js` config optimize
+* `Gulpfile.js` add `watch` feature
+
+
+
+
+## V1.7.2
 
 ##### New
 
