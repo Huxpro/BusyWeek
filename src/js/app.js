@@ -5,7 +5,8 @@ require.config({
         FastClick: "lib/fastclick",
         IScroll: "lib/iscroll",
         Router: "lib/director",
-        Vue: "lib/vue"
+        Vue: "lib/vue",
+        AV: "https://cdn1.lncld.net/static/js/av-core-mini-0.5.4"
     },
     shim: {
         'IScroll': {
@@ -13,6 +14,9 @@ require.config({
         },
         'Router': {
             exports: "Router"
+        },
+        'AV': {
+            exports: "AV"
         }
     }
 })
@@ -21,19 +25,21 @@ require( [
     'Vue',
     'IScroll',
     'FastClick',
+    'AV',
     'store',
     'util',
     'nav'
 ], function(
     Vue, 
     IScroll,
-    FastClick, 
-    Store
+    FastClick,
+    AV,
+    Store,
+    Util
 ) {   
     'use strict';
     console.log("module app loaded..");
-    
-    
+
     // Filters
     Vue.filter('getDay', function (_dateStr) {
         var _date = new Date(_dateStr),
@@ -44,7 +50,7 @@ require( [
     });
     
     Vue.filter('getDayType', function (_dateStr) {
-        var _diff = getDateDiff(_dateStr, getTodayDate()),
+        var _diff = Util.getDateDiff(_dateStr, Util.getTodayDate()),
             _dayMap = ["今天", "明天", "后天", "大后天", "第五天", "第六天", "第七天", "下周今天"];
         
         if (_dayMap[_diff]) {
@@ -84,7 +90,7 @@ require( [
              * @class todo
              */
             newTodo: {
-                date: getTodayDate(),
+                date: Util.getTodayDate(),
                 dayType: '0',   // dayType 与 Option 绑定，但只在运行时有用
                 done: false,
                 text: ''
@@ -139,12 +145,12 @@ require( [
                     document.querySelector('.bw-datepicker').focus();
                 }
                 
-                var _dateStr = getDiffDate(_dayType);
+                var _dateStr = Util.getDiffDate(_dayType);
                 this.newTodo.date = _dateStr;
             });
             
             this.$watch('newTodo.date', function (_date, _date_old) {
-                var _diff = getDateDiff(_date, getTodayDate());
+                var _diff = Util.getDateDiff(_date, Util.getTodayDate());
                 console.log(_diff);
                 
                 if (_diff >= 0 && _diff <= 7) {
@@ -249,7 +255,7 @@ require( [
                 //todo.title = this.beforeEditCache;
             },
             ifToday: function (_dateStr) {
-                if (_dateStr == getTodayDate()) {
+                if (_dateStr == Util.getTodayDate()) {
                     return true;
                 }
                 return false;
@@ -296,9 +302,9 @@ require( [
                 }
                
             },
-            // export to scope
+            // export to scope for vm-template use
             getDiffDate: function(_dayType){
-                return getDiffDate(_dayType)
+                return Util.getDiffDate(_dayType)
             },
             detectLanguage: function(){
                 var _nav = navigator;
