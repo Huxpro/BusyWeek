@@ -25,6 +25,7 @@ require( [
     'Vue',
     'IScroll',
     'FastClick',
+    'Router',
     'AV',
     'store',
     'util',
@@ -33,8 +34,9 @@ require( [
     Vue, 
     IScroll,
     FastClick,
+    Router,
     AV,
-    Store,
+    todoStorage,
     Util
 ) {   
     'use strict';
@@ -85,6 +87,18 @@ require( [
             state:states.LIST,
             
             /**
+             * 登录 类
+             *
+             * @class login
+             */
+            login: {
+                state: 'default',
+                tips: '如果账号不存在，系统会自动为您完成注册',
+                username: '',   
+                password: ''
+            },
+
+            /**
              * Todo 类
              *
              * @class todo
@@ -124,6 +138,7 @@ require( [
             
             this.initScroll();
             this.isStandAlone();
+            this.initRouter();
 
             // watch filter to refresh IScroll
             this.$watch('activeFilter', function(_filter){
@@ -197,7 +212,7 @@ require( [
                 this.state = states.LIST;
                 
                 // scroll to Todo
-                scrollToTodo(_timeline, _date);
+                this.scrollToTodo(_timeline, _date);
                 
                 // set default todo text 
                 if (!this.newTodo.text) {
@@ -262,6 +277,16 @@ require( [
             },
             // if todo show in activeFilter
             ifTodoShow: function(done){
+ 
+
+                if(this.activeFilter == "all"){
+                    return true;
+                }
+
+                if(this.ifAboutShow() || this.ifLoginShow()){
+                    return false;
+                }
+
                 if (this.activeFilter == "active"){
                     return !done;
                 }else if(this.activeFilter == "done"){
@@ -273,7 +298,11 @@ require( [
             },
             // if day show in activeFilter
             ifDayShow: function(todos){
-                
+
+                if(this.ifAboutShow() || this.ifLoginShow()){
+                    return false;
+                }
+
                 var activeTodos = todos.filter(function(todo){
                     return !todo.done
                 })
@@ -302,6 +331,12 @@ require( [
                 }
                
             },
+            ifAboutShow: function(){
+                return this.activeFilter == "about";
+            },
+            ifLoginShow: function(){
+                return this.activeFilter == "login";
+            },
             // export to scope for vm-template use
             getDiffDate: function(_dayType){
                 return Util.getDiffDate(_dayType)
@@ -313,6 +348,21 @@ require( [
                 if (_lang == "zh") {
                     this.appName = "好忙啊";
                 }
+            },
+            // Router
+            initRouter: function(){
+                this.router = Router({
+                    '/': this.setFilter.bind(null, "all"),
+                    '/all': this.setFilter.bind(null, "all"),
+                    '/done': this.setFilter.bind(null, "done"),
+                    '/about': this.setFilter.bind(null, "about"),
+                    '/login': this.setFilter.bind(null, "login"),
+                    '/active': this.setFilter.bind(null, "active"),
+                });
+                this.router.init('/');
+            },
+            setFilter: function(_filter){
+                this.activeFilter = _filter;
             },
             // IScroll function
             initScroll: function(){
@@ -356,6 +406,78 @@ require( [
                 if( _isIPhone && _isStandalone ){    
                     this.standalone = true
                 }                 
+            },
+            /**
+             * calculate the newTodo position and Scroll to!
+             */ 
+            scrollToTodo: function(_timeline, _date){
+                // 把 timeline.key 做一次排序
+                var sorted = (function(){
+                    var arr = [];
+                    for(var key in _timeline){
+                        arr.push(key);
+                    }
+                    return arr.sort(function(a,b){
+                        return a === b ? 0 : a > b ? 1 : -1
+                    })
+                })()
+                
+                // 拿到 _date 之前的 key
+                var before = (function(){
+                    var arr = [];
+                    sorted.forEach(function(val){
+                        if(val <= _date){
+                            arr.push(val);
+                        }
+                    })
+                    return arr;
+                })()
+                
+                // 根据之前的 key 算出 items 数和位置
+                var position = (function(){
+                    var day = before.length,
+                        items = 0;
+                    
+                    before.forEach(function (date) {
+                        var dayList = _timeline[date];
+                        items += dayList.todos.length;
+                    }) 
+                    
+                    //console.log("day:"+day+" items:"+items);
+                    
+                    return day*36+(items+7)*48;
+                })()
+                
+                // 根据位置算出 ScrollY
+                var scrollY = (function(){
+                    var edge = window.innerHeight || window.screen.availHeight;
+                    
+                    if(position < edge){
+                        return 0;
+                    }else{
+                        return position - edge;
+                    }
+                })()
+                
+                // jump to the target Scroll Position at NEXT View Update
+                // this method falls back to setTimeout(fn, 0)
+                var _scroll = this.BWScroll;
+
+                Vue.nextTick(function(){ 
+                    //scroll(0, scrollY);
+                    _scroll.scrollTo(0, -scrollY)
+                })
+                
+        //      console.log(before);
+        //      console.log("position:"+ position);
+        //      console.log("scrollTo:"+ scrollY);
+
+        //      console.log("document.body.clientHeight"+document.body.clientHeight);
+        //      console.log("document.body.offsetHeight"+document.body.offsetHeight);
+        //      console.log("window.innerHeight"+window.innerHeight);
+        //      console.log("window.outerHeight"+window.outerHeight);
+        //      console.log("window.screen.height"+window.screen.height);
+        //      console.log("window.screen.availHeight"+window.screen.availHeight);
             }
         }
     })
@@ -374,79 +496,6 @@ require( [
     console.log("fastclick working...");
     
         
-    
-    /**
-     * calculate the newTodo position and Scroll to!
-     */ 
-    function scrollToTodo(_timeline, _date){
-       
-        // 把 timeline.key 做一次排序
-        var sorted = (function(){
-            var arr = [];
-            for(var key in _timeline){
-                arr.push(key);
-            }
-            return arr.sort(function(a,b){
-                return a === b ? 0 : a > b ? 1 : -1
-            })
-        })()
-        
-        // 拿到 _date 之前的 key
-        var before = (function(){
-            var arr = [];
-            sorted.forEach(function(val){
-                if(val <= _date){
-                    arr.push(val);
-                }
-            })
-            return arr;
-        })()
-        
-        // 根据之前的 key 算出 items 数和位置
-        var position = (function(){
-            var day = before.length,
-                items = 0;
-            
-            before.forEach(function (date) {
-                var dayList = _timeline[date];
-                items += dayList.todos.length;
-            }) 
-            
-            //console.log("day:"+day+" items:"+items);
-            
-            return day*36+(items+7)*48;
-        })()
-        
-        // 根据位置算出 ScrollY
-        var scrollY = (function(){
-            var edge = window.innerHeight || window.screen.availHeight;
-            
-            if(position < edge){
-                return 0;
-            }else{
-                return position - edge;
-            }
-        })()
-        
-        // jump to the target Scroll Position at NEXT View Update
-        // this method falls back to setTimeout(fn, 0)
-        Vue.nextTick(function(){ 
-            //scroll(0, scrollY);
-            BWScroll.scrollTo(0, -scrollY)
-        })
-        
-//      console.log(before);
-//      console.log("position:"+ position);
-//      console.log("scrollTo:"+ scrollY);
-
-//      console.log("document.body.clientHeight"+document.body.clientHeight);
-//      console.log("document.body.offsetHeight"+document.body.offsetHeight);
-//      console.log("window.innerHeight"+window.innerHeight);
-//      console.log("window.outerHeight"+window.outerHeight);
-//      console.log("window.screen.height"+window.screen.height);
-//      console.log("window.screen.availHeight"+window.screen.availHeight);
-      
-    }
     
 });
 

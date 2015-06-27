@@ -4,6 +4,8 @@
 @import "nav.scss";
 @import "fab.scss";
 
+$color-theme: #03A9F4;
+
 /* mixin - shadow */
 @mixin shadow-1{
     box-shadow: 0px 1px 4px rgba(0,0,0,.26);
@@ -562,5 +564,72 @@ html, body {
     transform: translateZ(0);
     text-size-adjust: none;
     user-select: none;
+}
+
+// Login
+#bw-login{
+    @include absolute-center;
+    z-index: 4;
+    background: rgba(0, 0, 0, 0.74);
+
+    form{
+        width: 290px;
+        height: 300px;
+        margin-left: -150px;
+        margin-top: -150px;
+        background: white;
+        border-radius: 2px;
+        box-shadow: 0 8px 20px 0 rgba(0, 0, 0, 0.20);
+        @include absolute-center;
+    }
+
+    input{
+        display: block;
+        
+        width: 77%;
+        margin: 0 auto;
+        border: 0px;
+        border-radius: 0px;
+        border-bottom: 1px solid #BFBFC0;
+        padding-top: 20px;
+        color: $color-theme;
+        overflow: hidden;
+        outline: none;
+        font-size: 15px;
+        font-family: inherit;
+        &:focus{
+            border-bottom: 1px solid $color-theme;
+        }
+    }
+
+    button{
+        display: block;
+        width: 100%;
+        position: absolute;
+        bottom: 0px;
+        margin: 0 auto;
+        border: none;
+        outline: none;
+        background: white;
+        font-size: 18px;
+        color: $color-theme;
+        padding: 20px 40px;
+        font-family: inherit;
+        letter-spacing: 3px;
+        border-radius: 0px 0px 2px 2px;
+    }
+    button:active{
+        background-color: rgba(0, 0, 0, 0.07);
+    }
+
+    p{
+        color: $color-theme;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 15% 15% 10%;
+        margin: 0 auto;
+        text-align: center;
+        line-height: 1.5;
+    }
 }
 

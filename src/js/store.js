@@ -1,13 +1,37 @@
 /*jshint unused:false */
 
-(function (exports) {
+define([
+    'AV'
+], function (
+    AV
+) {
 
     'use strict';
     console.log('module store loaded..');
     
+    // cloud storage
+    AV.initialize("nhgpmpkj0f9uq8hrlf3hq1lwxuhao9dj3kl8z1dye6cjaptq", "5ex5jdqj0pue2xlmaxwljmafrvd9y0il75zjke4cpxr0dzgp");
+
+    var TestObject = AV.Object.extend("TestObject");
+    var testObject = new TestObject();
+    testObject.save({foo: "bar"}, {
+      success: function(object) {
+      console.log("LeanCloud works!");
+      }
+    });
+
+
+
+
+
+
+
+
+
+    // localStorage
     var STORAGE_KEY = 'busyWeek';
 
-    exports.todoStorage = {
+    return {
         fetch: function () {
             // for debug use. 
             window.data = JSON.parse(localStorage.getItem(STORAGE_KEY)); 
@@ -52,4 +76,4 @@
         }
     }
    
-})(window);
+});

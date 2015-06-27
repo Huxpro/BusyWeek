@@ -31,6 +31,17 @@
                 </div>
             </div>
             
+            <!-- Log In -->
+            <div id="bw-login"
+                 v-show="ifLoginShow()"
+            > 
+                <form id="login">
+                  <p>{{login.tips}}</p>
+                   <input v-model="login.username" type="text" placeholder="username">
+                   <input v-model="login.password" type="password" placeholder="password">
+                   <button> 登陆 </button>
+                </form>
+            </div>
     
             <!-- App Bar -->
             <header class="app-bar promote-layer">
@@ -57,17 +68,20 @@
             <nav class="navdrawer-container promote-layer">
               <h4></h4>
               <ul>
+                <li v-on = "click:activeFilter = 'login'">
+                    <a href="#/login"><i class="icon-person"></i>登录</a>
+                </li>
                 <li v-on = "click:activeFilter = 'all'">
-                    <a href="#all"><i class="icon-event_note"></i>全部事项</a>
+                    <a href="#/all"><i class="icon-event_note"></i>全部事项</a>
                 </li>
                 <li v-on = "click:activeFilter = 'done'">
-                    <a href="#done"><i class="icon-event_available"></i>完成事项</a>
+                    <a href="#/done"><i class="icon-event_available"></i>完成事项</a>
                 </li>
                 <li v-on = "click:activeFilter = 'active'">
-                    <a href="#active"><i class="icon-event_busy"></i>在忙事项</a>
+                    <a href="#/active"><i class="icon-event_busy"></i>在忙事项</a>
                 </li>
                 <li v-on = "click:activeFilter = 'about'">
-                    <a href="#about"><i class="icon-person"></i>关于</a>
+                    <a href="#/about"><i class="icon-person"></i>关于</a>
                 </li>
               </ul>
             </nav>
@@ -84,7 +98,10 @@
             <form 
                 id="form" 
                 class="m-cell m-cell-list bw-new" 
-                v-on="submit:addTodo"
+                v-on="
+                    submit:addTodo,
+                    keyup:addTodo | key enter
+                "
                 v-show = "state == 'INPUT'"
                 v-transition
             >
@@ -207,6 +224,33 @@
                             v-on="click:removeTodo(this)">
                         </a>
                     </li>
+                </ul>
+
+                <!-- about -->
+                <ul class= "m-cell m-cell-list bw-day"
+                    v-show="ifAboutShow()"
+                >
+                    <li 
+                        class="m-cell-item bw-todo"
+                    >
+                        <div class="m-txtinput view" >
+                            <b>BusyWeek!</b> is a time-based Todo-list App with simple, elegant design.
+                        </div>
+                    </li>
+                    <li 
+                        class="m-cell-item bw-todo"
+                        v-transition
+                    >
+                        <div class="m-txtinput view" >
+                            作者：<a href="http://huangxuan.me/about/">黄玄 </a>
+                            <br> <p><a href="http://m.wepiao.com/index.html">微信电影票</a>前端，前<a href="http://alitrip.com" target="_blank">阿里旅行</a>前端</p>
+                            <br> 知乎：<a href="http://www.zhihu.com/people/huxpro">@黄玄</a>
+                            <br> 博客：<a href="http://huangxuan.me">Hux Blog</a>
+                            <br> 微博：<a href="http://weibo.com/huxpro">@Hux黄玄</a>
+                            <br> Github：<a href="https://github.com/huxpro">@Huxpro</a>
+                        </div>
+                    </li>
+                    
                 </ul>
             </div>
             </div>
