@@ -95,7 +95,10 @@ require( [
                 state: 'default',
                 tips: '如果账号不存在，系统会自动为您完成注册',
                 username: '',   
-                password: ''
+                password: '',
+                disabled: false,
+                logined: false,
+                current: null
             },
 
             /**
@@ -133,12 +136,15 @@ require( [
         },
         created: function () {
             this.detectLanguage();
+            this.initAV();
+            this.initRouter();
         },
         ready: function () {
             
             this.initScroll();
             this.isStandAlone();
-            this.initRouter();
+            
+            
 
             // watch filter to refresh IScroll
             this.$watch('activeFilter', function(_filter){
@@ -277,16 +283,6 @@ require( [
             },
             // if todo show in activeFilter
             ifTodoShow: function(done){
- 
-
-                if(this.activeFilter == "all"){
-                    return true;
-                }
-
-                if(this.ifAboutShow() || this.ifLoginShow()){
-                    return false;
-                }
-
                 if (this.activeFilter == "active"){
                     return !done;
                 }else if(this.activeFilter == "done"){
@@ -298,9 +294,8 @@ require( [
             },
             // if day show in activeFilter
             ifDayShow: function(todos){
-
-                if(this.ifAboutShow() || this.ifLoginShow()){
-                    return false;
+                if(this.ifAboutShow()){
+                    return;
                 }
 
                 var activeTodos = todos.filter(function(todo){
@@ -337,6 +332,9 @@ require( [
             ifLoginShow: function(){
                 return this.activeFilter == "login";
             },
+            ifCloudShow: function(){
+                return this.activeFilter == "cloud";
+            },
             // export to scope for vm-template use
             getDiffDate: function(_dayType){
                 return Util.getDiffDate(_dayType)
@@ -357,6 +355,7 @@ require( [
                     '/done': this.setFilter.bind(null, "done"),
                     '/about': this.setFilter.bind(null, "about"),
                     '/login': this.setFilter.bind(null, "login"),
+                    '/cloud': this.setFilter.bind(null, "cloud"),
                     '/active': this.setFilter.bind(null, "active"),
                 });
                 this.router.init('/');
@@ -478,6 +477,120 @@ require( [
         //      console.log("window.outerHeight"+window.outerHeight);
         //      console.log("window.screen.height"+window.screen.height);
         //      console.log("window.screen.availHeight"+window.screen.availHeight);
+            },
+            // LeanCloud
+            initAV: function(){
+                // cloud storage
+                AV.initialize("nhgpmpkj0f9uq8hrlf3hq1lwxuhao9dj3kl8z1dye6cjaptq", "5ex5jdqj0pue2xlmaxwljmafrvd9y0il75zjke4cpxr0dzgp");
+
+                var _current = AV.User.current();
+                if(_current){
+                    this.login.logined = true;
+                    this.login.current = _current;
+                }
+            },
+            userLogOut: function(e){
+                e.preventDefault();
+                AV.User.logOut();
+                this.login.tips = '如果账号不存在，系统会自动为您完成注册';
+                this.login.current = null;
+                this.login.logined = false;
+            },
+            userLogIn: function(e){
+                e.preventDefault()
+
+                this.login.disabled = true;
+
+                var self = this,
+                    username = this.login.username,
+                    password = this.login.password;
+
+                AV.User.logIn(username, password, {
+                    success: function(user) {
+                        console.log(user);
+                        self.login.state = "default";
+                        self.login.tips = "登录成功";
+                        self.login.logined = true;
+                        self.login.current = user;
+                        self.activeFilter = 'all';
+                        self.login.disabled = false;
+                        self.login.username = "";
+                        self.login.password = "";
+                    },
+
+                    error: function(user, error){
+                        console.log(error);
+                        if(error.code == 211){
+                            self.login.state = "warning";
+                            self.login.tips = "该用户不存在，正在为您自动注册";
+                            self.userSignUp(username, password);
+                            return;
+                        }
+                        if(error.code == 210){
+                            self.login.state = "warning";
+                            self.login.tips = "用户名与密码不匹配";
+                            self.login.disabled = false;
+                        }
+                    }
+                })
+            },
+            userSignUp: function(_u, _p){
+                console.log("注册中");
+                var self = this,
+                    username = _u,
+                    password = _p;
+
+                var _user = new AV.User();
+                _user.set("username", username);
+                _user.set("password", password);
+
+                _user.signUp(null, {
+                    success: function(user) {
+                        console.log(user);
+                        self.login.tips = "注册成功";
+                        alert("注册成功！将自动为您登录");
+
+                        self.login.state = "default";
+                        self.login.tips = "登录成功";
+                        self.login.logined = true;
+                        self.login.current = user;
+                        self.login.disabled = false;
+                        self.login.username = "";
+                        self.login.password = "";
+                        setTimeout(function(){
+                            self.activeFilter = 'all';
+                        }, 1000);
+                    },
+
+                    error: function(user, error) {
+                        console.log(error);
+                        self.login.state = "warning";
+                        self.login.tips = error.message;
+                        self.login.disabled = false;
+                    }
+                });
+            },
+            // cloud backup
+            uploadData: function(){
+
+                var _todo = {
+                    todos: todoStorage.fetch()
+                }
+
+                AV.User.current().save(_todo, {
+                    success: function(object) {
+                        console.log(AV.User.current().get('username')+" push!");
+                        console.log(object);
+                    },
+                    error: function(object, error){
+                        alert(error.message);
+                    }
+                });
+            },
+            downloadData: function(){
+                // 根本没有网络请求！Todos 是跟着 User 一起下来的
+                var _todos = AV.User.current().get("todos");
+                this.timeline = _todos;
             }
         }
     })

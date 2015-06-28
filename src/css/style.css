@@ -997,7 +997,26 @@ html, body {
       -ms-user-select: none;
           user-select: none; }
 
-#bw-login {
+.btn {
+  display: block;
+  width: 100%;
+  position: relative;
+  margin: 0 auto;
+  border: none;
+  outline: none;
+  background: white;
+  font-size: 18px;
+  color: #03A9F4;
+  padding: 20px 40px;
+  font-family: inherit;
+  letter-spacing: 3px;
+  border-radius: 0px 0px 2px 2px; }
+  .btn:active {
+    background-color: rgba(0, 0, 0, 0.07); }
+  .btn[disabled] {
+    color: #BFBFC0; }
+
+.bw-mask {
   margin: auto;
   position: absolute;
   top: 0;
@@ -1006,7 +1025,7 @@ html, body {
   right: 0;
   z-index: 4;
   background: rgba(0, 0, 0, 0.74); }
-  #bw-login form {
+  .bw-mask .bw-panel {
     width: 290px;
     height: 300px;
     margin-left: -150px;
@@ -1020,7 +1039,14 @@ html, body {
     left: 0;
     bottom: 0;
     right: 0; }
-  #bw-login input {
+    .bw-mask .bw-panel a {
+      text-decoration: underline;
+      color: #03A9F4; }
+  .bw-mask .btn-sheet {
+    position: absolute;
+    bottom: 0px;
+    width: 100%; }
+  .bw-mask input {
     display: block;
     width: 77%;
     margin: 0 auto;
@@ -1033,30 +1059,18 @@ html, body {
     outline: none;
     font-size: 15px;
     font-family: inherit; }
-    #bw-login input:focus {
+    .bw-mask input:focus {
       border-bottom: 1px solid #03A9F4; }
-  #bw-login button {
-    display: block;
-    width: 100%;
-    position: absolute;
-    bottom: 0px;
-    margin: 0 auto;
-    border: none;
-    outline: none;
-    background: white;
-    font-size: 18px;
-    color: #03A9F4;
-    padding: 20px 40px;
-    font-family: inherit;
-    letter-spacing: 3px;
-    border-radius: 0px 0px 2px 2px; }
-  #bw-login button:active {
-    background-color: rgba(0, 0, 0, 0.07); }
-  #bw-login p {
+  .bw-mask p {
     color: #03A9F4;
     box-sizing: border-box;
     width: 100%;
     padding: 15% 15% 10%;
+    min-height: 120px;
     margin: 0 auto;
     text-align: center;
     line-height: 1.5; }
+    .bw-mask p.default {
+      color: #03A9F4; }
+    .bw-mask p.warning {
+      color: red; }

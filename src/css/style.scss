@@ -566,13 +566,36 @@ html, body {
     user-select: none;
 }
 
+// bw-btn
+.btn{
+    display: block;
+    width: 100%;
+    position: relative;
+    margin: 0 auto;
+    border: none;
+    outline: none;
+    background: white;
+    font-size: 18px;
+    color: $color-theme;
+    padding: 20px 40px;
+    font-family: inherit;
+    letter-spacing: 3px;
+    border-radius: 0px 0px 2px 2px;
+    &:active{
+        background-color: rgba(0, 0, 0, 0.07);
+    }
+    &[disabled]{
+        color: #BFBFC0;
+    }
+}
+
 // Login
-#bw-login{
+.bw-mask{
     @include absolute-center;
     z-index: 4;
     background: rgba(0, 0, 0, 0.74);
 
-    form{
+    .bw-panel{
         width: 290px;
         height: 300px;
         margin-left: -150px;
@@ -581,11 +604,20 @@ html, body {
         border-radius: 2px;
         box-shadow: 0 8px 20px 0 rgba(0, 0, 0, 0.20);
         @include absolute-center;
+        a{
+            text-decoration: underline;
+            color: $color-theme;
+        }
+    }
+
+    .btn-sheet{
+        position: absolute;
+        bottom: 0px;  
+        width: 100%;
     }
 
     input{
         display: block;
-        
         width: 77%;
         margin: 0 auto;
         border: 0px;
@@ -602,34 +634,21 @@ html, body {
         }
     }
 
-    button{
-        display: block;
-        width: 100%;
-        position: absolute;
-        bottom: 0px;
-        margin: 0 auto;
-        border: none;
-        outline: none;
-        background: white;
-        font-size: 18px;
-        color: $color-theme;
-        padding: 20px 40px;
-        font-family: inherit;
-        letter-spacing: 3px;
-        border-radius: 0px 0px 2px 2px;
-    }
-    button:active{
-        background-color: rgba(0, 0, 0, 0.07);
-    }
-
     p{
         color: $color-theme;
         box-sizing: border-box;
         width: 100%;
         padding: 15% 15% 10%;
+        min-height: 120px;
         margin: 0 auto;
         text-align: center;
         line-height: 1.5;
+        &.default{
+            color: $color-theme;
+        }
+        &.warning{
+            color: red;
+        }
     }
 }
 
