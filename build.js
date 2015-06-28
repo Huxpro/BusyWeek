@@ -15,7 +15,8 @@
         FastClick: "lib/fastclick",
         IScroll: "lib/iscroll",
         Router: "lib/director",
-        Vue: "lib/vue"
+        Vue: "lib/vue",
+        AV: "https://cdn1.lncld.net/static/js/av-core-mini-0.5.4"
     },
     shim: {
         'IScroll': {
@@ -23,6 +24,9 @@
         },
         'Router': {
             exports: "Router"
+        },
+        'AV': {
+            exports: "AV"
         }
     }
 })

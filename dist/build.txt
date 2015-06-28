@@ -20,6 +20,7 @@ js/app.js
 js/lib/vue.js
 js/lib/iscroll.js
 js/lib/fastclick.js
+js/lib/director.js
 js/store.js
 js/util.js
 js/nav.js

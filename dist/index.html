@@ -31,7 +31,96 @@
                 </div>
             </div>
             
-    
+            <!-- Log In -->
+            <div class="bw-mask"
+                 v-show="ifLoginShow()"
+            > 
+                <form id="login" 
+                    v-show="!login.logined"
+                    class="bw-panel" 
+                    v-on="
+                        submit:userLogIn,
+                        keyup:userLogIn | key enter
+                    "
+                >
+                    <p class={{login.state}} >
+                        {{ login.tips }}
+                    </p>
+                    <input v-model="login.username" type="text" placeholder="username">
+                    <input v-model="login.password" type="password" placeholder="password">
+                    <div class="btn-sheet">
+                        <button class="btn" type="submit"
+                            v-attr="disabled:login.disabled"
+                        >
+                        登陆
+                        </button>
+                    </div>
+                </form>
+                <div v-show="login.logined"
+                    class="bw-panel" 
+                >
+                    <p class={{login.state}} >
+                        {{ login.logined && "早上好！ "+login.current.get('username') }}
+                        <br><br>
+                        现在，你可以使用云备份来上传下载你的个人数据啦！
+                    </p>
+                    <div class="btn-sheet">
+                        <button 
+                            class="btn" 
+                            style="color:#FF5B45"
+                            v-on ="click: userLogOut"
+                        >
+                            退出登陆
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cloud -->
+            <div class="bw-mask"
+                 v-show="ifCloudShow()"
+            > 
+                <div class="bw-panel" > 
+                    <p v-show="!login.logined" >   
+                        登陆后才可以使用云备份哦！
+                    </p>
+                    <p v-show="login.logined" >   
+                        上传数据将会覆盖云端数据<br>
+                        下载数据也将覆盖本地数据<br>请小心操作哦
+                    </p>
+                    <div class="btn-sheet">
+                        <button class="btn"
+                            v-attr="disabled:!login.logined"
+                            v-on="click:uploadData"
+                        >上传</button>
+                        <button class="btn"
+                            v-attr="disabled:!login.logined"
+                            v-on="click:downloadData"
+                        >下载</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- about -->
+            <div class="bw-mask"
+                v-show="ifAboutShow()"
+            >
+                <div class="bw-panel"> 
+                    <p>
+                        <b>BusyWeek!</b> is a time-based Todo-list App with simple, elegant design.
+                    </p>
+                    <p class="btn-sheet" >
+                        @2015 <a href="http://huangxuan.me/about/">黄玄</a>
+                        <br>
+                        <br>
+                        <a href="http://www.zhihu.com/people/huxpro">知乎</a>
+                        <a href="http://huangxuan.me">博客</a>
+                        <a href="http://weibo.com/huxpro">微博</a>
+                        <a href="https://github.com/huxpro">GitHub</a>
+                    </p>
+                </div>
+            </div>
+
             <!-- App Bar -->
             <header class="app-bar promote-layer">
               <div class="app-bar-container">
@@ -44,10 +133,10 @@
                 ></button>
                 <h1 class="logo">BusyWeek!</h1>
                 <section class="app-bar-actions">
-                     <button 
+                    <button 
                          class="bw-action-add icon-more_vert"
-                         >
-                     </button>
+                    >
+                    </button>
                 </section>
               </div>
             </header>
@@ -57,17 +146,26 @@
             <nav class="navdrawer-container promote-layer">
               <h4></h4>
               <ul>
+                <li v-on = "click:activeFilter = 'login'">
+                    <a href="#/login">
+                        <i class="icon-person"></i>
+                        {{ (login.logined)?login.current.get("username"):"登录" }}
+                    </a>
+                </li>
                 <li v-on = "click:activeFilter = 'all'">
-                    <a href="#all"><i class="icon-event_note"></i>全部事项</a>
+                    <a href="#/all"><i class="icon-event_note"></i>全部事项</a>
                 </li>
                 <li v-on = "click:activeFilter = 'done'">
-                    <a href="#done"><i class="icon-event_available"></i>完成事项</a>
+                    <a href="#/done"><i class="icon-event_available"></i>完成事项</a>
                 </li>
                 <li v-on = "click:activeFilter = 'active'">
-                    <a href="#active"><i class="icon-event_busy"></i>在忙事项</a>
+                    <a href="#/active"><i class="icon-event_busy"></i>在忙事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'cloud'">
+                    <a href="#/cloud"><i class="icon-person"></i>云备份</a>
                 </li>
                 <li v-on = "click:activeFilter = 'about'">
-                    <a href="#about"><i class="icon-person"></i>关于</a>
+                    <a href="#/about"><i class="icon-person"></i>关于</a>
                 </li>
               </ul>
             </nav>
@@ -84,7 +182,10 @@
             <form 
                 id="form" 
                 class="m-cell m-cell-list bw-new" 
-                v-on="submit:addTodo"
+                v-on="
+                    submit:addTodo,
+                    keyup:addTodo | key enter
+                "
                 v-show = "state == 'INPUT'"
                 v-transition
             >
@@ -95,9 +196,7 @@
                 >
                 </textarea>
                 <!-- <input type="reset" class="m-reset iconfont icon-delete" />-->
-                <div 
-                    class="bw-new-picker"                   
-                >
+                <div class="bw-new-picker" >
                     <div>
                         <select 
                             class="bw-daypicker"
