@@ -581,6 +581,7 @@ require( [
                     success: function(object) {
                         console.log(AV.User.current().get('username')+" push!");
                         console.log(object);
+                        alert("上传成功！")
                     },
                     error: function(object, error){
                         alert(error.message);
@@ -590,7 +591,11 @@ require( [
             downloadData: function(){
                 // 根本没有网络请求！Todos 是跟着 User 一起下来的
                 var _todos = AV.User.current().get("todos");
-                this.timeline = _todos;
+                if(_todos){
+                    this.timeline = _todos;
+                    alert("下载成功！");
+                }
+                
             }
         }
     })
