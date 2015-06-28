@@ -593,9 +593,7 @@ require( [
                 var _todos = AV.User.current().get("todos");
                 if(_todos){
                     this.timeline = _todos;
-                    alert("下载成功！");
                 }
-                
             }
         }
     })
