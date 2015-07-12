@@ -7,3 +7,4 @@ npm-debug.log
 .sass-cache/
 */.sass-cache/
 *.css.map
+cordova/

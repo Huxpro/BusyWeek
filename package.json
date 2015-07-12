@@ -4,6 +4,9 @@
   "description": "A time based Todo-list App",
   "main": "",
   "scripts": {
+    "cordova-src": "cp -r src cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv src www",
+    "cordova-dist": "cp -r dist cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv dist www",
+    "cordova-emu": "cd cordova/busyweek; cordova emulate ios",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -45,7 +45,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   margin: 0;
-  padding: 0; 
+  padding: 0;
 }
 
 .bw-card{
@@ -119,11 +119,11 @@ html, body {
     .spinner {
       width: 70px;
       height: 70px;
-    
+
       position: relative;
       margin: 0 auto 16px auto;
     }
-    
+
     .double-bounce1, .double-bounce2 {
       width: 100%;
       height: 100%;
@@ -133,26 +133,26 @@ html, body {
       position: absolute;
       top: 0;
       left: 0;
-      
+
       -webkit-animation: bounce 2.0s infinite ease-in-out;
       animation: bounce 2.0s infinite ease-in-out;
     }
-    
+
     .double-bounce2 {
       -webkit-animation-delay: -1.0s;
       animation-delay: -1.0s;
     }
-    
+
     @-webkit-keyframes bounce {
       0%, 100% { -webkit-transform: scale(0.0) }
       50% { -webkit-transform: scale(1.0) }
     }
-    
+
     @keyframes bounce {
-      0%, 100% { 
+      0%, 100% {
         transform: scale(0.0);
         -webkit-transform: scale(0.0);
-      } 50% { 
+      } 50% {
         transform: scale(1.0);
         -webkit-transform: scale(1.0);
       }
@@ -181,11 +181,11 @@ html, body {
         right:86px;
         bottom: 63px;
         top: auto;
-        padding-top:0px;
+        padding-top:0px !important;
         overflow:hidden;
         border-radius:3px;
 	}
-    
+
     // motion
     transition: all .25s ease;
     transform : translate3d(0,0,0);
@@ -197,7 +197,7 @@ html, body {
         opacity: 0;
         transform : translate3d(0,-20%,0);
     }
-    
+
     .m-cell-item{
         border:none;
     }
@@ -234,15 +234,15 @@ html, body {
     position:fixed;
     bottom:0px;
     min-height: 56px;
-    
+
     display: flex;
     align-items:center;
-    
+
     &>div{
         flex-grow:1;
         flex-basis: 0;
         text-align: center;
-        
+
         &:nth-of-type(1){
             flex-grow: 3;
         }
@@ -252,10 +252,10 @@ html, body {
         &:nth-of-type(3){
             flex-grow: 2;
         }
-        
+
         &>*{
           font-weight: lighter;
-          outline:0; 
+          outline:0;
           color:#fff;
           padding: 10px;
           line-height: 20px;
@@ -264,9 +264,9 @@ html, body {
           background-color:rgba(115, 130, 155, 0.1) !important;
         }
     }
-   
+
     .bw-daypicker{
-        -webkit-appearance: none; 
+        -webkit-appearance: none;
         background: none;
         border: none;
         text-align:center;
@@ -275,7 +275,7 @@ html, body {
         @extend .bw-daypicker;
         text-align: center;
         font-size:15px;
-        
+
         &:focus{
             color: yellow;
         }
@@ -309,7 +309,7 @@ html, body {
 	&.on-input-mode {
 		display:none;
 	}
-	
+
 	@media all and (min-width: 640px) {
 		width: 70%;
 		margin: 0 auto;
@@ -328,7 +328,7 @@ html, body {
         background: none;
         flex:1;
         @include selectable;
-        
+
         // multi-lines support
         line-height: 20px;
         padding:8px 0;
@@ -350,15 +350,15 @@ html, body {
         font-size: 12px;
         opacity: 0.9;
 //        border-top: 1px solid rgba(32, 35, 37, 0.15);
- 
+
         &.sticky{
             position: -webkit-sticky;
             position: -moz-sticky;
             position: -ms-sticky;
             position: -o-sticky;
-            top: 104; 
+            top: 104;
         }
-        
+
 
         em{
             font-size: 14px;
@@ -391,7 +391,7 @@ html, body {
         .check {
             border-color: #03A9F4;
             background: #03A9F4 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB8AAAAWBAMAAADKj1rCAAAAHlBMVEUAAAD///////////////////////////////////8kfJuVAAAACXRSTlMA5ynxOgvCiWKZ3EdUAAAAV0lEQVQY02NAAUxFDKhAcWIAqgLJyagCijNN0BU4UEcBRwqaAk2IOMKEQKAETAFcBk7BpGAkQgmYQLYfhFEc4ARRgFBiCFGAUDIThy8QSoQd0MIyFMEEAPDjG3xrfBzoAAAAAElFTkSuQmCC) no-repeat center;
-            background-size: auto 11px; 
+            background-size: auto 11px;
         }
     }
     .bw-day{
@@ -411,7 +411,7 @@ html, body {
         transition: all .35s ease;
         transform : translate3d(0%,0,0);
         word-break:break-all;
-        
+
         &.editing{
             .view{
                 display: none;
@@ -423,7 +423,7 @@ html, body {
         .edit{
             display: none;
         }
-        
+
         &.v-enter, &.v-leave {
             transform : translate3d(-100%,0,0);
         }
@@ -433,12 +433,12 @@ html, body {
         &:focus {
             @include shadow-1;
         }
-      
+
         .done{
             text-decoration: line-through;
             color: #ccc;
         }
-    }   
+    }
 }
 .bw-delete{
     display: inline-block;
@@ -612,7 +612,7 @@ html, body {
 
     .btn-sheet{
         position: absolute;
-        bottom: 0px;  
+        bottom: 0px;
         width: 100%;
     }
 
@@ -651,4 +651,3 @@ html, body {
         }
     }
 }
-

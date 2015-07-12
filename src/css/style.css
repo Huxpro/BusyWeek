@@ -664,7 +664,7 @@ html, body {
       right: 86px;
       bottom: 63px;
       top: auto;
-      padding-top: 0px;
+      padding-top: 0px !important;
       overflow: hidden;
       border-radius: 3px; } }
   .bw-new.v-enter {
