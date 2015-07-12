@@ -1,7 +1,7 @@
 /**
  * Created by 黄玄 on 15/06/02.
  * Updated by Hux on 15/06/10.
- * 
+ *
  * Gulpfile 用于新版 requireJS 方案打包
  */
 
@@ -41,7 +41,7 @@ gulp.task('css', ['sass'], function () {
 // build
 gulp.task('build', ['css'], function() {
     var build = 'node r.js -o build.js';
-    
+
     exec(build, function callback(error, stdout, stderr){
         //console.log(stdout);
         console.log('finish build');
@@ -58,7 +58,7 @@ gulp.task('serve', function(){
 
 // watch
 gulp.task('watch', ['css', 'serve'], function(){
-    // watch JSX and SASS
+    // watch SASS
     gulp.watch('src/css/*.scss', ['css']);
 })
 

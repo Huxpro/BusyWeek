@@ -393,7 +393,7 @@ require( [
                         self.BWScroll.refresh();
                         setTimeout(function () {
                             self.BWScroll.refresh();
-                        }, 300);
+                        }, 350);
                     })
                 }
             },
