@@ -403,14 +403,18 @@ require( [
                 var _isStandalone = window.navigator.standalone == true;
                 var _isBrowser = document.URL.match(/^https?:/)
 
-                if(!_isBrowser){
+                // iPhone Cordova
+                if(!_isBrowser && _isIPhone){
                     this.standalone = true;
                     return;
                 }
 
+                // iPhone "add to Desktop"
                 if( _isIPhone && _isStandalone  ){
                     this.standalone = true
                 }
+
+                // default: Web and Android
             },
             /**
              * calculate the newTodo position and Scroll to!
