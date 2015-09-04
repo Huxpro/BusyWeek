@@ -26,7 +26,9 @@
   "homepage": "https://github.com/Huxpro/BusyWeek",
   "devDependencies": {
     "autoprefixer-core": "^5.2.0",
+    "colors": "^1.1.2",
     "gulp": "^3.9.0",
+    "gulp-connect": "^2.2.0",
     "gulp-postcss": "^5.1.8",
     "gulp-sass": "^2.0.1"
   }

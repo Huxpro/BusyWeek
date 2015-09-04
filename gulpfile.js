@@ -10,13 +10,6 @@ var path = require('path');
 var childProcess = require('child_process');
 var exec = childProcess.exec;
 
-// node serve
-gulp.task('serve', function() {
-    exec(['sudo node server.js'].join(' '), function(error, stdout, stderr) {
-        console.log(stdout);
-    });
-});
-
 
 // compile sass
 var sass = require('gulp-sass');
@@ -48,12 +41,26 @@ gulp.task('build', ['css'], function() {
     });
 });
 
+// server use gulp-connect
+var connect = require('gulp-connect');
+var colors = require('colors');
+var PORT = 9000;
 
-// server
 gulp.task('serve', function(){
-    exec('supervisor server.js', function(error, stdout, stderr){
-        console.log("server running at port: 9000");
+    connect.server({
+        root: "src",
+        port: 9000,
+        livereload: true
     })
+    connect.server({
+        root: "dist",
+        port: 9001,
+        livereload: true
+    })
+
+    var d = "[" + String(new Date().toTimeString().split(" ")[0]).gray + "]"
+    console.log(d + " Server SRC  ".bgMagenta + " listened at 9000 ".bgRed);
+    console.log(d + " Server DIST ".bgMagenta + " listened at 9001 ".bgRed);
 })
 
 // watch
