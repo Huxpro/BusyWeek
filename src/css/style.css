@@ -716,8 +716,8 @@ html, body {
     -webkit-flex-grow: 1;
         -ms-flex-positive: 1;
             flex-grow: 1;
-    -ms-flex-preferred-size: 0;
-        -webkit-flex-basis: 0;
+    -webkit-flex-basis: 0;
+        -ms-flex-preferred-size: 0;
             flex-basis: 0;
     text-align: center; }
     .bw-new-picker > div:nth-of-type(1) {
