@@ -1,14 +1,14 @@
-# BusyWeek! 
+# BusyWeek!
 
 > A time-based Todo-list App with simple design, which is a side-project of mine
 
 
 ## What is BusyWeek!
 
-BusyWeek! is a **time-based** Todo-list App with simple, elegant design, which can help you manage your schedule by automatically convert time between 
+BusyWeek! is a **time-based** Todo-list App with simple, elegant design, which can help you manage your schedule by automatically convert time between
 
-- *What is the date that day?* 
-- *What day is it that day?* 
+- *What is the date that day?*
+- *What day is it that day?*
 - *How many days before/after that day?*
 
 and present a Todo-list **sorted by date** to you.
@@ -24,6 +24,47 @@ and present a Todo-list **sorted by date** to you.
 
 
 # Changelog
+
+## Warning
+
+This project is no longer maintained and would be rewrite using React.js.
+
+Although Vue.js is a very simple, awesome, light-weight MVVM library and support Component System now days, but React.js does better in many way:
+
+- Model and View is not strictly bound(limit each other), which is more flexible than ViewModel data-binding
+- The Old Back-end MVC way is more simple and focused when deal with UI rendering than MVVM
+- Represent UI as a **state machine** making UI logic predictable and easy to maintain
+- UI template is more declarative with JSX than a template engine DSL
+- Communication between components is clear with `props`, `context` and `callback`.
+- Ecosystem is more active and strong.
+- etc.
+
+## V2.1.1
+
+##### Change
+
+* Vue.js upgrade to 0.12.12 (from 0.11)
+* Migrate to `gulp-connect` instead of own wrote `server.js`
+
+
+## V2.1.0
+
+##### New
+
+* Optimize for Cordova use
+* Add npm script
+
+
+## V2.0.0
+
+##### New
+
+* LogIn/SignUp/CloudSync support!
+* Router use director.js
+
+##### Fixed
+
+* Fix scrollTo() unusable when migrating to iScroll
 
 
 ## V1.8.0
@@ -77,7 +118,7 @@ and present a Todo-list **sorted by date** to you.
 * After using Require.js as the module loader, I put all `<script>` tag at the end of `<body>`, which expose the rendering process in desktop ( Mobile will be waiting all script ready then render)
 * The second reason help to trigger this problem is that desktop will perform all "transition" at the beginning if you set `transiton: all`
 * So I fixed this issue by hack the CSS of Loading Screen
-* If you try to use `display:none` to hidden all UI except Loading, It is truly expensive. 
+* If you try to use `display:none` to hidden all UI except Loading, It is truly expensive.
 
 
 
@@ -86,7 +127,7 @@ and present a Todo-list **sorted by date** to you.
 ##### New
 
 * DayPicker in newTodoView now support "选个日期" as the option out of range
-* Using Autoprefixer as one task of the CSS pre-compile, mainly for Flexbox. 
+* Using Autoprefixer as one task of the CSS pre-compile, mainly for Flexbox.
 
 ##### Fix
 
