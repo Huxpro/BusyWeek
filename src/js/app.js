@@ -143,8 +143,7 @@ require( [
 
             this.initScroll();
             this.isStandAlone();
-
-
+            this.scrollToToday();
 
             // watch filter to refresh IScroll
             this.$watch('activeFilter', function(_filter){
@@ -218,11 +217,11 @@ require( [
                 this.state = states.LIST;
 
                 // scroll to Todo
-                this.scrollToTodo(_timeline, _date);
+                this.scrollToTodo(_date);
 
                 // set default todo text
                 if (!this.newTodo.text) {
-                    this.newTodo.text = "写点啥呀！"
+                    this.newTodo.text = "写点什么吧！"
                 }
 
                 // create new dayObject in timeline
@@ -419,7 +418,9 @@ require( [
             /**
              * calculate the newTodo position and Scroll to!
              */
-            scrollToTodo: function(_timeline, _date){
+            scrollToTodo: function(_date){
+                var _timeline = this.timeline;
+
                 // 把 timeline.key 做一次排序
                 var sorted = (function(){
                     var arr = [];
@@ -487,6 +488,9 @@ require( [
         //      console.log("window.outerHeight"+window.outerHeight);
         //      console.log("window.screen.height"+window.screen.height);
         //      console.log("window.screen.availHeight"+window.screen.availHeight);
+            },
+            scrollToToday: function(){
+                this.scrollToTodo(Util.getTodayDate());
             },
             // LeanCloud
             initAV: function(){

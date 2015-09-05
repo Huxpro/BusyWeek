@@ -17,27 +17,27 @@
     </head>
     <body v-class = "standalone: standalone">
             <!-- Splash Screen -->
-            <div 
+            <div
                 id="loading"
                 v-show="!loaded"
                 v-transition
-            >   
+            >
                 <div class="content">
                     <div class="spinner">
                       <div class="double-bounce1"></div>
                       <div class="double-bounce2"></div>
                     </div>
-                    <p> 加载中... </p>    
+                    <p> 加载中... </p>
                 </div>
             </div>
-            
+
             <!-- Log In -->
             <div class="bw-mask"
                  v-show="ifLoginShow()"
-            > 
-                <form id="login" 
+            >
+                <form id="login"
                     v-show="!login.logined"
-                    class="bw-panel" 
+                    class="bw-panel"
                     v-on="
                         submit:userLogIn,
                         keyup:userLogIn | key enter
@@ -57,7 +57,7 @@
                     </div>
                 </form>
                 <div v-show="login.logined"
-                    class="bw-panel" 
+                    class="bw-panel"
                 >
                     <p class={{login.state}} >
                         {{ login.logined && "早上好！ "+login.current.get('username') }}
@@ -65,8 +65,8 @@
                         现在，你可以使用云备份来上传下载你的个人数据啦！
                     </p>
                     <div class="btn-sheet">
-                        <button 
-                            class="btn" 
+                        <button
+                            class="btn"
                             style="color:#FF5B45"
                             v-on ="click: userLogOut"
                         >
@@ -79,12 +79,12 @@
             <!-- Cloud -->
             <div class="bw-mask"
                  v-show="ifCloudShow()"
-            > 
-                <div class="bw-panel" > 
-                    <p v-show="!login.logined" >   
+            >
+                <div class="bw-panel" >
+                    <p v-show="!login.logined" >
                         登录后才可以使用云备份哦！
                     </p>
-                    <p v-show="login.logined" >   
+                    <p v-show="login.logined" >
                         上传数据将会覆盖云端数据<br>
                         下载数据也将覆盖本地数据<br>请小心操作哦
                     </p>
@@ -100,12 +100,12 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- about -->
             <div class="bw-mask"
                 v-show="ifAboutShow()"
             >
-                <div class="bw-panel"> 
+                <div class="bw-panel">
                     <p>
                         <b>BusyWeek!</b> is a time-based Todo-list App with simple, elegant design.
                     </p>
@@ -133,15 +133,15 @@
                 ></button>
                 <h1 class="logo">BusyWeek!</h1>
                 <section class="app-bar-actions">
-                    <button 
+                    <button
                          class="bw-action-add icon-more_vert"
                     >
                     </button>
                 </section>
               </div>
             </header>
-            
-            
+
+
             <!-- Navigation Drawer -->
             <nav class="navdrawer-container promote-layer">
               <h4></h4>
@@ -169,19 +169,19 @@
                 </li>
               </ul>
             </nav>
-            
-            
+
+
             <!-- FAB: floating action button -->
-            <div class="FAB bw-action-add icon-add" 
+            <div class="FAB bw-action-add icon-add"
                  v-class = " delete-mode : (state == 'INPUT') "
                  v-on = "click:onActionAdd"
             ></div>
-            
-            
+
+
             <!-- inputView -->
-            <form 
-                id="form" 
-                class="m-cell m-cell-list bw-new" 
+            <form
+                id="form"
+                class="m-cell m-cell-list bw-new"
                 v-on="
                     submit:addTodo,
                     keyup:addTodo | key enter
@@ -192,13 +192,13 @@
                 <textarea
                     class="m-txtinput bw-input"
                     placeholder="又有事情忙啦？"
-                    v-model="newTodo.text" 
+                    v-model="newTodo.text"
                 >
                 </textarea>
                 <!-- <input type="reset" class="m-reset iconfont icon-delete" />-->
                 <div class="bw-new-picker" >
                     <div>
-                        <select 
+                        <select
                             class="bw-daypicker"
                             v-model="newTodo.dayType"
                         >
@@ -214,14 +214,14 @@
                         </select>
                     </div>
                     <div>
-                        <input 
+                        <input
                             class="bw-datepicker"
-                            v-model="newTodo.date" 
+                            v-model="newTodo.date"
                             type = 'date'>
                     </div>
                     <div>
-                        <input 
-                            type="submit" 
+                        <input
+                            type="submit"
                             class="iconfont bw-newbtn"
                             value="添加">
                     </div>
@@ -229,11 +229,11 @@
             </form>
 
             <div class="navdrawer-mask bw-scroller">
-                
+
             <!-- Timeline: the main ListView -->
-            <div class="bw-timeline scroller" 
+            <div class="bw-timeline scroller"
             	v-class=" on-input-mode : state !== 'LIST'"
-            > 
+            >
                 <!-- day -->
                 <!-- This template traverse "app.timeline" and this = "day" here -->
                 <ul class= "m-cell m-cell-list bw-day"
@@ -242,43 +242,41 @@
                     v-transition
                 >
                     <li class="m-cell-header sticky"
-                        
+                        v-class="today : ifToday($key)"
                     >
-                        <em 
-                            v-class="today : ifToday($key)"
-                        > 
-                            {{$key | getDayType}} 
+                        <em>
+                            {{$key | getDayType}}
                         </em>
                         <span>
                             {{$key}} {{$key | getDay}}
                         </span>
-                        
+
                     </li>
                     <!-- todo -->
                     <!-- This template traverse "day.todos" and this = "todo" here -->
-                    <li 
+                    <li
                         class="m-cell-item bw-todo"
-                        v-repeat="todos" 
-                        v-class="editing : this == editingTodo" 
+                        v-repeat="todos"
+                        v-class="editing : this == editingTodo"
                         v-show="ifTodoShow(done)"
                         v-transition
                     >
                         <!-- checkbox -->
-                        <div 
-                            class="bw-checkbox" 
+                        <div
+                            class="bw-checkbox"
                             v-on = "click:checkTodo(this)"
                         >
-                            <span 
-                                v-class = "check : done" 
-                                class="m-checkbox"    
+                            <span
+                                v-class = "check : done"
+                                class="m-checkbox"
                             </span>
                         </div>
-                        
+
                         <!-- text -->
                         <div class="m-cell-ctrl m-cell-txt" v-class="editing : this == editingTodo" >
                             <!-- regular view -->
-                            <div 
-                                class="m-txtinput view" 
+                            <div
+                                class="m-txtinput view"
                                 v-class="done : done"
                                 value="{{text}}"
                                 v-on="click:editTodo(this)"
@@ -286,9 +284,9 @@
                                 {{text}}
                             </div>
                             <!-- edit view -->
-                            <input 
-                                type="text" 
-                                class="m-txtinput edit" 
+                            <input
+                                type="text"
+                                class="m-txtinput edit"
                                 v-model = "text"
                                 v-todo-focus="this == editingTodo"
                                 value="{{text}}"
@@ -299,23 +297,26 @@
                                 "
                             >
                         </div>
-                        
+
                         <!-- delete button -->
-                        <a 
-                            class="icon-close bw-delete" 
+                        <a
+                            class="icon-close bw-delete"
                             v-on="click:removeTodo(this)">
                         </a>
                     </li>
                 </ul>
             </div>
+            <div class="bw-tips">
+                点击红色按钮，开启新的一天
             </div>
-        <script defer async src="js/lib/require.js" data-main="js/app.js"></script>        
+            </div>
+        <script defer async src="js/lib/require.js" data-main="js/app.js"></script>
         <!--<script async src="js/app.js"></script>-->
         <script>
              window.addEventListener('load',function(e){
                 console.log('LOAD');
-            })   
-            
+            })
+
             document.addEventListener('DOMContentLoaded', function(e) {
                 console.log("DOMContentLoaded");
             }, false);
