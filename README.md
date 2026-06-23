@@ -39,16 +39,42 @@ QR code), and a raw **Web** bundle for container integration.
 
 > Requires Node.js 18+.
 
+### Try it on the web 🌐
+
+The app runs on the **Lynx Web Platform** too — the same Vue Lynx code,
+rendered in a browser via `@lynx-js/web-core`. The deployed site lives at:
+
+> **https://huxpro.github.io/BusyWeek/**
+
+It is published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
+GitHub Actions workflow on every push to `master`. To build the static site
+locally:
+
+```bash
+npm run build:web   # rspeedy build + bundles the Lynx web runtime into dist/
+npx serve dist      # serve dist/ and open index.html
+```
+
+`build:web` produces a fully self-contained `dist/` (host `index.html`,
+`main.web.bundle`, and the `@lynx-js/web-core` runtime under `static/`) with
+relative URLs, so it works under the GitHub Pages project subpath.
+
+> **One-time setup:** in the repo, **Settings → Pages → Build and deployment →
+> Source: GitHub Actions**. After that, pushes to `master` deploy automatically.
+
 ### Project layout
 
 ```
 src/
-  index.ts     # createApp(App).mount() entry
+  index.ts     # createApp(App).mount() entry; imports base.css
   App.vue      # the whole BusyWeek UI (composer, timeline, filters, FAB)
+  base.css     # shared base styles (cross-platform font stack, smoothing)
   store.ts     # persistence (NativeModules local storage, in-memory fallback)
   util.ts      # date helpers (ported from the original util.js)
   types.ts     # Todo / DayObject / Timeline model
   App.css      # Material-ish theme (#03A9F4)
+web/index.html # host page for the web build (loads the Lynx web runtime)
+scripts/       # assemble-web.mjs — bundles the web runtime into dist/
 lynx.config.ts # Rspeedy + Vue Lynx + QR-code plugins
 legacy/        # the original Vue 0.12 web app, kept for reference
 ```

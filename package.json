@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "rspeedy build",
+    "build:web": "rspeedy build && node scripts/assemble-web.mjs",
     "dev": "rspeedy dev",
     "preview": "rspeedy preview"
   },
