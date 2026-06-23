@@ -39,9 +39,10 @@ Per-app frames are under `port/` and `original/`.
   app bar (全部 / 在忙 / 完成); the original kept them in a hamburger **nav
   drawer**. The port uses a round checkbox, the original a square one. Day
   headers read “周二” in the port vs “星期二” in the original (both correct).
-- **Legacy rendering caveat:** the original uses 2009-era `-webkit-box`
-  flexbox. In a 2026 browser the un-flexed text column collapses CJK text to one
-  character per line — see `original/02-list-all-RAW-legacy-flexbox.png` for the
-  raw artifact. A 4-line modern-flex shim was injected **into the test copy only**
-  (not committed) so the original renders in its intended row layout for a fair
-  comparison.
+- **Legacy flexbox fix:** the original used 2009-era `-webkit-box` flexbox, so
+  in a 2026 browser its un-flexed todo-text column collapsed CJK text to one
+  character per line (`original/02-list-all-BEFORE-flexbox-fix.png`). This was
+  fixed at the source by adding standard flexbox (`display: flex`, `flex`,
+  `align-items`, `justify-content`) alongside the legacy `-webkit-box` rules in
+  `legacy/src/css/style.css` and `mpi.scss`. The `original/*.png` frames above
+  are rendered straight from that fixed CSS — **no test-time shim**.
