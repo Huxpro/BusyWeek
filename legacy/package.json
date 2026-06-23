@@ -1,0 +1,35 @@
+{
+  "name": "busyWeek",
+  "version": "1.0.0",
+  "description": "A time based Todo-list App",
+  "main": "",
+  "scripts": {
+    "cordova-src": "cp -r src cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv src www",
+    "cordova-dist": "cp -r dist cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv dist www",
+    "cordova-emu": "cd cordova/busyweek; cordova emulate ios",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Huxpro/BusyWeek.git"
+  },
+  "keywords": [
+    "busyWeek",
+    "todo",
+    "hux"
+  ],
+  "author": "Hux",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Huxpro/BusyWeek/issues"
+  },
+  "homepage": "https://github.com/Huxpro/BusyWeek",
+  "devDependencies": {
+    "autoprefixer-core": "^5.2.0",
+    "colors": "^1.1.2",
+    "gulp": "^3.9.0",
+    "gulp-connect": "^2.2.0",
+    "gulp-postcss": "^5.1.8",
+    "gulp-sass": "^2.0.1"
+  }
+}

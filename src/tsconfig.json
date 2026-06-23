@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["vue-lynx/types"],
+
+    "lib": ["es2023"],
+    "target": "es2022",
+
+    "noEmit": true,
+  },
+  "vueCompilerOptions": {
+    "plugins": ["vue-lynx/types/volar-plugin"]
+  },
+  "include": ["./**/*.ts", "./**/*.vue"],
+}
