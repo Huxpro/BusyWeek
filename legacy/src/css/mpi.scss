@@ -137,11 +137,13 @@ a {
 .m-cell {
   position: relative;
   display: -webkit-box;
+  display: flex;
   margin-bottom: 10px;
   padding: 13px 10px;
   min-height: 22px;
   background-color: white;
   -webkit-box-align: center;
+  align-items: center;
   border-top: 1px solid rgba(32, 35, 37, 0.15);
   border-bottom: 1px solid rgba(32, 35, 37, 0.15); }
   .m-cell .m-switch {
@@ -168,22 +170,30 @@ a {
 .m-cell-item {
   position: relative;
   display: -webkit-box;
+  display: flex;
   padding-right: 10px;
   margin-left: 10px;
   min-height: 48px;
   border-bottom: 1px solid rgba(32, 35, 37, 0.15);
-  -webkit-box-align: center; }
+  -webkit-box-align: center;
+  align-items: center; }
 
 
 .m-cell-ctrl {
   display: -webkit-box;
+  display: flex;
   color: #202325;
   font-size: 16px;
   -webkit-box-flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   -webkit-box-pack: end;
-  -webkit-box-align: center; }
+  justify-content: flex-end;
+  -webkit-box-align: center;
+  align-items: center; }
   .m-cell-ctrl.m-cell-txt {
-    -webkit-box-pack: justify; }
+    -webkit-box-pack: justify;
+    justify-content: space-between; }
   .m-cell-ctrl .m-txtinput {
     padding: 0; }
 

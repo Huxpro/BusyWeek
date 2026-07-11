@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>BusyWeek! · Vue Lynx (Web)</title>
+    <meta
+      name="description"
+      content="BusyWeek! — a time-based todo list, ported to Vue Lynx and running on the Lynx Web Platform."
+    />
+    <!--
+      Lynx Web Platform runtime (@lynx-js/web-core, client_prod build). It is
+      copied into ./static by scripts/assemble-web.mjs so the page is fully
+      self-contained — no CDN. The runtime loads its async chunks from ./static/.
+    -->
+    <script type="module" src="./static/js/client.js"></script>
+    <link rel="stylesheet" href="./static/css/client.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #f0f0f0;
+      }
+      lynx-view {
+        display: block;
+        height: 100vh;
+        width: 100vw;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      `url` is relative, so this works under any base path, including the
+      GitHub Pages project subpath (https://<user>.github.io/BusyWeek/).
+    -->
+    <lynx-view url="./main.web.bundle" height="100vh" width="100vw"></lynx-view>
+  </body>
+</html>

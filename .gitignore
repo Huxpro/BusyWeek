@@ -1,10 +1,16 @@
+# Local
 .DS_Store
+*.local
+*.log*
+
+# Dist
 node_modules
-*/node_modules
-npm-debug.log
-*.swp
-.sw*
-.sass-cache/
-*/.sass-cache/
-*.css.map
-cordova/
+dist/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# TypeScript
+*.tsbuildinfo

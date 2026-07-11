@@ -1,13 +1,26 @@
 {
-  "name": "busyWeek",
-  "version": "1.0.0",
-  "description": "A time based Todo-list App",
-  "main": "",
+  "name": "busyweek-lynx",
+  "version": "3.0.0",
+  "description": "BusyWeek! — a time-based Todo-list app, ported to Vue Lynx",
+  "type": "module",
   "scripts": {
-    "cordova-src": "cp -r src cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv src www",
-    "cordova-dist": "cp -r dist cordova/busyweek/;cd cordova/busyweek;rm -rf www;mv dist www",
-    "cordova-emu": "cd cordova/busyweek; cordova emulate ios",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rspeedy build",
+    "build:web": "rspeedy build && node scripts/assemble-web.mjs",
+    "dev": "rspeedy dev",
+    "preview": "rspeedy preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-lynx": "0.4.0"
+  },
+  "devDependencies": {
+    "@lynx-js/qrcode-rsbuild-plugin": "^0.4.6",
+    "@lynx-js/rspeedy": "^0.13.5",
+    "@rsbuild/plugin-vue": "^1.2.6",
+    "typescript": "~5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "repository": {
     "type": "git",
@@ -16,20 +29,10 @@
   "keywords": [
     "busyWeek",
     "todo",
+    "lynx",
+    "vue-lynx",
     "hux"
   ],
   "author": "Hux",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Huxpro/BusyWeek/issues"
-  },
-  "homepage": "https://github.com/Huxpro/BusyWeek",
-  "devDependencies": {
-    "autoprefixer-core": "^5.2.0",
-    "colors": "^1.1.2",
-    "gulp": "^3.9.0",
-    "gulp-connect": "^2.2.0",
-    "gulp-postcss": "^5.1.8",
-    "gulp-sass": "^2.0.1"
-  }
+  "license": "ISC"
 }

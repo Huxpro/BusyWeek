@@ -1,0 +1,25 @@
+/* Base styles shared by the native (Lynx) and web targets.
+ *
+ * CSS inheritance is enabled in lynx.config.ts (`enableCSSInheritance`), so
+ * setting the font on the root view cascades to every <text>. We also set it
+ * on `text` directly so the web build is covered regardless of inheritance,
+ * and pick a cross-platform stack with solid CJK coverage (BusyWeek is bilingual).
+ */
+
+:root {
+  --bw-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  --bw-text: #333333;
+}
+
+.app {
+  font-family: var(--bw-font);
+  color: var(--bw-text);
+}
+
+text {
+  font-family: var(--bw-font);
+  /* Crisper glyphs on the web target; ignored on native. */
+  -webkit-font-smoothing: antialiased;
+}
