@@ -41,12 +41,14 @@ QR code), and a raw **Web** bundle for container integration.
 
 ### Try it on the web 🌐
 
-The app runs on the **Lynx Web Platform** too — the same Vue Lynx code,
-rendered in a browser via `@lynx-js/web-core`. The deployed site lives at:
+Both editions are deployed side by side, so you can compare them live:
 
-> **https://huxpro.github.io/BusyWeek/**
+| URL | Edition |
+| --- | --- |
+| **https://huxpro.github.io/BusyWeek/** | Vue Lynx version (on the Lynx Web Platform via `@lynx-js/web-core`) |
+| **https://huxpro.github.io/BusyWeek/legacy/** | the original Vue 0.12 web edition |
 
-It is published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
+They are published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
 GitHub Actions workflow, which builds the site and pushes it to the `gh-pages`
 branch (the branch this repo's Pages already serves) on every push to `master`
 — so merging updates the live site with no repo settings change. You can also
@@ -55,14 +57,17 @@ run the workflow manually from any branch via **Actions → Run workflow**.
 To build the static site locally:
 
 ```bash
-npm run build:web   # rspeedy build + bundles the Lynx web runtime into dist/
-npx serve dist      # serve dist/ and open index.html
+npm run build:web   # rspeedy build + assemble dist/ (both editions)
+npx serve dist      # serve dist/ — / is Lynx, /legacy/ is the original
 ```
 
-`build:web` produces a fully self-contained `dist/` (host `index.html`,
-`main.web.bundle`, a `.nojekyll` marker, and the `@lynx-js/web-core` runtime
-under `static/`) with relative URLs, so it works under the GitHub Pages project
-subpath.
+`build:web` produces a fully self-contained `dist/` with relative URLs so it
+works under the GitHub Pages project subpath:
+
+- `index.html`, `main.web.bundle`, `static/` — the Lynx app + web runtime (`/`)
+- `legacy/` — the original web app (`/legacy/`), with its dead LeanCloud SDK
+  stubbed so it boots without the CDN (login / cloud-sync are inert)
+- `.nojekyll` — so Pages serves the runtime folders verbatim
 
 ### Project layout
 
