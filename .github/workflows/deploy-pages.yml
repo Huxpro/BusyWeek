@@ -1,13 +1,14 @@
 name: Deploy Vue Lynx web to GitHub Pages
 
-# Builds the Vue Lynx *web* bundle (app + Lynx Web Platform runtime) and
-# publishes the static site to the `gh-pages` branch, which this repo's
-# GitHub Pages is configured to serve. No repo settings change is required.
+# Builds the Vue Lynx web site (app + Lynx Web Platform runtime + the original
+# edition at /legacy/) and deploys it via the official GitHub Pages Actions
+# pipeline. This is the correct method when the repo's Pages "Source" is set to
+# "GitHub Actions" (Settings -> Pages -> Build and deployment -> Source).
 #
-# Runs on pushes to `master` (i.e. when PR #1 merges) and can be triggered
-# manually from any branch via "Run workflow".
+# dist/ includes a CNAME file (from web/CNAME), so the custom domain
+# (huangxuan.me) is preserved on every deploy.
 #
-# Live at: https://huxpro.github.io/BusyWeek/
+# Live at: https://huangxuan.me/BusyWeek/
 
 on:
   push:
@@ -15,15 +16,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
-# One deploy at a time; don't cancel an in-progress publish.
+# One deploy at a time; don't cancel an in-progress production deploy.
 concurrency:
-  group: pages-deploy
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,15 +36,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:web
-      - name: Publish dist/ to gh-pages
-        run: |
-          cd dist
-          git init -q
-          git checkout -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -qm "Deploy ${GITHUB_SHA} to GitHub Pages"
-          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
