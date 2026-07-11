@@ -1,0 +1,263 @@
+@charset "UTF-8";
+
+/* reset */
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, abbr, address, cite, code, del, dfn, em, img, ins, kbd, q, samp, small, strong, sub, sup, var, b, i, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary, time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  outline: 0;
+  border: 0;
+  background: transparent;
+  vertical-align: baseline;
+  font-style: inherit;
+  font-size: 100%; }
+
+html {
+  font-family: sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%; }
+
+body {
+  line-height: 1; }
+
+li {
+  list-style: none; }
+
+a:active {
+  outline: 0; }
+
+button[disabled], html input[disabled] {
+  cursor: default; }
+
+img {
+  vertical-align: middle; }
+
+button, input, select, textarea {
+  margin: 0;
+  font-size: 100%;
+  font-family: inherit; }
+
+button, input {
+  line-height: normal; }
+
+button, select {
+  text-transform: none; }
+
+button, html input[type="button"], input[type="reset"], input[type="submit"] {
+  cursor: pointer;
+  -webkit-appearance: button; }
+
+input[type="search"] {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  -webkit-appearance: textfield; }
+
+input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none; }
+
+audio:not([controls]) {
+  display: none;
+  height: 0; }
+
+[hidden], template {
+  display: none; }
+
+dfn {
+  font-style: italic; }
+
+code, kbd, pre, samp {
+  font-size: 1em;
+  font-family: monospace, serif; }
+
+blockquote, q {
+  quotes: none; }
+
+blockquote:before, blockquote:after, q:before, q:after {
+  content: '';
+  content: none; }
+
+table {
+  border-spacing: 0;
+  border-collapse: collapse; }
+
+/* base */
+html {
+  height: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+
+body {
+  color: #2b577a;
+  font-size: 14px;
+  font-family: 'Helvetica Neue', 'STHeitiSC-Light', arial, sans-serif; }
+
+a {
+  text-decoration: none; }
+
+.clearfix:before, .clearfix:after {
+  display: table;
+  content: ""; }
+
+.clearfix:after {
+  clear: both; }
+
+.center-block {
+  display: block;
+  margin-right: auto;
+  margin-left: auto; }
+
+.fr {
+  float: right !important; }
+
+.fl {
+  float: left !important; }
+
+.hide, .hidden {
+  display: none !important; }
+
+.show {
+  display: block !important; }
+
+.visible {
+  visibility: visible; }
+
+.invisible {
+  visibility: hidden; }
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; }
+
+
+/* 
+	cells.scss
+	智峰
+	2014-07 
+*/
+.m-cell {
+  position: relative;
+  display: -webkit-box;
+  display: flex;
+  margin-bottom: 10px;
+  padding: 13px 10px;
+  min-height: 22px;
+  background-color: white;
+  -webkit-box-align: center;
+  align-items: center;
+  border-top: 1px solid rgba(32, 35, 37, 0.15);
+  border-bottom: 1px solid rgba(32, 35, 37, 0.15); }
+  .m-cell .m-switch {
+    margin-right: 6px; }
+  .m-cell .m-btn {
+    height: 28px;
+    line-height: 28px; }
+  .m-cell .m-reset {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    display: none;
+    margin-top: -10px; }
+  .m-cell .m-txtinput:focus + .m-reset {
+    display: block; }
+
+.m-cell-list, .m-cell-form {
+  display: block;
+  padding: 0;
+  min-height: 48px; }
+  .m-cell-list .m-cell-item:last-child, .m-cell-form .m-cell-item:last-child {
+    border-bottom: 0 none; }
+
+.m-cell-item {
+  position: relative;
+  display: -webkit-box;
+  display: flex;
+  padding-right: 10px;
+  margin-left: 10px;
+  min-height: 48px;
+  border-bottom: 1px solid rgba(32, 35, 37, 0.15);
+  -webkit-box-align: center;
+  align-items: center; }
+
+
+.m-cell-ctrl {
+  display: -webkit-box;
+  display: flex;
+  color: #202325;
+  font-size: 16px;
+  -webkit-box-flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  -webkit-box-pack: end;
+  justify-content: flex-end;
+  -webkit-box-align: center;
+  align-items: center; }
+  .m-cell-ctrl.m-cell-txt {
+    -webkit-box-pack: justify;
+    justify-content: space-between; }
+  .m-cell-ctrl .m-txtinput {
+    padding: 0; }
+
+
+.m-txtinput {
+  display: block;
+  -webkit-box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  font-size: 17px;
+  border: 0 none; }
+  .m-txtinput:focus {
+    color: #202325;
+    font-weight: 700; }
+
+::-webkit-input-placeholder {
+  color: rgba(32, 35, 37, 0.3); }
+
+
+.m-cell-txt span {
+  display: block; }
+.m-cell-txt .m-help-icon {
+  margin-right: -10px;
+  width: 43px;
+  height: 26px;
+  border-left: 1px solid #D6D9DC; }
+
+
+/*
+	form.scss
+	智峰
+	2014-06
+*/
+input[type="button"], input[type="submit"] {
+  -webkit-appearance: button; }
+
+input[type="text"], textarea, input[type="radio"], input[type="reset"] {
+  outline: none;
+  border: 0 none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+
+/* checkbox */
+.m-checkbox {
+  display: inline-block;
+  width: 19px;
+  height: 19px;
+  outline: none;
+  border: 1px solid #ccc;
+  -webkit-border-radius: 2px;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+  .m-checkbox:checked {
+    border-color: #47ABEF;
+    background: #47ABEF url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB8AAAAWBAMAAADKj1rCAAAAHlBMVEUAAAD///////////////////////////////////8kfJuVAAAACXRSTlMA5ynxOgvCiWKZ3EdUAAAAV0lEQVQY02NAAUxFDKhAcWIAqgLJyagCijNN0BU4UEcBRwqaAk2IOMKEQKAETAFcBk7BpGAkQgmYQLYfhFEc4ARRgFBiCFGAUDIThy8QSoQd0MIyFMEEAPDjG3xrfBzoAAAAAElFTkSuQmCC) no-repeat center;
+    -webkit-background-size: auto 11px; }
+
+
+/* reset */
+.m-reset {
+  width: 20px;
+  height: 20px;
+  -webkit-border-radius: 0;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoBAMAAAB+0KVeAAAALVBMVEUAAACqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo3wCjHAAAADnRSTlMADXED3dQi/O+fK1LIrEBM/QsAAAEUSURBVCjPfZMxDgFBFIaHVRGikahEoVKIQqMTPaVSNK4i0ajUIg4gTiBxA4UDIIgg7wzePzv/spnsvkL4fJn375u3Jq02J5FBM4YyDbHVL/9Y0BJX13YEpxLViKwgf7VzcP8P35Hoq9s4fNnW4zi8I0AW34YhuOGjrrCG0zNWf05w1EUhgvdMBXBmingAhUP7p6oqmg7OMCYP5VNWVcVghV/rsI8cVFWxK2GnolClKEeTE6pORNuSUKUoZ4VUKRLajAgQg8ioAQhzFIM21Z6LhIwHqkcXHhmR1YXPUxShug4H8lLRZq1iIBwdRKgcHYb8gAgV5oXXsRRb8wX6JFycf8XJy+Cvjb9gKavoL62/3v6LkFJfNyO//1qNK7MAAAAASUVORK5CYII=) no-repeat;
+  -webkit-background-size: 20px; }
+
+

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html id="app">
+    <head>
+        <title v-text="appName"> BusyWeek! </title>
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="icon/iPhone.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="icon/iPad.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="icon/iPhone@2x.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="icon/iPad@2x.png">
+		<!--<meta content="telephone=no" name="format-detection" />-->
+        <link rel="stylesheet" href="icomoon/style.css">
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+    </head>
+    <body v-class = "standalone: standalone">
+            <!-- Splash Screen -->
+            <div 
+                id="loading"
+                v-show="!loaded"
+                v-transition
+            >   
+                <div class="content">
+                    <div class="spinner">
+                      <div class="double-bounce1"></div>
+                      <div class="double-bounce2"></div>
+                    </div>
+                    <p> 加载中... </p>    
+                </div>
+            </div>
+            
+            <!-- Log In -->
+            <div class="bw-mask"
+                 v-show="ifLoginShow()"
+            > 
+                <form id="login" 
+                    v-show="!login.logined"
+                    class="bw-panel" 
+                    v-on="
+                        submit:userLogIn,
+                        keyup:userLogIn | key enter
+                    "
+                >
+                    <p class={{login.state}} >
+                        {{ login.tips }}
+                    </p>
+                    <input v-model="login.username" type="text" placeholder="username">
+                    <input v-model="login.password" type="password" placeholder="password">
+                    <div class="btn-sheet">
+                        <button class="btn" type="submit"
+                            v-attr="disabled:login.disabled"
+                        >
+                        登录
+                        </button>
+                    </div>
+                </form>
+                <div v-show="login.logined"
+                    class="bw-panel" 
+                >
+                    <p class={{login.state}} >
+                        {{ login.logined && "早上好！ "+login.current.get('username') }}
+                        <br><br>
+                        现在，你可以使用云备份来上传下载你的个人数据啦！
+                    </p>
+                    <div class="btn-sheet">
+                        <button 
+                            class="btn" 
+                            style="color:#FF5B45"
+                            v-on ="click: userLogOut"
+                        >
+                            退出登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cloud -->
+            <div class="bw-mask"
+                 v-show="ifCloudShow()"
+            > 
+                <div class="bw-panel" > 
+                    <p v-show="!login.logined" >   
+                        登录后才可以使用云备份哦！
+                    </p>
+                    <p v-show="login.logined" >   
+                        上传数据将会覆盖云端数据<br>
+                        下载数据也将覆盖本地数据<br>请小心操作哦
+                    </p>
+                    <div class="btn-sheet">
+                        <button class="btn"
+                            v-attr="disabled:!login.logined"
+                            v-on="click:uploadData"
+                        >上传</button>
+                        <button class="btn"
+                            v-attr="disabled:!login.logined"
+                            v-on="click:downloadData"
+                        >下载</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- about -->
+            <div class="bw-mask"
+                v-show="ifAboutShow()"
+            >
+                <div class="bw-panel"> 
+                    <p>
+                        <b>BusyWeek!</b> is a time-based Todo-list App with simple, elegant design.
+                    </p>
+                    <p class="btn-sheet" >
+                        @2015 <a href="http://huangxuan.me/about/">黄玄</a>
+                        <br>
+                        <br>
+                        <a href="http://www.zhihu.com/people/huxpro">知乎</a>
+                        <a href="http://huangxuan.me">博客</a>
+                        <a href="http://weibo.com/huxpro">微博</a>
+                        <a href="https://github.com/huxpro">GitHub</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- App Bar -->
+            <header class="app-bar promote-layer">
+              <div class="app-bar-container">
+                <button class="bw-action-nav icon-menu navdrawer-menu"
+                        v-show = "state == 'LIST'"
+                ></button>
+                <button class="icon-arrow_back"
+                        v-show = "state == 'INPUT'"
+                        v-on = "click:onActionAdd";
+                ></button>
+                <h1 class="logo">BusyWeek!</h1>
+                <section class="app-bar-actions">
+                    <button 
+                         class="bw-action-add icon-more_vert"
+                    >
+                    </button>
+                </section>
+              </div>
+            </header>
+            
+            
+            <!-- Navigation Drawer -->
+            <nav class="navdrawer-container promote-layer">
+              <h4></h4>
+              <ul>
+                <li v-on = "click:activeFilter = 'login'">
+                    <a href="#/login">
+                        <i class="icon-person"></i>
+                        {{ (login.logined)?login.current.get("username"):"登录" }}
+                    </a>
+                </li>
+                <li v-on = "click:activeFilter = 'all'">
+                    <a href="#/all"><i class="icon-event_note"></i>全部事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'done'">
+                    <a href="#/done"><i class="icon-event_available"></i>完成事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'active'">
+                    <a href="#/active"><i class="icon-event_busy"></i>在忙事项</a>
+                </li>
+                <li v-on = "click:activeFilter = 'cloud'">
+                    <a href="#/cloud"><i class="icon-person"></i>云备份</a>
+                </li>
+                <li v-on = "click:activeFilter = 'about'">
+                    <a href="#/about"><i class="icon-person"></i>关于</a>
+                </li>
+              </ul>
+            </nav>
+            
+            
+            <!-- FAB: floating action button -->
+            <div class="FAB bw-action-add icon-add" 
+                 v-class = " delete-mode : (state == 'INPUT') "
+                 v-on = "click:onActionAdd"
+            ></div>
+            
+            
+            <!-- inputView -->
+            <form 
+                id="form" 
+                class="m-cell m-cell-list bw-new" 
+                v-on="
+                    submit:addTodo,
+                    keyup:addTodo | key enter
+                "
+                v-show = "state == 'INPUT'"
+                v-transition
+            >
+                <textarea
+                    class="m-txtinput bw-input"
+                    placeholder="又有事情忙啦？"
+                    v-model="newTodo.text" 
+                >
+                </textarea>
+                <!-- <input type="reset" class="m-reset iconfont icon-delete" />-->
+                <div class="bw-new-picker" >
+                    <div>
+                        <select 
+                            class="bw-daypicker"
+                            v-model="newTodo.dayType"
+                        >
+                          <option value="0">&nbsp;今天 {{getDiffDate(0) | getDay }} </option>
+                          <option value="1">&nbsp;明天 {{getDiffDate(1) | getDay }}</option>
+                          <option value="2">&nbsp;后天 {{getDiffDate(2) | getDay }}</option>
+                          <option value="3">大后天 {{getDiffDate(3) | getDay }}</option>
+                          <option value="4">第五天 {{getDiffDate(4) | getDay }}</option>
+                          <option value="5">第六天 {{getDiffDate(5) | getDay }}</option>
+                          <option value="6">第七天 {{getDiffDate(6) | getDay }}</option>
+                          <option value="7">下周今天 {{getDiffDate(7) | getDay }}</option>
+                          <option value="8">选个日期</option>
+                        </select>
+                    </div>
+                    <div>
+                        <input 
+                            class="bw-datepicker"
+                            v-model="newTodo.date" 
+                            type = 'date'>
+                    </div>
+                    <div>
+                        <input 
+                            type="submit" 
+                            class="iconfont bw-newbtn"
+                            value="添加">
+                    </div>
+                </div>
+            </form>
+
+            <div class="navdrawer-mask bw-scroller">
+                
+            <!-- Timeline: the main ListView -->
+            <div class="bw-timeline scroller" 
+            	v-class=" on-input-mode : state !== 'LIST'"
+            > 
+                <!-- day -->
+                <!-- This template traverse "app.timeline" and this = "day" here -->
+                <ul class= "m-cell m-cell-list bw-day"
+                    v-repeat="timeline | orderBy 'key'"
+                    v-show="ifDayShow(todos)"
+                    v-transition
+                >
+                    <li class="m-cell-header sticky"
+                        
+                    >
+                        <em 
+                            v-class="today : ifToday($key)"
+                        > 
+                            {{$key | getDayType}} 
+                        </em>
+                        <span>
+                            {{$key}} {{$key | getDay}}
+                        </span>
+                        
+                    </li>
+                    <!-- todo -->
+                    <!-- This template traverse "day.todos" and this = "todo" here -->
+                    <li 
+                        class="m-cell-item bw-todo"
+                        v-repeat="todos" 
+                        v-class="editing : this == editingTodo" 
+                        v-show="ifTodoShow(done)"
+                        v-transition
+                    >
+                        <!-- checkbox -->
+                        <div 
+                            class="bw-checkbox" 
+                            v-on = "click:checkTodo(this)"
+                        >
+                            <span 
+                                v-class = "check : done" 
+                                class="m-checkbox"    
+                            </span>
+                        </div>
+                        
+                        <!-- text -->
+                        <div class="m-cell-ctrl m-cell-txt" v-class="editing : this == editingTodo" >
+                            <!-- regular view -->
+                            <div 
+                                class="m-txtinput view" 
+                                v-class="done : done"
+                                value="{{text}}"
+                                v-on="click:editTodo(this)"
+                            >
+                                {{text}}
+                            </div>
+                            <!-- edit view -->
+                            <input 
+                                type="text" 
+                                class="m-txtinput edit" 
+                                v-model = "text"
+                                v-todo-focus="this == editingTodo"
+                                value="{{text}}"
+                                v-on="
+                                    blur  : doneEdit(this),
+                                    keyup : doneEdit(this) | key enter,
+                                    keyup : cancelEdit(this) | key esc
+                                "
+                            >
+                        </div>
+                        
+                        <!-- delete button -->
+                        <a 
+                            class="icon-close bw-delete" 
+                            v-on="click:removeTodo(this)">
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            </div>
+        <script defer async src="js/lib/require.js" data-main="js/app.js"></script>        
+        <!--<script async src="js/app.js"></script>-->
+        <script>
+             window.addEventListener('load',function(e){
+                console.log('LOAD');
+            })   
+            
+            document.addEventListener('DOMContentLoaded', function(e) {
+                console.log("DOMContentLoaded");
+            }, false);
+        </script>
+    </body>
+</html>
