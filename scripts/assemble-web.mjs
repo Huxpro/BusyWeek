@@ -45,6 +45,17 @@ await copyFile(path.join(root, 'web', 'index.html'), path.join(dist, 'index.html
 // Disable Jekyll so GitHub Pages serves the runtime folders/files verbatim.
 await writeFile(path.join(dist, '.nojekyll'), '')
 
+// Preserve the Pages custom domain. The deploy force-pushes a fresh gh-pages
+// branch, so the CNAME must be re-emitted on every build or the custom domain
+// (huangxuan.me) breaks with a 404.
+const cnameSrc = path.join(root, 'web', 'CNAME')
+try {
+  await access(cnameSrc)
+  await copyFile(cnameSrc, path.join(dist, 'CNAME'))
+} catch {
+  // no custom domain configured — skip
+}
+
 // --- Original edition at /legacy/ -----------------------------------------
 // Copy the original web app verbatim, then neutralize its LeanCloud (AV)
 // dependency: the SDK is loaded from an external CDN and the app's 2015-era
@@ -84,4 +95,4 @@ console.log('  - dist/index.html        (Lynx host page,  served at /)')
 console.log('  - dist/main.web.bundle   (Lynx app)')
 console.log('  - dist/static/           (Lynx web runtime)')
 console.log('  - dist/legacy/           (original web edition, served at /legacy/)')
-console.log('  - dist/.nojekyll')
+console.log('  - dist/.nojekyll + CNAME')
