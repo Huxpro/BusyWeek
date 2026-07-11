@@ -9,7 +9,7 @@
 // relative, so the result works under the GitHub Pages project subpath.
 
 import { createRequire } from 'node:module'
-import { cp, mkdir, copyFile, access } from 'node:fs/promises'
+import { cp, mkdir, copyFile, access, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,8 +37,11 @@ const runtimeSrc = path.join(
 await mkdir(dist, { recursive: true })
 await cp(runtimeSrc, path.join(dist, 'static'), { recursive: true })
 await copyFile(path.join(root, 'web', 'index.html'), path.join(dist, 'index.html'))
+// Disable Jekyll so GitHub Pages serves the runtime folders/files verbatim.
+await writeFile(path.join(dist, '.nojekyll'), '')
 
 console.log('✓ Assembled static web site in dist/')
 console.log('  - dist/index.html        (host page)')
 console.log('  - dist/main.web.bundle   (app)')
 console.log('  - dist/static/           (Lynx web runtime)')
+console.log('  - dist/.nojekyll')

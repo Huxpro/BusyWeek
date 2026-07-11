@@ -47,8 +47,12 @@ rendered in a browser via `@lynx-js/web-core`. The deployed site lives at:
 > **https://huxpro.github.io/BusyWeek/**
 
 It is published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
-GitHub Actions workflow on every push to `master`. To build the static site
-locally:
+GitHub Actions workflow, which builds the site and pushes it to the `gh-pages`
+branch (the branch this repo's Pages already serves) on every push to `master`
+— so merging updates the live site with no repo settings change. You can also
+run the workflow manually from any branch via **Actions → Run workflow**.
+
+To build the static site locally:
 
 ```bash
 npm run build:web   # rspeedy build + bundles the Lynx web runtime into dist/
@@ -56,11 +60,9 @@ npx serve dist      # serve dist/ and open index.html
 ```
 
 `build:web` produces a fully self-contained `dist/` (host `index.html`,
-`main.web.bundle`, and the `@lynx-js/web-core` runtime under `static/`) with
-relative URLs, so it works under the GitHub Pages project subpath.
-
-> **One-time setup:** in the repo, **Settings → Pages → Build and deployment →
-> Source: GitHub Actions**. After that, pushes to `master` deploy automatically.
+`main.web.bundle`, a `.nojekyll` marker, and the `@lynx-js/web-core` runtime
+under `static/`) with relative URLs, so it works under the GitHub Pages project
+subpath.
 
 ### Project layout
 
