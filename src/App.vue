@@ -5,10 +5,10 @@ import './App.css'
 import type { Filter, Timeline, Todo } from './types.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import {
+  getDateDiff,
   getDay,
   getDayType,
   getDiffDate,
-  getPickerLabel,
   getTodayDate,
 } from './util.js'
 
@@ -20,12 +20,25 @@ const timeline = ref<Timeline>({})
 const activeFilter = ref<Filter>('all')
 const editingId = ref<string | null>(null)
 
-// the "new todo" being composed in INPUT mode
+// the "new todo" being composed on the add page
 const newTodoText = ref('')
-const newTodoDayType = ref(0)
+const newTodoDate = ref(getTodayDate())
 
-// the day-picker offers the same relative days as the original <select>
+// quick relative-day picks (the "select" from the original)
 const dayTypes = [0, 1, 2, 3, 4, 5, 6, 7]
+const DAY_LABELS = ['今天', '明天', '后天', '大后天', '第五天', '第六天', '第七天', '下周今天']
+function quickLabel(dayType: number): string {
+  return DAY_LABELS[dayType] ?? `${dayType}天后`
+}
+
+// day-type + weekday label for the currently chosen date
+const dayTypeLabel = computed(
+  () => `${getDayType(newTodoDate.value)} ${getDay(newTodoDate.value)}`,
+)
+// which quick-pick (if any) matches the chosen date
+const activeOffset = computed(() =>
+  getDateDiff(newTodoDate.value, getTodayDate()),
+)
 
 const filters: { value: Filter; label: string }[] = [
   { value: 'all', label: '全部' },
@@ -44,11 +57,6 @@ onMounted(async () => {
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
 // --- derived view ----------------------------------------------------------
-/**
- * Days sorted by date, with each day's todos filtered by the active filter.
- * Days left with no matching todos are dropped — same behaviour as the
- * original `ifDayShow` / `ifTodoShow` pair.
- */
 const visibleDays = computed(() => {
   const tl = timeline.value
   return Object.keys(tl)
@@ -72,21 +80,30 @@ function isToday(dateStr: string): boolean {
 }
 
 function genId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
 // --- actions ---------------------------------------------------------------
+function openInput() {
+  newTodoText.value = ''
+  newTodoDate.value = getTodayDate()
+  state.value = 'INPUT'
+}
+function closeInput() {
+  state.value = 'LIST'
+}
 function toggleInput() {
-  state.value = state.value === 'LIST' ? 'INPUT' : 'LIST'
+  if (state.value === 'LIST') openInput()
+  else closeInput()
 }
 
 function selectDayType(dayType: number) {
-  newTodoDayType.value = dayType
+  newTodoDate.value = getDiffDate(dayType)
 }
 
 function addTodo() {
-  const dayType = newTodoDayType.value
-  const date = getDiffDate(dayType)
+  const date = newTodoDate.value
+  const dayType = getDateDiff(date, getTodayDate())
   const text = newTodoText.value.trim() || '写点啥呀！'
 
   const tl = timeline.value
@@ -94,10 +111,7 @@ function addTodo() {
     tl[date] = { date, todos: [] }
   }
   tl[date].todos.push({ id: genId(), date, dayType, done: false, text })
-
-  // reset composer but keep the chosen day, then return to the list
-  newTodoText.value = ''
-  state.value = 'LIST'
+  closeInput()
 }
 
 function checkTodo(todo: Todo) {
@@ -129,41 +143,34 @@ function removeTodo(dayKey: string, id: string) {
 
 <template>
   <view class="app">
-    <!-- App bar -->
-    <view class="app-bar">
-      <view
-        v-if="state === 'INPUT'"
-        class="app-bar-action"
-        @tap="toggleInput"
-      >
-        <text class="app-bar-action-text">‹</text>
+    <!-- ===== Pinned header (never scrolls) ===== -->
+    <view class="header">
+      <view class="app-bar">
+        <text class="logo">BusyWeek!</text>
+        <text class="logo-accent">好忙啊</text>
       </view>
-      <text class="logo">BusyWeek!</text>
-      <text class="logo-accent">好忙啊</text>
-    </view>
-
-    <!-- Filter tabs with a sliding indicator -->
-    <view class="filters">
-      <view
-        v-for="f in filters"
-        :key="f.value"
-        class="filter"
-        @tap="activeFilter = f.value"
-      >
-        <text
-          class="filter-text"
-          :class="{ 'filter-text--active': activeFilter === f.value }"
-          >{{ f.label }}</text
+      <view class="filters">
+        <view
+          v-for="f in filters"
+          :key="f.value"
+          class="filter"
+          @tap="activeFilter = f.value"
         >
+          <text
+            class="filter-text"
+            :class="{ 'filter-text--active': activeFilter === f.value }"
+            >{{ f.label }}</text
+          >
+        </view>
+        <view
+          class="filter-indicator"
+          :style="{ transform: `translateX(${filterIndex * 100}%)` }"
+        />
       </view>
-      <view
-        class="filter-indicator"
-        :style="{ transform: `translateX(${filterIndex * 100}%)` }"
-      />
     </view>
 
-    <!-- LIST mode: the timeline -->
-    <scroll-view v-if="state === 'LIST'" class="timeline">
+    <!-- ===== Only this list scrolls ===== -->
+    <scroll-view class="timeline">
       <view v-if="isEmpty" class="empty">
         <view class="empty-badge"><text class="empty-badge-text">✓</text></view>
         <text class="empty-text">这周还不忙</text>
@@ -200,7 +207,6 @@ function removeTodo(dayKey: string, id: string) {
               >✓</text
             >
           </view>
-
           <view class="todo-body">
             <text
               v-if="editingId !== todo.id"
@@ -217,56 +223,66 @@ function removeTodo(dayKey: string, id: string) {
               @confirm="finishEdit(day.key, todo)"
             />
           </view>
-
           <view class="delete" @tap="removeTodo(day.key, todo.id)">
             <text class="delete-text">✕</text>
           </view>
         </view>
       </view>
 
-      <!-- bottom spacer so the FAB never covers the last item -->
       <view class="timeline-spacer" />
     </scroll-view>
 
-    <!-- INPUT mode: compose a new todo -->
-    <view v-else class="composer">
-      <view class="composer-card">
-        <textarea
-          class="composer-input"
-          v-model="newTodoText"
-          placeholder="又有事情忙啦？"
-        />
-      </view>
-
-      <text class="composer-label">什么时候？</text>
-      <scroll-view scroll-orientation="horizontal" class="picker">
-        <view
-          v-for="t in dayTypes"
-          :key="t"
-          class="chip"
-          :class="{ 'chip--active': newTodoDayType === t }"
-          @tap="selectDayType(t)"
-        >
-          <text
-            class="chip-text"
-            :class="{ 'chip-text--active': newTodoDayType === t }"
-            >{{ getPickerLabel(t) }}</text
-          >
-        </view>
-      </scroll-view>
-
-      <view class="add-btn" @tap="addTodo">
-        <text class="add-btn-text">添加</text>
-      </view>
+    <!-- ===== Floating action button (list mode) ===== -->
+    <view v-if="state === 'LIST'" class="fab" @tap="openInput">
+      <text class="fab-icon">＋</text>
     </view>
 
-    <!-- Floating action button (morphs + -> x) -->
-    <view
-      class="fab"
-      :class="{ 'fab--close': state === 'INPUT' }"
-      @tap="toggleInput"
-    >
-      <text class="fab-icon">＋</text>
+    <!-- ===== Full-screen add page (slides down from the top) ===== -->
+    <view class="addpage" :class="{ 'addpage--open': state === 'INPUT' }">
+      <view class="addpage-bar">
+        <view class="addpage-back" @tap="closeInput">
+          <text class="addpage-back-text">‹</text>
+        </view>
+        <text class="addpage-title">添加事项</text>
+      </view>
+
+      <view class="addpage-input-wrap">
+        <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
+        <textarea class="addpage-input" v-model="newTodoText" />
+      </view>
+
+      <view class="addpage-bottom">
+        <scroll-view scroll-orientation="horizontal" class="addpage-chips">
+          <view
+            v-for="t in dayTypes"
+            :key="t"
+            class="qchip"
+            :class="{ 'qchip--active': activeOffset === t }"
+            @tap="selectDayType(t)"
+          >
+            <text
+              class="qchip-text"
+              :class="{ 'qchip-text--active': activeOffset === t }"
+              >{{ quickLabel(t) }}</text
+            >
+          </view>
+        </scroll-view>
+
+        <view class="addpage-row">
+          <view class="addpage-daytype">
+            <text class="addpage-daytype-text">{{ dayTypeLabel }}</text>
+          </view>
+          <!-- native <input type="date"> -> native calendar on Lynx for Web -->
+          <input
+            class="addpage-date"
+            type="date"
+            v-model="newTodoDate"
+          />
+          <view class="addpage-submit" @tap="addTodo">
+            <text class="addpage-submit-text">添加</text>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
