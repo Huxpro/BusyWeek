@@ -32,6 +32,9 @@ const filters: { value: Filter; label: string }[] = [
   { value: 'active', label: '在忙' },
   { value: 'done', label: '完成' },
 ]
+const filterIndex = computed(() =>
+  Math.max(0, filters.findIndex((f) => f.value === activeFilter.value)),
+)
 
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
@@ -128,19 +131,23 @@ function removeTodo(dayKey: string, id: string) {
   <view class="app">
     <!-- App bar -->
     <view class="app-bar">
-      <view v-if="state === 'INPUT'" class="app-bar-action" @tap="toggleInput">
+      <view
+        v-if="state === 'INPUT'"
+        class="app-bar-action"
+        @tap="toggleInput"
+      >
         <text class="app-bar-action-text">‹</text>
       </view>
       <text class="logo">BusyWeek!</text>
+      <text class="logo-accent">好忙啊</text>
     </view>
 
-    <!-- Filter tabs -->
+    <!-- Filter tabs with a sliding indicator -->
     <view class="filters">
       <view
         v-for="f in filters"
         :key="f.value"
         class="filter"
-        :class="{ 'filter--active': activeFilter === f.value }"
         @tap="activeFilter = f.value"
       >
         <text
@@ -149,20 +156,31 @@ function removeTodo(dayKey: string, id: string) {
           >{{ f.label }}</text
         >
       </view>
+      <view
+        class="filter-indicator"
+        :style="{ transform: `translateX(${filterIndex * 100}%)` }"
+      />
     </view>
 
     <!-- LIST mode: the timeline -->
     <scroll-view v-if="state === 'LIST'" class="timeline">
       <view v-if="isEmpty" class="empty">
-        <text class="empty-text">这周还不忙，点 + 添加事项吧</text>
+        <view class="empty-badge"><text class="empty-badge-text">✓</text></view>
+        <text class="empty-text">这周还不忙</text>
+        <text class="empty-hint">点右下角 + 添加事项吧</text>
       </view>
 
       <view v-for="day in visibleDays" :key="day.key" class="day-group">
         <view class="day-header">
-          <text class="day-type" :class="{ 'day-type--today': isToday(day.key) }">{{
-            getDayType(day.key)
-          }}</text>
-          <text class="day-date">{{ day.key }} {{ getDay(day.key) }}</text>
+          <view class="day-type-wrap">
+            <view v-if="isToday(day.key)" class="today-dot" />
+            <text
+              class="day-type"
+              :class="{ 'day-type--today': isToday(day.key) }"
+              >{{ getDayType(day.key) }}</text
+            >
+          </view>
+          <text class="day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
         </view>
 
         <view
@@ -176,7 +194,11 @@ function removeTodo(dayKey: string, id: string) {
             :class="{ 'checkbox--checked': todo.done }"
             @tap="checkTodo(todo)"
           >
-            <text v-if="todo.done" class="checkbox-mark">✓</text>
+            <text
+              class="checkbox-mark"
+              :class="{ 'checkbox-mark--on': todo.done }"
+              >✓</text
+            >
           </view>
 
           <view class="todo-body">
@@ -208,11 +230,13 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- INPUT mode: compose a new todo -->
     <view v-else class="composer">
-      <textarea
-        class="composer-input"
-        v-model="newTodoText"
-        placeholder="又有事情忙啦？"
-      />
+      <view class="composer-card">
+        <textarea
+          class="composer-input"
+          v-model="newTodoText"
+          placeholder="又有事情忙啦？"
+        />
+      </view>
 
       <text class="composer-label">什么时候？</text>
       <scroll-view scroll-orientation="horizontal" class="picker">
@@ -236,9 +260,13 @@ function removeTodo(dayKey: string, id: string) {
       </view>
     </view>
 
-    <!-- Floating action button -->
-    <view class="fab" :class="{ 'fab--close': state === 'INPUT' }" @tap="toggleInput">
-      <text class="fab-icon">{{ state === 'INPUT' ? '✕' : '+' }}</text>
+    <!-- Floating action button (morphs + -> x) -->
+    <view
+      class="fab"
+      :class="{ 'fab--close': state === 'INPUT' }"
+      @tap="toggleInput"
+    >
+      <text class="fab-icon">＋</text>
     </view>
   </view>
 </template>
