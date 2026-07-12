@@ -101,7 +101,14 @@ function selectDayType(dayType: number) {
   newTodoDate.value = getDiffDate(dayType)
 }
 
+// keyboard dismiss: blur the textarea (hides the soft keyboard)
+const taEl = ref<{ blur?: () => void } | null>(null)
+function dismissKb() {
+  taEl.value?.blur?.()
+}
+
 function addTodo() {
+  dismissKb()
   const date = newTodoDate.value
   const dayType = getDateDiff(date, getTodayDate())
   const text = newTodoText.value.trim() || '写点啥呀！'
@@ -239,7 +246,7 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- ===== Full-screen add page (slides down from the top) ===== -->
     <view class="addpage" :class="{ 'addpage--open': state === 'INPUT' }">
-      <view class="addpage-bar">
+      <view class="addpage-bar" @tap="dismissKb">
         <view class="addpage-back" @tap="closeInput">
           <text class="addpage-back-text">‹</text>
         </view>
@@ -248,10 +255,11 @@ function removeTodo(dayKey: string, id: string) {
 
       <view class="addpage-input-wrap">
         <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
-        <textarea class="addpage-input" v-model="newTodoText" />
+        <textarea ref="taEl" class="addpage-input" v-model="newTodoText" />
       </view>
 
       <view class="addpage-bottom">
+        <!-- quick relative-day picks (Lynx-native; work on web and native) -->
         <scroll-view scroll-orientation="horizontal" class="addpage-chips">
           <view
             v-for="t in dayTypes"
@@ -273,11 +281,7 @@ function removeTodo(dayKey: string, id: string) {
             <text class="addpage-daytype-text">{{ dayTypeLabel }}</text>
           </view>
           <!-- native <input type="date"> -> native calendar on Lynx for Web -->
-          <input
-            class="addpage-date"
-            type="date"
-            v-model="newTodoDate"
-          />
+          <input class="addpage-date" type="date" v-model="newTodoDate" />
           <view class="addpage-submit" @tap="addTodo">
             <text class="addpage-submit-text">添加</text>
           </view>

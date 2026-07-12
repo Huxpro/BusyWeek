@@ -19,16 +19,29 @@
     <script type="module" src="./static/js/client.js"></script>
     <link rel="stylesheet" href="./static/css/client.css" />
     <style>
+      /* Lock the outer container: no page scroll / rubber-band; the app owns
+         the whole viewport and only its inner list scrolls. */
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #f0f0f0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #29b6f6; /* blue fallback behind the top status bar */
       }
+      body {
+        position: fixed;
+        inset: 0;
+        -webkit-user-select: none;
+      }
+      /* The Lynx viewport tracks the visual viewport so the on-screen keyboard
+         pushes the app's bottom controls up instead of covering them. */
       lynx-view {
-        display: block;
-        height: 100vh;
-        width: 100vw;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
         border: none;
       }
 
@@ -36,7 +49,7 @@
       #lynx-bundle {
         position: fixed;
         right: 12px;
-        top: 12px;
+        top: calc(12px + env(safe-area-inset-top));
         z-index: 2147483647;
         display: flex;
         align-items: center;
@@ -75,6 +88,25 @@
   <body>
     <!-- `url` is relative, so this works under any base path. -->
     <lynx-view url="./main.web.bundle" height="100vh" width="100vw"></lynx-view>
+
+    <script>
+      // Keyboard avoidance (web): resize the Lynx viewport to the visual
+      // viewport so the soft keyboard pushes the app's bottom bar up rather
+      // than covering it. iOS Safari shrinks visualViewport when the keyboard
+      // shows; we mirror that onto <lynx-view>.
+      (function () {
+        var vv = window.visualViewport
+        var el = document.querySelector('lynx-view')
+        if (!vv || !el) return
+        function sync() {
+          el.style.height = vv.height + 'px'
+          el.style.transform = 'translateY(' + vv.offsetTop + 'px)'
+        }
+        vv.addEventListener('resize', sync)
+        vv.addEventListener('scroll', sync)
+        sync()
+      })()
+    </script>
 
     <!-- Copy the native Lynx bundle URL (open it in Lynx Explorer). -->
     <button id="lynx-bundle" type="button">

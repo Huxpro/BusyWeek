@@ -4,7 +4,7 @@
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   background-color: #eef1f5;
   animation: app-in 0.45s ease both;
@@ -18,6 +18,9 @@
 .header {
   position: relative;
   z-index: 10;
+  /* fill the top safe area with the app-bar blue (status bar backdrop) */
+  padding-top: env(safe-area-inset-top);
+  background-color: #29b6f6;
 }
 
 .app-bar {
@@ -213,13 +216,13 @@
 .delete:active { background-color: #ffecec; }
 .delete-text { color: #d6dbe0; font-size: 15px; }
 
-.timeline-spacer { height: 104px; }
+.timeline-spacer { height: calc(104px + env(safe-area-inset-bottom)); }
 
 /* ===== Floating action button ===== */
 .fab {
   position: fixed;
   right: 22px;
-  bottom: 26px;
+  bottom: calc(26px + env(safe-area-inset-bottom));
   width: 58px;
   height: 58px;
   border-radius: 29px;
@@ -258,7 +261,8 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   padding-left: 10px;
   padding-right: 18px;
 }
@@ -314,7 +318,7 @@
 }
 
 .addpage-bottom {
-  padding-bottom: 34px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
   padding-top: 6px;
 }
 
@@ -353,10 +357,7 @@
   padding-left: 18px;
   padding-right: 18px;
 }
-.addpage-daytype {
-  display: flex;
-  align-items: center;
-}
+.addpage-daytype { display: flex; align-items: center; }
 .addpage-daytype-text {
   color: #ffffff;
   font-size: 15px;
@@ -368,7 +369,7 @@
   margin-left: 12px;
   margin-right: 12px;
   padding-left: 14px;
-  padding-right: 14px;
+  padding-right: 10px;
   border-radius: 22px;
   background-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
