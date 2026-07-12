@@ -52,6 +52,23 @@ const filterIndex = computed(() =>
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
   timeline.value = await loadTimeline()
+
+  // Bridge the native <select> (main thread) into this background worker:
+  // the host page forwards its change via lynx-view.sendGlobalEvent('daySelect'),
+  // which arrives here through Lynx's GlobalEventEmitter. `lynx` is a global
+  // injected by the runtime in the background thread.
+  const lynxApi = (typeof lynx !== 'undefined' ? lynx : undefined) as
+    | {
+        getJSModule?: (n: string) => {
+          addListener?: (n: string, cb: (...a: unknown[]) => void) => void
+        }
+      }
+    | undefined
+  const emitter = lynxApi?.getJSModule?.('GlobalEventEmitter')
+  emitter?.addListener?.('daySelect', (value: unknown) => {
+    const v = String(value)
+    if (v && v !== 'custom') newTodoDate.value = getDiffDate(Number(v))
+  })
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -97,8 +114,13 @@ function toggleInput() {
   else closeInput()
 }
 
-function selectDayType(dayType: number) {
-  newTodoDate.value = getDiffDate(dayType)
+// native <select> value: a preset offset (0-7) or 'custom' for arbitrary dates
+const selectValue = computed(() => {
+  const o = activeOffset.value
+  return o >= 0 && o <= 7 ? String(o) : 'custom'
+})
+function optionLabel(dayType: number): string {
+  return `${quickLabel(dayType)} ${getDay(getDiffDate(dayType))}`
 }
 
 // keyboard dismiss: blur the textarea (hides the soft keyboard)
@@ -259,27 +281,23 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="addpage-bottom">
-        <!-- quick relative-day picks (Lynx-native; work on web and native) -->
-        <scroll-view scroll-orientation="horizontal" class="addpage-chips">
-          <view
-            v-for="t in dayTypes"
-            :key="t"
-            class="qchip"
-            :class="{ 'qchip--active': activeOffset === t }"
-            @tap="selectDayType(t)"
-          >
-            <text
-              class="qchip-text"
-              :class="{ 'qchip-text--active': activeOffset === t }"
-              >{{ quickLabel(t) }}</text
-            >
-          </view>
-        </scroll-view>
-
         <view class="addpage-row">
-          <view class="addpage-daytype">
-            <text class="addpage-daytype-text">{{ dayTypeLabel }}</text>
-          </view>
+          <!-- native <select> — real HTMLSelectElement on Lynx-for-Web. Its
+               change is bridged to this worker by the host page via
+               sendGlobalEvent('daySelect') (see web/index.html). -->
+          <select
+            class="addpage-select"
+            data-lynx-global-event="daySelect"
+            :value="selectValue"
+          >
+            <option v-if="selectValue === 'custom'" value="custom" :label="dayTypeLabel" />
+            <option
+              v-for="t in dayTypes"
+              :key="t"
+              :value="String(t)"
+              :label="optionLabel(t)"
+            />
+          </select>
           <!-- native <input type="date"> -> native calendar on Lynx for Web -->
           <input class="addpage-date" type="date" v-model="newTodoDate" />
           <view class="addpage-submit" @tap="addTodo">
