@@ -45,14 +45,14 @@ Both editions are deployed side by side, so you can compare them live:
 
 | URL | Edition |
 | --- | --- |
-| **https://huxpro.github.io/BusyWeek/** | Vue Lynx version (on the Lynx Web Platform via `@lynx-js/web-core`) |
-| **https://huxpro.github.io/BusyWeek/legacy/** | the original Vue 0.12 web edition |
+| **https://huangxuan.me/BusyWeek/** | Vue Lynx version (on the Lynx Web Platform via `@lynx-js/web-core`) |
+| **https://huangxuan.me/BusyWeek/legacy/** | the original Vue 0.12 web edition |
 
 They are published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
-GitHub Actions workflow, which builds the site and pushes it to the `gh-pages`
-branch (the branch this repo's Pages already serves) on every push to `master`
-— so merging updates the live site with no repo settings change. You can also
-run the workflow manually from any branch via **Actions → Run workflow**.
+GitHub Actions workflow on every push to `master` (and via **Actions → Run
+workflow**). It requires **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. The build emits a `CNAME`, so the custom domain
+(`huangxuan.me`) is preserved on every deploy.
 
 To build the static site locally:
 
@@ -68,6 +68,7 @@ works under the GitHub Pages project subpath:
 - `legacy/` — the original web app (`/legacy/`), with its dead LeanCloud SDK
   stubbed so it boots without the CDN (login / cloud-sync are inert)
 - `.nojekyll` — so Pages serves the runtime folders verbatim
+- `CNAME` — preserves the `huangxuan.me` custom domain across deploys
 
 ### Project layout
 
