@@ -208,24 +208,26 @@ function startEdit(todo: Todo) {
 // v-todo-focus). web: the element exposes focus(); native: invoke the blur/
 // focus UI method via SelectorQuery on the element's id.
 const vFocus = {
-  mounted(el: { focus?: () => void; id?: string }) {
-    const doFocus = () => {
-      el?.focus?.()
+  // binding.value is the element's `id` ATTRIBUTE (el.id here would be Lynx's
+  // internal numeric node id, not the selector we set).
+  mounted(el: { focus?: () => void }, binding: { value?: string }) {
+    const id = binding?.value
+    const focus = () => {
+      el?.focus?.() // web: no-op across the worker boundary, harmless
+      if (typeof lynx === 'undefined' || !id) return
       try {
-        if (typeof lynx !== 'undefined' && el?.id) {
-          ;(lynx as unknown as { createSelectorQuery: () => any })
-            .createSelectorQuery()
-            .select(`#${el.id}`)
-            .invoke({ method: 'focus' })
-            .exec()
-        }
+        ;(lynx as unknown as { createSelectorQuery: () => any })
+          .createSelectorQuery()
+          .select(`#${id}`)
+          // fail cb is required — without it a missing node throws uncaught
+          .invoke({ method: 'focus', fail: () => {} })
+          .exec()
       } catch {
-        /* focus unsupported here — falls back to tapping the field again */
+        /* ignore — falls back to tapping the field again */
       }
     }
-    // run now and once more after the element is committed to the main thread
-    doFocus()
-    Promise.resolve().then(doFocus)
+    // defer so the input is committed to the native tree before we query it
+    Promise.resolve().then(focus)
   },
 }
 
@@ -327,7 +329,7 @@ function removeTodo(dayKey: string, id: string) {
             >
             <input
               v-else
-              v-focus
+              v-focus="'edit-' + todo.id"
               :id="'edit-' + todo.id"
               class="todo-input"
               v-model="todo.text"
