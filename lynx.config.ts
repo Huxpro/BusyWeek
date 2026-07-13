@@ -5,8 +5,10 @@ import { pluginVueLynx } from 'vue-lynx/plugin'
 
 export default defineConfig({
   environments: {
-    lynx: {},
-    web: {},
+    // Native (iOS/Android) — no web <select> / <input type="date">.
+    lynx: { source: { define: { __WEB__: false } } },
+    // Lynx Web Platform — native HTML form controls are available.
+    web: { source: { define: { __WEB__: true } } },
   },
   plugins: [
     pluginQRCode({

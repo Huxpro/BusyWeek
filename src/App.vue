@@ -14,6 +14,10 @@ import {
 
 type AppState = 'LIST' | 'INPUT'
 
+// Web vs native: the web build can use real <select> / <input type="date">;
+// the native (iOS/Android) build cannot, and uses Lynx-native chips instead.
+const isWeb = __WEB__
+
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
@@ -53,22 +57,24 @@ const filterIndex = computed(() =>
 onMounted(async () => {
   timeline.value = await loadTimeline()
 
-  // Bridge the native <select> (main thread) into this background worker:
-  // the host page forwards its change via lynx-view.sendGlobalEvent('daySelect'),
-  // which arrives here through Lynx's GlobalEventEmitter. `lynx` is a global
-  // injected by the runtime in the background thread.
-  const lynxApi = (typeof lynx !== 'undefined' ? lynx : undefined) as
-    | {
-        getJSModule?: (n: string) => {
-          addListener?: (n: string, cb: (...a: unknown[]) => void) => void
+  // Web only: bridge the native <select> (main thread) into this background
+  // worker. The host page forwards its change via
+  // lynx-view.sendGlobalEvent('daySelect'), which arrives here through Lynx's
+  // GlobalEventEmitter. `lynx` is a runtime-injected global.
+  if (isWeb) {
+    const lynxApi = (typeof lynx !== 'undefined' ? lynx : undefined) as
+      | {
+          getJSModule?: (n: string) => {
+            addListener?: (n: string, cb: (...a: unknown[]) => void) => void
+          }
         }
-      }
-    | undefined
-  const emitter = lynxApi?.getJSModule?.('GlobalEventEmitter')
-  emitter?.addListener?.('daySelect', (value: unknown) => {
-    const v = String(value)
-    if (v && v !== 'custom') newTodoDate.value = getDiffDate(Number(v))
-  })
+      | undefined
+    const emitter = lynxApi?.getJSModule?.('GlobalEventEmitter')
+    emitter?.addListener?.('daySelect', (value: unknown) => {
+      const v = String(value)
+      if (v && v !== 'custom') newTodoDate.value = getDiffDate(Number(v))
+    })
+  }
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -112,6 +118,11 @@ function closeInput() {
 function toggleInput() {
   if (state.value === 'LIST') openInput()
   else closeInput()
+}
+
+// native day-type chips (used on the native build)
+function selectDayType(dayType: number) {
+  newTodoDate.value = getDiffDate(dayType)
 }
 
 // native <select> value: a preset offset (0-7) or 'custom' for arbitrary dates
@@ -281,10 +292,10 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="addpage-bottom">
-        <view class="addpage-row">
-          <!-- native <select> — real HTMLSelectElement on Lynx-for-Web. Its
-               change is bridged to this worker by the host page via
-               sendGlobalEvent('daySelect') (see web/index.html). -->
+        <!-- ===== Web: native <select> + native <input type="date"> ===== -->
+        <view v-if="isWeb" class="addpage-row">
+          <!-- real HTMLSelectElement on Lynx-for-Web; its change is bridged to
+               this worker by the host page via sendGlobalEvent('daySelect'). -->
           <select
             class="addpage-select"
             data-lynx-global-event="daySelect"
@@ -298,12 +309,39 @@ function removeTodo(dayKey: string, id: string) {
               :label="optionLabel(t)"
             />
           </select>
-          <!-- native <input type="date"> -> native calendar on Lynx for Web -->
+          <!-- native calendar on Lynx for Web -->
           <input class="addpage-date" type="date" v-model="newTodoDate" />
           <view class="addpage-submit" @tap="addTodo">
             <text class="addpage-submit-text">添加</text>
           </view>
         </view>
+
+        <!-- ===== Native (iOS/Android): Lynx-native chips ===== -->
+        <template v-else>
+          <scroll-view scroll-orientation="horizontal" class="addpage-chips">
+            <view
+              v-for="t in dayTypes"
+              :key="t"
+              class="qchip"
+              :class="{ 'qchip--active': activeOffset === t }"
+              @tap="selectDayType(t)"
+            >
+              <text
+                class="qchip-text"
+                :class="{ 'qchip-text--active': activeOffset === t }"
+                >{{ quickLabel(t) }}</text
+              >
+            </view>
+          </scroll-view>
+          <view class="addpage-row">
+            <view class="addpage-daytype">
+              <text class="addpage-daytype-text">{{ dayTypeLabel }}</text>
+            </view>
+            <view class="addpage-submit" @tap="addTodo">
+              <text class="addpage-submit-text">添加</text>
+            </view>
+          </view>
+        </template>
       </view>
     </view>
   </view>
