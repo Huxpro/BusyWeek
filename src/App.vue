@@ -94,7 +94,30 @@ function toggleInput() {
 // keyboard dismiss: blur the textarea (hides the soft keyboard)
 const taEl = ref<{ blur?: () => void } | null>(null)
 function dismissKb() {
+  // web: the x-textarea custom element exposes blur()
   taEl.value?.blur?.()
+  // native: no DOM blur() — invoke the element's blur UI method via SelectorQuery
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        .invoke({ method: 'blur' })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable (e.g. web runtime) — the blur() above covers it */
+  }
+}
+
+// open a picker sheet, dismissing the keyboard first so it can't overlap
+function openDayPicker() {
+  dismissKb()
+  dayPickerOpen.value = true
+}
+function openDatePicker() {
+  dismissKb()
+  datePickerOpen.value = true
 }
 
 function addTodo() {
@@ -243,28 +266,36 @@ function removeTodo(dayKey: string, id: string) {
         <text class="addpage-title">添加事项</text>
       </view>
 
-      <view class="addpage-input-wrap">
+      <!-- constrained composer card (kept in the top region so the soft
+           keyboard, which covers the bottom half, never hides the controls) -->
+      <view class="addpage-card">
         <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
-        <textarea ref="taEl" class="addpage-input" v-model="newTodoText" />
+        <textarea
+          id="addpage-ta"
+          ref="taEl"
+          class="addpage-input"
+          v-model="newTodoText"
+        />
       </view>
 
-      <view class="addpage-bottom">
-        <view class="addpage-row">
-          <!-- day-type field → opens the cross-platform day picker sheet -->
-          <view class="addpage-field" @tap="dayPickerOpen = true">
-            <text class="addpage-field-text">{{ dayTypeLabel }}</text>
-            <text class="addpage-field-caret">▾</text>
-          </view>
-          <!-- date field → opens the cross-platform calendar sheet -->
-          <view class="addpage-field" @tap="datePickerOpen = true">
-            <text class="addpage-field-text">{{ prettyDate }}</text>
-            <text class="addpage-field-caret">📅</text>
-          </view>
-          <view class="addpage-submit" @tap="addTodo">
-            <text class="addpage-submit-text">添加</text>
-          </view>
+      <view class="addpage-row">
+        <!-- day-type field → opens the cross-platform day picker sheet -->
+        <view class="addpage-field" @tap="openDayPicker">
+          <text class="addpage-field-text">{{ dayTypeLabel }}</text>
+          <text class="addpage-field-caret">▾</text>
+        </view>
+        <!-- date field → opens the cross-platform calendar sheet -->
+        <view class="addpage-field" @tap="openDatePicker">
+          <text class="addpage-field-text">{{ prettyDate }}</text>
+          <text class="addpage-field-caret">📅</text>
+        </view>
+        <view class="addpage-submit" @tap="addTodo">
+          <text class="addpage-submit-text">添加</text>
         </view>
       </view>
+
+      <!-- fills the rest of the screen; tapping it dismisses the keyboard -->
+      <view class="addpage-dismiss" @tap="dismissKb" />
     </view>
 
     <!-- ===== Cross-platform pickers (Lynx primitives; web + native) ===== -->

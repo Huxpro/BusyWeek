@@ -1,7 +1,9 @@
 /* Day-type list (the cross-platform "select"). */
 
+/* Fixed height (not max-height) so the Lynx scroll-view has a bounded box and
+   actually scrolls on native. 8 rows × 52px overflow this, so it scrolls. */
 .dp-list {
-  max-height: 340px;
+  height: 320px;
   padding-top: 4px;
 }
 .dp-item {

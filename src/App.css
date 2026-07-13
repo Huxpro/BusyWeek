@@ -283,43 +283,41 @@
   margin-left: 4px;
 }
 
-.addpage-input-wrap {
-  flex: 1;
+/* Constrained composer card — a fixed-height box near the top, NOT the whole
+   screen. The soft keyboard covers the bottom half, so keeping the input +
+   controls up here means they stay visible on native (which has no
+   keyboard-avoidance event) without any viewport gymnastics. */
+.addpage-card {
   position: relative;
   display: flex;
+  height: 150px;
+  margin-left: 18px;
+  margin-right: 18px;
+  margin-top: 8px;
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.14);
 }
 .addpage-ph {
   position: absolute;
-  top: 22px;
-  left: 22px;
-  right: 22px;
-  font-size: 22px;
-  line-height: 32px;
+  top: 16px;
+  left: 18px;
+  right: 18px;
+  font-size: 20px;
+  line-height: 28px;
   color: rgba(255, 255, 255, 0.68);
 }
+/* On web this Lynx <textarea> renders as a real <textarea>, so strip its
+   default focus outline, border, and resize grip directly (no ::part needed). */
 .addpage-input {
   flex: 1;
-  padding: 22px;
-  font-size: 22px;
-  line-height: 32px;
+  padding: 16px 18px;
+  font-size: 20px;
+  line-height: 28px;
   color: #ffffff;
   background-color: transparent;
   border: none;
-}
-/* strip the inner native textarea's default border/background (web target) */
-.addpage-input::part(textarea) {
-  border: none;
-  background-color: transparent;
-  color: #ffffff;
+  outline: none;
   resize: none;
-}
-.addpage-input::part(textarea)::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.addpage-bottom {
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
-  padding-top: 6px;
 }
 
 .addpage-row {
@@ -328,6 +326,12 @@
   align-items: center;
   padding-left: 18px;
   padding-right: 18px;
+  padding-top: 14px;
+}
+
+/* flexible spacer under the controls; catches taps to dismiss the keyboard */
+.addpage-dismiss {
+  flex: 1;
 }
 /* tappable field that opens a picker sheet (day-type / date) */
 .addpage-field {

@@ -31,7 +31,7 @@ function pick(offset: number) {
         </view>
       </view>
 
-      <scroll-view class="dp-list">
+      <scroll-view class="dp-list" scroll-orientation="vertical">
         <view
           v-for="o in options"
           :key="o"
