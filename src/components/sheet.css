@@ -1,0 +1,68 @@
+/* Shared bottom-sheet presentation for the cross-platform pickers.
+   Built from Lynx primitives only — works on web and native. */
+
+.sheet-root {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* off state: fully transparent + panel pushed down (see --open) */
+  visibility: hidden;
+}
+.sheet-root--open { visibility: visible; }
+
+.sheet-backdrop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 33, 0);
+  transition: background-color 0.3s ease;
+}
+.sheet-root--open .sheet-backdrop {
+  background-color: rgba(15, 23, 33, 0.45);
+}
+
+.sheet-panel {
+  position: relative;
+  background-color: #ffffff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  box-shadow: 0px -6px 24px rgba(20, 40, 70, 0.18);
+  transform: translateY(110%);
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sheet-root--open .sheet-panel { transform: translateY(0); }
+
+.sheet-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding-left: 18px;
+  padding-right: 12px;
+  border-bottom: 1px solid #eef1f4;
+}
+.sheet-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b2f33;
+}
+.sheet-done {
+  padding: 8px 14px;
+  border-radius: 18px;
+}
+.sheet-done:active { background-color: #eef6fd; }
+.sheet-done-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0288d1;
+}

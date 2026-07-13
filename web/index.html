@@ -106,33 +106,6 @@
         vv.addEventListener('scroll', sync)
         sync()
       })()
-
-      // Bridge native form controls (main thread) into the Lynx background
-      // worker. A raw <select>'s `change` doesn't cross into the worker like a
-      // Lynx element's events do, so we catch it here and forward it with
-      // <lynx-view>.sendGlobalEvent(name, [value]). The app subscribes via
-      // lynx.getJSModule('GlobalEventEmitter').addListener(name, ...).
-      ;(function () {
-        var lv = document.querySelector('lynx-view')
-        if (!lv) return
-        function onChange(e) {
-          var t = e.target
-          if (
-            t &&
-            t.tagName === 'SELECT' &&
-            t.hasAttribute('data-lynx-global-event') &&
-            typeof lv.sendGlobalEvent === 'function'
-          ) {
-            lv.sendGlobalEvent(t.getAttribute('data-lynx-global-event'), [t.value])
-          }
-        }
-        function attach() {
-          var root = lv.shadowRoot
-          if (!root) return setTimeout(attach, 120)
-          root.addEventListener('change', onChange, true)
-        }
-        attach()
-      })()
     </script>
 
     <!-- Copy the native Lynx bundle URL (open it in Lynx Explorer). -->

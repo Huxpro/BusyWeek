@@ -4,19 +4,11 @@ import { computed, onMounted, ref, watch } from 'vue-lynx'
 import './App.css'
 import type { Filter, Timeline, Todo } from './types.js'
 import { loadTimeline, saveTimeline } from './store.js'
-import {
-  getDateDiff,
-  getDay,
-  getDayType,
-  getDiffDate,
-  getTodayDate,
-} from './util.js'
+import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
+import DatePickerSheet from './components/DatePickerSheet.vue'
+import DayPickerSheet from './components/DayPickerSheet.vue'
 
 type AppState = 'LIST' | 'INPUT'
-
-// Web vs native: the web build can use real <select> / <input type="date">;
-// the native (iOS/Android) build cannot, and uses Lynx-native chips instead.
-const isWeb = __WEB__
 
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
@@ -28,21 +20,19 @@ const editingId = ref<string | null>(null)
 const newTodoText = ref('')
 const newTodoDate = ref(getTodayDate())
 
-// quick relative-day picks (the "select" from the original)
-const dayTypes = [0, 1, 2, 3, 4, 5, 6, 7]
-const DAY_LABELS = ['今天', '明天', '后天', '大后天', '第五天', '第六天', '第七天', '下周今天']
-function quickLabel(dayType: number): string {
-  return DAY_LABELS[dayType] ?? `${dayType}天后`
-}
+// cross-platform pickers (built from Lynx primitives — work on web + native)
+const dayPickerOpen = ref(false)
+const datePickerOpen = ref(false)
 
 // day-type + weekday label for the currently chosen date
 const dayTypeLabel = computed(
   () => `${getDayType(newTodoDate.value)} ${getDay(newTodoDate.value)}`,
 )
-// which quick-pick (if any) matches the chosen date
-const activeOffset = computed(() =>
-  getDateDiff(newTodoDate.value, getTodayDate()),
-)
+// short "M月D日" for the date field
+const prettyDate = computed(() => {
+  const { month0, day } = parseDate(newTodoDate.value)
+  return `${month0 + 1}月${day}日`
+})
 
 const filters: { value: Filter; label: string }[] = [
   { value: 'all', label: '全部' },
@@ -56,25 +46,6 @@ const filterIndex = computed(() =>
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
   timeline.value = await loadTimeline()
-
-  // Web only: bridge the native <select> (main thread) into this background
-  // worker. The host page forwards its change via
-  // lynx-view.sendGlobalEvent('daySelect'), which arrives here through Lynx's
-  // GlobalEventEmitter. `lynx` is a runtime-injected global.
-  if (isWeb) {
-    const lynxApi = (typeof lynx !== 'undefined' ? lynx : undefined) as
-      | {
-          getJSModule?: (n: string) => {
-            addListener?: (n: string, cb: (...a: unknown[]) => void) => void
-          }
-        }
-      | undefined
-    const emitter = lynxApi?.getJSModule?.('GlobalEventEmitter')
-    emitter?.addListener?.('daySelect', (value: unknown) => {
-      const v = String(value)
-      if (v && v !== 'custom') newTodoDate.value = getDiffDate(Number(v))
-    })
-  }
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -118,20 +89,6 @@ function closeInput() {
 function toggleInput() {
   if (state.value === 'LIST') openInput()
   else closeInput()
-}
-
-// native day-type chips (used on the native build)
-function selectDayType(dayType: number) {
-  newTodoDate.value = getDiffDate(dayType)
-}
-
-// native <select> value: a preset offset (0-7) or 'custom' for arbitrary dates
-const selectValue = computed(() => {
-  const o = activeOffset.value
-  return o >= 0 && o <= 7 ? String(o) : 'custom'
-})
-function optionLabel(dayType: number): string {
-  return `${quickLabel(dayType)} ${getDay(getDiffDate(dayType))}`
 }
 
 // keyboard dismiss: blur the textarea (hides the soft keyboard)
@@ -292,57 +249,34 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="addpage-bottom">
-        <!-- ===== Web: native <select> + native <input type="date"> ===== -->
-        <view v-if="isWeb" class="addpage-row">
-          <!-- real HTMLSelectElement on Lynx-for-Web; its change is bridged to
-               this worker by the host page via sendGlobalEvent('daySelect'). -->
-          <select
-            class="addpage-select"
-            data-lynx-global-event="daySelect"
-            :value="selectValue"
-          >
-            <option v-if="selectValue === 'custom'" value="custom" :label="dayTypeLabel" />
-            <option
-              v-for="t in dayTypes"
-              :key="t"
-              :value="String(t)"
-              :label="optionLabel(t)"
-            />
-          </select>
-          <!-- native calendar on Lynx for Web -->
-          <input class="addpage-date" type="date" v-model="newTodoDate" />
+        <view class="addpage-row">
+          <!-- day-type field → opens the cross-platform day picker sheet -->
+          <view class="addpage-field" @tap="dayPickerOpen = true">
+            <text class="addpage-field-text">{{ dayTypeLabel }}</text>
+            <text class="addpage-field-caret">▾</text>
+          </view>
+          <!-- date field → opens the cross-platform calendar sheet -->
+          <view class="addpage-field" @tap="datePickerOpen = true">
+            <text class="addpage-field-text">{{ prettyDate }}</text>
+            <text class="addpage-field-caret">📅</text>
+          </view>
           <view class="addpage-submit" @tap="addTodo">
             <text class="addpage-submit-text">添加</text>
           </view>
         </view>
-
-        <!-- ===== Native (iOS/Android): Lynx-native chips ===== -->
-        <template v-else>
-          <scroll-view scroll-orientation="horizontal" class="addpage-chips">
-            <view
-              v-for="t in dayTypes"
-              :key="t"
-              class="qchip"
-              :class="{ 'qchip--active': activeOffset === t }"
-              @tap="selectDayType(t)"
-            >
-              <text
-                class="qchip-text"
-                :class="{ 'qchip-text--active': activeOffset === t }"
-                >{{ quickLabel(t) }}</text
-              >
-            </view>
-          </scroll-view>
-          <view class="addpage-row">
-            <view class="addpage-daytype">
-              <text class="addpage-daytype-text">{{ dayTypeLabel }}</text>
-            </view>
-            <view class="addpage-submit" @tap="addTodo">
-              <text class="addpage-submit-text">添加</text>
-            </view>
-          </view>
-        </template>
       </view>
     </view>
+
+    <!-- ===== Cross-platform pickers (Lynx primitives; web + native) ===== -->
+    <DayPickerSheet
+      :open="dayPickerOpen"
+      v-model="newTodoDate"
+      @close="dayPickerOpen = false"
+    />
+    <DatePickerSheet
+      :open="datePickerOpen"
+      v-model="newTodoDate"
+      @close="datePickerOpen = false"
+    />
   </view>
 </template>

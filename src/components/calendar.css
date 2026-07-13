@@ -1,0 +1,86 @@
+/* Month-grid calendar built from Lynx primitives — cross-platform. */
+
+.cal-monthbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.cal-navbtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-navbtn:active { background-color: #eef6fd; }
+.cal-navtext {
+  font-size: 26px;
+  line-height: 26px;
+  color: #0288d1;
+}
+.cal-monthlabel {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b2f33;
+}
+
+.cal-weekrow {
+  display: flex;
+  flex-direction: row;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 4px;
+}
+.cal-weekcell {
+  width: 14.285%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+}
+.cal-weektext {
+  font-size: 12px;
+  color: #9aa1a9;
+}
+
+.cal-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+.cal-cell {
+  width: 14.285%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-cell--empty { }
+.cal-daytext {
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  text-align: center;
+  line-height: 38px;
+  font-size: 15px;
+  color: #2b2f33;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.cal-cell:active .cal-daytext { background-color: #eef6fd; }
+.cal-cell--today .cal-daytext {
+  color: #0288d1;
+  font-weight: 700;
+}
+.cal-cell--selected .cal-daytext {
+  background-color: #03a9f4;
+  color: #ffffff;
+  font-weight: 700;
+}
