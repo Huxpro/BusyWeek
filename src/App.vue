@@ -198,6 +198,37 @@ function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
+// tap a todo's text → swap to the edit <input>; v-focus (below) focuses it
+// on mount so it edits in a single tap.
+function startEdit(todo: Todo) {
+  editingId.value = todo.id
+}
+
+// focus the edit input the instant it appears (mirrors the original's
+// v-todo-focus). web: the element exposes focus(); native: invoke the blur/
+// focus UI method via SelectorQuery on the element's id.
+const vFocus = {
+  mounted(el: { focus?: () => void; id?: string }) {
+    const doFocus = () => {
+      el?.focus?.()
+      try {
+        if (typeof lynx !== 'undefined' && el?.id) {
+          ;(lynx as unknown as { createSelectorQuery: () => any })
+            .createSelectorQuery()
+            .select(`#${el.id}`)
+            .invoke({ method: 'focus' })
+            .exec()
+        }
+      } catch {
+        /* focus unsupported here — falls back to tapping the field again */
+      }
+    }
+    // run now and once more after the element is committed to the main thread
+    doFocus()
+    Promise.resolve().then(doFocus)
+  },
+}
+
 function finishEdit(dayKey: string, todo: Todo) {
   if (editingId.value !== todo.id) return
   editingId.value = null
@@ -284,15 +315,22 @@ function removeTodo(dayKey: string, id: string) {
             >
           </view>
           <view class="todo-body">
-            <!-- always an <input>: a single tap focuses it → edit in one tap
-                 (matching the original's v-todo-focus behaviour). Explicit
-                 :value + @input for the same reason as the composer above. -->
+            <!-- display as text; a single tap swaps to the input, which
+                 v-focus focuses immediately (the original's v-todo-focus
+                 pattern) so editing takes one tap. -->
+            <text
+              v-if="editingId !== todo.id"
+              class="todo-text"
+              :class="{ 'todo-text--done': todo.done }"
+              @tap="startEdit(todo)"
+              >{{ todo.text }}</text
+            >
             <input
+              v-else
+              v-focus
+              :id="'edit-' + todo.id"
               class="todo-input"
-              :class="{ 'todo-input--done': todo.done }"
-              :value="todo.text"
-              @input="todo.text = $event.detail.value"
-              @focus="editingId = todo.id"
+              v-model="todo.text"
               @blur="finishEdit(day.key, todo)"
               @confirm="finishEdit(day.key, todo)"
             />
@@ -331,15 +369,11 @@ function removeTodo(dayKey: string, id: string) {
 
       <view class="addpage-input-wrap">
         <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
-        <!-- explicit :value + @input (Lynx delivers the value in
-             event.detail.value); v-model's directive-injected handler isn't
-             registered in time for the web element to enable the input event. -->
         <textarea
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
-          :value="newTodoText"
-          @input="newTodoText = $event.detail.value"
+          v-model="newTodoText"
         />
       </view>
 
