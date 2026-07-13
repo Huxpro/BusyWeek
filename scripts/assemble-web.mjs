@@ -42,6 +42,15 @@ await mkdir(dist, { recursive: true })
 await cp(runtimeSrc, path.join(dist, 'static'), { recursive: true })
 await copyFile(path.join(root, 'web', 'index.html'), path.join(dist, 'index.html'))
 
+// Web app icons + PWA manifest (cross-platform home-screen / favicon support).
+await cp(path.join(root, 'web', 'icons'), path.join(dist, 'icons'), {
+  recursive: true,
+})
+await copyFile(
+  path.join(root, 'web', 'manifest.webmanifest'),
+  path.join(dist, 'manifest.webmanifest'),
+)
+
 // --- Original edition at /legacy/ -----------------------------------------
 // Copy the original web app verbatim, then neutralize its LeanCloud (AV)
 // dependency: the SDK is loaded from an external CDN and the app's 2015-era

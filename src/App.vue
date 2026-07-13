@@ -143,6 +143,33 @@ function dismissKb() {
   }
 }
 
+// swipe-up-to-close gesture on the add page (it slides down from the top, so
+// an upward flick sends it back up). A deliberate, mostly-vertical drag only,
+// so tapping the textarea / picking a date never triggers it.
+let swipeStartY = 0
+let swipeStartX = 0
+function onAddTouchStart(e: {
+  touches?: { clientX: number; clientY: number }[]
+  changedTouches?: { clientX: number; clientY: number }[]
+}) {
+  const t = e.touches?.[0] ?? e.changedTouches?.[0]
+  swipeStartY = t?.clientY ?? 0
+  swipeStartX = t?.clientX ?? 0
+}
+function onAddTouchEnd(e: {
+  touches?: { clientX: number; clientY: number }[]
+  changedTouches?: { clientX: number; clientY: number }[]
+}) {
+  const t = e.changedTouches?.[0] ?? e.touches?.[0]
+  if (!t) return
+  const up = swipeStartY - t.clientY
+  const dx = Math.abs(t.clientX - swipeStartX)
+  if (up > 80 && up > dx) {
+    dismissKb()
+    closeInput()
+  }
+}
+
 // open a picker sheet, dismissing the keyboard first so it can't overlap
 function openDayPicker() {
   dismissKb()
@@ -219,7 +246,7 @@ function removeTodo(dayKey: string, id: string) {
     </view>
 
     <!-- ===== Only this list scrolls ===== -->
-    <scroll-view class="timeline">
+    <scroll-view class="timeline" scroll-orientation="vertical">
       <view v-if="isEmpty" class="empty">
         <view class="empty-badge"><text class="empty-badge-text">✓</text></view>
         <text class="empty-text">这周还不忙</text>
@@ -258,11 +285,13 @@ function removeTodo(dayKey: string, id: string) {
           </view>
           <view class="todo-body">
             <!-- always an <input>: a single tap focuses it → edit in one tap
-                 (matching the original's v-todo-focus behaviour) -->
+                 (matching the original's v-todo-focus behaviour). Explicit
+                 :value + @input for the same reason as the composer above. -->
             <input
               class="todo-input"
               :class="{ 'todo-input--done': todo.done }"
-              v-model="todo.text"
+              :value="todo.text"
+              @input="todo.text = $event.detail.value"
               @focus="editingId = todo.id"
               @blur="finishEdit(day.key, todo)"
               @confirm="finishEdit(day.key, todo)"
@@ -290,6 +319,8 @@ function removeTodo(dayKey: string, id: string) {
       class="addpage"
       :class="{ 'addpage--open': state === 'INPUT' }"
       :style="{ paddingBottom: keyboardHeight ? `${keyboardHeight}px` : '' }"
+      @touchstart="onAddTouchStart"
+      @touchend="onAddTouchEnd"
     >
       <view class="addpage-bar">
         <view class="addpage-back" @tap="closeInput">
@@ -300,11 +331,15 @@ function removeTodo(dayKey: string, id: string) {
 
       <view class="addpage-input-wrap">
         <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
+        <!-- explicit :value + @input (Lynx delivers the value in
+             event.detail.value); v-model's directive-injected handler isn't
+             registered in time for the web element to enable the input event. -->
         <textarea
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
-          v-model="newTodoText"
+          :value="newTodoText"
+          @input="newTodoText = $event.detail.value"
         />
       </view>
 

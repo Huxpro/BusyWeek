@@ -11,10 +11,13 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  /* off state: fully transparent + panel pushed down (see --open) */
-  visibility: hidden;
+  /* Closed state stays mounted (panel pushed off-screen + backdrop clear) so
+     the slide-down/​fade-out transitions actually play on dismiss. We block
+     interaction with pointer-events (toggles instantly) instead of visibility
+     (which would hide the panel immediately and cut the exit animation). */
+  pointer-events: none;
 }
-.sheet-root--open { visibility: visible; }
+.sheet-root--open { pointer-events: auto; }
 
 .sheet-backdrop {
   position: absolute;
