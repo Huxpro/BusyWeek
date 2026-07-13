@@ -253,7 +253,8 @@
   flex-direction: column;
   background-image: linear-gradient(165deg, #3fb9f6 0%, #2196e8 55%, #1e88e5 100%);
   transform: translateY(-100%);
-  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-bottom 0.25s ease;
 }
 .addpage--open { transform: translateY(0); }
 
@@ -283,36 +284,30 @@
   margin-left: 4px;
 }
 
-/* Constrained composer card — a fixed-height box near the top, NOT the whole
-   screen. The soft keyboard covers the bottom half, so keeping the input +
-   controls up here means they stay visible on native (which has no
-   keyboard-avoidance event) without any viewport gymnastics. */
-.addpage-card {
+/* Full-height composer — the input owns the page; the controls sit in a bar
+   pinned to the bottom, which is lifted above the soft keyboard by the
+   keyboard-avoidance offset (see App.vue / web index.html). */
+.addpage-input-wrap {
+  flex: 1;
   position: relative;
   display: flex;
-  height: 150px;
-  margin-left: 18px;
-  margin-right: 18px;
-  margin-top: 8px;
-  border-radius: 18px;
-  background-color: rgba(255, 255, 255, 0.14);
 }
 .addpage-ph {
   position: absolute;
-  top: 16px;
-  left: 18px;
-  right: 18px;
-  font-size: 20px;
-  line-height: 28px;
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  font-size: 22px;
+  line-height: 32px;
   color: rgba(255, 255, 255, 0.68);
 }
 /* On web this Lynx <textarea> renders as a real <textarea>, so strip its
    default focus outline, border, and resize grip directly (no ::part needed). */
 .addpage-input {
   flex: 1;
-  padding: 16px 18px;
-  font-size: 20px;
-  line-height: 28px;
+  padding: 22px;
+  font-size: 22px;
+  line-height: 32px;
   color: #ffffff;
   background-color: transparent;
   border: none;
@@ -320,18 +315,16 @@
   resize: none;
 }
 
+.addpage-bottom {
+  padding-top: 6px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
 .addpage-row {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding-left: 18px;
   padding-right: 18px;
-  padding-top: 14px;
-}
-
-/* flexible spacer under the controls; catches taps to dismiss the keyboard */
-.addpage-dismiss {
-  flex: 1;
 }
 /* tappable field that opens a picker sheet (day-type / date) */
 .addpage-field {

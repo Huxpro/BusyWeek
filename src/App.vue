@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue-lynx'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue-lynx'
 
 import './App.css'
 import type { Filter, Timeline, Todo } from './types.js'
@@ -24,6 +24,11 @@ const newTodoDate = ref(getTodayDate())
 const dayPickerOpen = ref(false)
 const datePickerOpen = ref(false)
 
+// soft-keyboard height (device-independent px), used to lift the composer's
+// bottom bar clear of the keyboard on native. Driven by Lynx's global
+// `keyboardstatuschanged` event.
+const keyboardHeight = ref(0)
+
 // day-type + weekday label for the currently chosen date
 const dayTypeLabel = computed(
   () => `${getDayType(newTodoDate.value)} ${getDay(newTodoDate.value)}`,
@@ -43,10 +48,38 @@ const filterIndex = computed(() =>
   Math.max(0, filters.findIndex((f) => f.value === activeFilter.value)),
 )
 
+// --- keyboard avoidance (native) -------------------------------------------
+// Lynx has no keyboard-height CSS/viewport primitive, so the documented
+// approach is to listen for the `keyboardstatuschanged` global event and
+// offset the view yourself. `height` is in device-independent px (same unit
+// as Lynx CSS px), so it maps 1:1 onto paddingBottom.
+// https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
+function onKeyboardStatus(status: string, height: number) {
+  keyboardHeight.value = status === 'on' ? height : 0
+}
+let removeKbListener: (() => void) | undefined
+function bindKeyboard() {
+  // Guarded: on Lynx-for-Web the runtime resizes <lynx-view> to the visual
+  // viewport (web/index.html) and does not emit this event, so this no-ops.
+  try {
+    if (typeof lynx === 'undefined') return
+    const emitter = (lynx as any).getJSModule?.('GlobalEventEmitter')
+    if (!emitter?.addListener) return
+    emitter.addListener('keyboardstatuschanged', onKeyboardStatus)
+    removeKbListener = () =>
+      emitter.removeListener?.('keyboardstatuschanged', onKeyboardStatus)
+  } catch {
+    /* GlobalEventEmitter unavailable — web handles avoidance separately */
+  }
+}
+
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
+  bindKeyboard()
   timeline.value = await loadTimeline()
 })
+
+onUnmounted(() => removeKbListener?.())
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
@@ -257,18 +290,23 @@ function removeTodo(dayKey: string, id: string) {
       <text class="fab-icon">＋</text>
     </view>
 
-    <!-- ===== Full-screen add page (slides down from the top) ===== -->
-    <view class="addpage" :class="{ 'addpage--open': state === 'INPUT' }">
-      <view class="addpage-bar" @tap="dismissKb">
+    <!-- ===== Full-screen add page (slides down from the top) =====
+         paddingBottom = keyboardHeight lifts the bottom bar above the soft
+         keyboard on native (Lynx `keyboardstatuschanged`); on web the runtime
+         resizes <lynx-view> to the visual viewport instead, so this stays 0. -->
+    <view
+      class="addpage"
+      :class="{ 'addpage--open': state === 'INPUT' }"
+      :style="{ paddingBottom: keyboardHeight ? `${keyboardHeight}px` : '' }"
+    >
+      <view class="addpage-bar">
         <view class="addpage-back" @tap="closeInput">
           <text class="addpage-back-text">‹</text>
         </view>
         <text class="addpage-title">添加事项</text>
       </view>
 
-      <!-- constrained composer card (kept in the top region so the soft
-           keyboard, which covers the bottom half, never hides the controls) -->
-      <view class="addpage-card">
+      <view class="addpage-input-wrap">
         <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
         <textarea
           id="addpage-ta"
@@ -278,24 +316,23 @@ function removeTodo(dayKey: string, id: string) {
         />
       </view>
 
-      <view class="addpage-row">
-        <!-- day-type field → opens the cross-platform day picker sheet -->
-        <view class="addpage-field" @tap="openDayPicker">
-          <text class="addpage-field-text">{{ dayTypeLabel }}</text>
-          <text class="addpage-field-caret">▾</text>
-        </view>
-        <!-- date field → opens the cross-platform calendar sheet -->
-        <view class="addpage-field" @tap="openDatePicker">
-          <text class="addpage-field-text">{{ prettyDate }}</text>
-          <text class="addpage-field-caret">📅</text>
-        </view>
-        <view class="addpage-submit" @tap="addTodo">
-          <text class="addpage-submit-text">添加</text>
+      <view class="addpage-bottom">
+        <view class="addpage-row">
+          <!-- day-type field → opens the cross-platform day picker sheet -->
+          <view class="addpage-field" @tap="openDayPicker">
+            <text class="addpage-field-text">{{ dayTypeLabel }}</text>
+            <text class="addpage-field-caret">▾</text>
+          </view>
+          <!-- date field → opens the cross-platform calendar sheet -->
+          <view class="addpage-field" @tap="openDatePicker">
+            <text class="addpage-field-text">{{ prettyDate }}</text>
+            <text class="addpage-field-caret">📅</text>
+          </view>
+          <view class="addpage-submit" @tap="addTodo">
+            <text class="addpage-submit-text">添加</text>
+          </view>
         </view>
       </view>
-
-      <!-- fills the rest of the screen; tapping it dismisses the keyboard -->
-      <view class="addpage-dismiss" @tap="dismissKb" />
     </view>
 
     <!-- ===== Cross-platform pickers (Lynx primitives; web + native) ===== -->
