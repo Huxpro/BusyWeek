@@ -18,9 +18,14 @@
 .header {
   position: relative;
   z-index: 10;
-  /* fill the top safe area with the app-bar blue (status bar backdrop) */
+  /* ONE continuous gradient across the status-bar inset + app bar + filters,
+     so the top reads as a single immersive blue instead of three bands.
+     On native this fills the notch area edge-to-edge; on web the browser's
+     solid safe-area band shows the page background (#29b6f6, the gradient's
+     top color — see web/index.html) so the two meet seamlessly. */
   padding-top: env(safe-area-inset-top);
-  background-color: #29b6f6;
+  background-image: linear-gradient(180deg, #29b6f6 0%, #0288d1 100%);
+  box-shadow: 0px 2px 10px rgba(3, 111, 165, 0.28);
 }
 
 .app-bar {
@@ -30,8 +35,6 @@
   height: 56px;
   padding-left: 18px;
   padding-right: 18px;
-  background-image: linear-gradient(180deg, #29b6f6 0%, #039be5 100%);
-  box-shadow: 0px 2px 8px rgba(3, 111, 165, 0.35);
 }
 .logo {
   color: #ffffff;
@@ -50,8 +53,6 @@
   position: relative;
   display: flex;
   flex-direction: row;
-  background-color: #039be5;
-  box-shadow: 0px 2px 6px rgba(3, 111, 165, 0.22);
 }
 .filter {
   flex: 1;
@@ -164,7 +165,10 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  min-height: 52px;
+  /* fixed height (not min-height) keeps the row geometry identical on native
+     and web — min-height + body padding produced stray top/bottom gaps on the
+     first/last row under Lynx's native flex layout. */
+  height: 52px;
   padding-left: 14px;
   padding-right: 10px;
   border-bottom: 1px solid #f4f6f8;
@@ -200,10 +204,21 @@
 }
 .checkbox-mark--on { opacity: 1; transform: scale(1); }
 
-.todo-body { flex: 1; padding-top: 13px; padding-bottom: 13px; }
-.todo-text { font-size: 15px; color: #2b2f33; transition: color 0.25s ease; }
-.todo-text--done { color: #c2c9d0; text-decoration: line-through; }
-.todo-input { font-size: 15px; color: #2b2f33; height: 26px; }
+/* the row height is fixed, so the body just centers its single line (no
+   vertical padding, which is what caused the native gaps). */
+.todo-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.todo-input {
+  width: 100%;
+  height: 24px;
+  font-size: 15px;
+  line-height: 20px;
+  color: #2b2f33;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  transition: color 0.25s ease;
+}
+.todo-input--done { color: #c2c9d0; text-decoration: line-through; }
 
 .delete {
   width: 34px;
@@ -341,7 +356,8 @@
   transition: background-color 0.18s ease;
 }
 .addpage-field:active { background-color: rgba(255, 255, 255, 0.3); }
-.addpage-field:first-child { margin-right: 10px; }
+/* even 10px gaps: both fields push the next control away (day | date | 添加) */
+.addpage-field { margin-right: 10px; }
 .addpage-field-text {
   color: #ffffff;
   font-size: 14px;

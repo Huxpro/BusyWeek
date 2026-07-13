@@ -45,44 +45,76 @@
         border: none;
       }
 
-      /* Floating pill to copy the native Lynx bundle URL for Lynx Explorer. */
-      #lynx-bundle {
+      /* Top-right overflow menu (⋯): Lynx bundle URL + legacy version. */
+      .ovf {
         position: fixed;
         right: 12px;
-        top: calc(12px + env(safe-area-inset-top));
+        top: calc(10px + env(safe-area-inset-top));
         z-index: 2147483647;
+        font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
+      .ovf-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: none;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        font-size: 22px;
+        line-height: 1;
         display: flex;
         align-items: center;
-        gap: 7px;
-        max-width: calc(100vw - 28px);
-        padding: 8px 13px;
-        border: none;
-        border-radius: 22px;
-        background: rgba(20, 28, 38, 0.82);
-        color: #eaf3fb;
-        font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+        justify-content: center;
         cursor: pointer;
-        opacity: 0.55;
-        transition: opacity 0.2s ease, transform 0.15s ease;
         -webkit-backdrop-filter: blur(6px);
         backdrop-filter: blur(6px);
+        transition: background 0.2s ease, transform 0.15s ease;
       }
-      #lynx-bundle:hover { opacity: 1; }
-      #lynx-bundle:active { transform: scale(0.96); }
-      #lynx-bundle .lb-ico { font-size: 14px; }
-      #lynx-bundle .lb-url {
-        max-width: 46vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        opacity: 0.85;
+      .ovf-btn:hover { background: rgba(255, 255, 255, 0.32); }
+      .ovf-btn:active { transform: scale(0.94); }
+      .ovf-menu {
+        position: absolute;
+        right: 0;
+        top: 44px;
+        min-width: 218px;
+        padding: 6px;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(10, 30, 60, 0.3);
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+        transform-origin: top right;
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s ease;
       }
-      #lynx-bundle.copied {
+      .ovf.open .ovf-menu {
         opacity: 1;
-        background: #1e88e5;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
       }
+      .ovf-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 10px;
+        background: transparent;
+        color: #21303d;
+        font: inherit;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+      .ovf-item:hover { background: #eef6fd; }
+      .ovf-item:active { background: #e1eefb; }
+      .ovf-ico { font-size: 17px; width: 22px; text-align: center; flex: none; }
+      .ovf-txt { display: flex; flex-direction: column; }
+      .ovf-sub { font-size: 11px; color: #8a96a3; margin-top: 2px; }
     </style>
   </head>
   <body>
@@ -108,27 +140,65 @@
       })()
     </script>
 
-    <!-- Copy the native Lynx bundle URL (open it in Lynx Explorer). -->
-    <button id="lynx-bundle" type="button">
-      <span class="lb-ico">📱</span>
-      <span class="lb-label">Lynx bundle</span>
-    </button>
+    <!-- Top-right overflow menu: copy the native Lynx bundle URL, or open the
+         original legacy web edition. -->
+    <div class="ovf" id="ovf">
+      <button
+        class="ovf-btn"
+        id="ovf-btn"
+        type="button"
+        aria-label="更多"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        ⋯
+      </button>
+      <div class="ovf-menu" role="menu">
+        <button class="ovf-item" id="ovf-copy" type="button" role="menuitem">
+          <span class="ovf-ico">📱</span>
+          <span class="ovf-txt">
+            <span id="ovf-copy-label">复制 Lynx Bundle URL</span>
+            <span class="ovf-sub">在 Lynx Explorer 中打开原生版</span>
+          </span>
+        </button>
+        <a class="ovf-item" href="./legacy/" role="menuitem">
+          <span class="ovf-ico">🕹️</span>
+          <span class="ovf-txt">
+            <span>Legacy 版本</span>
+            <span class="ovf-sub">最初的 Web 版 (Vue 0.12)</span>
+          </span>
+        </a>
+      </div>
+    </div>
     <script>
-      (function () {
-        var btn = document.getElementById('lynx-bundle')
+      ;(function () {
+        var root = document.getElementById('ovf')
+        var btn = document.getElementById('ovf-btn')
+        var copy = document.getElementById('ovf-copy')
+        var copyLabel = document.getElementById('ovf-copy-label')
         var url = new URL('./main.lynx.bundle', location.href).href
-        btn.title = '复制原生 Lynx bundle URL，粘贴到 Lynx Explorer 打开\n' + url
-        var label = btn.querySelector('.lb-label')
+        copy.title = url
+        function setOpen(open) {
+          root.classList.toggle('open', open)
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+        }
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation()
+          setOpen(!root.classList.contains('open'))
+        })
+        document.addEventListener('click', function (e) {
+          if (!root.contains(e.target)) setOpen(false)
+        })
         var resetTimer
-        btn.addEventListener('click', function () {
-          var done = function () {
-            btn.classList.add('copied')
-            label.textContent = '已复制 ✓'
+        copy.addEventListener('click', function (e) {
+          e.stopPropagation()
+          function done() {
+            copyLabel.textContent = '已复制 ✓'
             clearTimeout(resetTimer)
             resetTimer = setTimeout(function () {
-              btn.classList.remove('copied')
-              label.textContent = 'Lynx bundle'
-            }, 1800)
+              copyLabel.textContent = '复制 Lynx Bundle URL'
+              setOpen(false)
+            }, 1200)
           }
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(done, fallback)
@@ -142,7 +212,9 @@
             ta.style.opacity = '0'
             document.body.appendChild(ta)
             ta.select()
-            try { document.execCommand('copy') } catch (e) {}
+            try {
+              document.execCommand('copy')
+            } catch (e) {}
             document.body.removeChild(ta)
             done()
           }

@@ -171,10 +171,6 @@ function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
-function startEdit(todo: Todo) {
-  editingId.value = todo.id
-}
-
 function finishEdit(dayKey: string, todo: Todo) {
   if (editingId.value !== todo.id) return
   editingId.value = null
@@ -261,17 +257,13 @@ function removeTodo(dayKey: string, id: string) {
             >
           </view>
           <view class="todo-body">
-            <text
-              v-if="editingId !== todo.id"
-              class="todo-text"
-              :class="{ 'todo-text--done': todo.done }"
-              @tap="startEdit(todo)"
-              >{{ todo.text }}</text
-            >
+            <!-- always an <input>: a single tap focuses it → edit in one tap
+                 (matching the original's v-todo-focus behaviour) -->
             <input
-              v-else
               class="todo-input"
+              :class="{ 'todo-input--done': todo.done }"
               v-model="todo.text"
+              @focus="editingId = todo.id"
               @blur="finishEdit(day.key, todo)"
               @confirm="finishEdit(day.key, todo)"
             />
