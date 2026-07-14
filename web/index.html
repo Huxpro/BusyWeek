@@ -2,15 +2,34 @@
 <html lang="zh">
   <head>
     <meta charset="utf-8" />
+    <!-- Lock zoom: focusing an input must not zoom the page (as the original
+         legacy edition did). maximum-scale + user-scalable=no. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>BusyWeek! · Vue Lynx (Web)</title>
     <meta
       name="description"
       content="BusyWeek! — a time-based todo list, ported to Vue Lynx and running on the Lynx Web Platform."
     />
+
+    <!-- Web app icons — cross-platform (favicon, iOS home-screen, Android/PWA
+         via the manifest). Extends the original edition's apple-touch-icon set. -->
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./icons/apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="./icons/apple-touch-icon-114.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#29b6f6" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="BusyWeek!" />
     <!--
       Lynx Web Platform runtime (@lynx-js/web-core, client_prod build). It is
       copied into ./static by scripts/assemble-web.mjs so the page is fully
@@ -19,25 +38,209 @@
     <script type="module" src="./static/js/client.js"></script>
     <link rel="stylesheet" href="./static/css/client.css" />
     <style>
+      /* Lock the outer container: no page scroll / rubber-band; the app owns
+         the whole viewport and only its inner list scrolls. */
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #f0f0f0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #29b6f6; /* blue fallback behind the top status bar */
       }
+      body {
+        position: fixed;
+        inset: 0;
+        -webkit-user-select: none;
+      }
+      /* The Lynx viewport tracks the visual viewport so the on-screen keyboard
+         pushes the app's bottom controls up instead of covering them. */
       lynx-view {
-        display: block;
-        height: 100vh;
-        width: 100vw;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
         border: none;
       }
+
+      /* Top-right overflow menu (⋯): Lynx bundle URL + legacy version. */
+      .ovf {
+        position: fixed;
+        right: 12px;
+        top: calc(10px + env(safe-area-inset-top));
+        z-index: 2147483647;
+        font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
+      .ovf-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: none;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        font-size: 22px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        transition: background 0.2s ease, transform 0.15s ease;
+      }
+      .ovf-btn:hover { background: rgba(255, 255, 255, 0.32); }
+      .ovf-btn:active { transform: scale(0.94); }
+      .ovf-menu {
+        position: absolute;
+        right: 0;
+        top: 44px;
+        min-width: 218px;
+        padding: 6px;
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(10, 30, 60, 0.3);
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+        transform-origin: top right;
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s ease;
+      }
+      .ovf.open .ovf-menu {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
+      }
+      .ovf-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 10px;
+        background: transparent;
+        color: #21303d;
+        font: inherit;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+      .ovf-item:hover { background: #eef6fd; }
+      .ovf-item:active { background: #e1eefb; }
+      .ovf-ico { font-size: 17px; width: 22px; text-align: center; flex: none; }
+      .ovf-txt { display: flex; flex-direction: column; }
+      .ovf-sub { font-size: 11px; color: #8a96a3; margin-top: 2px; }
     </style>
   </head>
   <body>
-    <!--
-      `url` is relative, so this works under any base path, including the
-      GitHub Pages project subpath (https://<user>.github.io/BusyWeek/).
-    -->
+    <!-- `url` is relative, so this works under any base path. -->
     <lynx-view url="./main.web.bundle" height="100vh" width="100vw"></lynx-view>
+
+    <script>
+      // Keyboard avoidance (web): resize the Lynx viewport to the visual
+      // viewport so the soft keyboard pushes the app's bottom bar up rather
+      // than covering it. iOS Safari shrinks visualViewport when the keyboard
+      // shows; we mirror that onto <lynx-view>.
+      ;(function () {
+        var vv = window.visualViewport
+        var el = document.querySelector('lynx-view')
+        if (!vv || !el) return
+        function sync() {
+          el.style.height = vv.height + 'px'
+          el.style.transform = 'translateY(' + vv.offsetTop + 'px)'
+        }
+        vv.addEventListener('resize', sync)
+        vv.addEventListener('scroll', sync)
+        sync()
+      })()
+    </script>
+
+    <!-- Top-right overflow menu: copy the native Lynx bundle URL, or open the
+         original legacy web edition. -->
+    <div class="ovf" id="ovf">
+      <button
+        class="ovf-btn"
+        id="ovf-btn"
+        type="button"
+        aria-label="更多"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        ⋯
+      </button>
+      <div class="ovf-menu" role="menu">
+        <button class="ovf-item" id="ovf-copy" type="button" role="menuitem">
+          <span class="ovf-ico">📱</span>
+          <span class="ovf-txt">
+            <span id="ovf-copy-label">复制 Lynx Bundle URL</span>
+            <span class="ovf-sub">在 Lynx Explorer 中打开原生版</span>
+          </span>
+        </button>
+        <a class="ovf-item" href="./legacy/" role="menuitem">
+          <span class="ovf-ico">🕹️</span>
+          <span class="ovf-txt">
+            <span>Legacy 版本</span>
+            <span class="ovf-sub">最初的 Web 版 (Vue 0.12)</span>
+          </span>
+        </a>
+      </div>
+    </div>
+    <script>
+      ;(function () {
+        var root = document.getElementById('ovf')
+        var btn = document.getElementById('ovf-btn')
+        var copy = document.getElementById('ovf-copy')
+        var copyLabel = document.getElementById('ovf-copy-label')
+        // ?fullscreen=true so Lynx Explorer opens the bundle full-screen
+        // (matches the QR-code schema in lynx.config.ts).
+        var url = new URL('./main.lynx.bundle?fullscreen=true', location.href).href
+        copy.title = url
+        function setOpen(open) {
+          root.classList.toggle('open', open)
+          btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+        }
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation()
+          setOpen(!root.classList.contains('open'))
+        })
+        document.addEventListener('click', function (e) {
+          if (!root.contains(e.target)) setOpen(false)
+        })
+        var resetTimer
+        copy.addEventListener('click', function (e) {
+          e.stopPropagation()
+          function done() {
+            copyLabel.textContent = '已复制 ✓'
+            clearTimeout(resetTimer)
+            resetTimer = setTimeout(function () {
+              copyLabel.textContent = '复制 Lynx Bundle URL'
+              setOpen(false)
+            }, 1200)
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done, fallback)
+          } else {
+            fallback()
+          }
+          function fallback() {
+            var ta = document.createElement('textarea')
+            ta.value = url
+            ta.style.position = 'fixed'
+            ta.style.opacity = '0'
+            document.body.appendChild(ta)
+            ta.select()
+            try {
+              document.execCommand('copy')
+            } catch (e) {}
+            document.body.removeChild(ta)
+            done()
+          }
+        })
+      })()
+    </script>
   </body>
 </html>

@@ -1,103 +1,134 @@
-/* BusyWeek! — Material-ish theme ported from the original style.scss.
-   Theme color: #03A9F4. Canvas: #F0F0F0. Cards: #fff. */
+/* BusyWeek! — refined Material theme + motion.
+   Theme #03A9F4. Ported from the original and elevated with animation. */
 
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: #f0f0f0;
+  height: 100%;
+  overflow: hidden;
+  background-color: #eef1f5;
+  animation: app-in 0.45s ease both;
+}
+@keyframes app-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* ---- App bar ---- */
+/* ===== Pinned header (app bar + filters never scroll) ===== */
+.header {
+  position: relative;
+  z-index: 10;
+  /* ONE continuous gradient across the status-bar inset + app bar + filters,
+     so the top reads as a single immersive blue instead of three bands.
+     On native this fills the notch area edge-to-edge; on web the browser's
+     solid safe-area band shows the page background (#29b6f6, the gradient's
+     top color — see web/index.html) so the two meet seamlessly. */
+  padding-top: env(safe-area-inset-top);
+  background-image: linear-gradient(180deg, #29b6f6 0%, #0288d1 100%);
+  box-shadow: 0px 2px 10px rgba(3, 111, 165, 0.28);
+}
+
 .app-bar {
   display: flex;
   flex-direction: row;
   align-items: center;
   height: 56px;
-  padding-left: 16px;
-  padding-right: 16px;
-  background-color: #03a9f4;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.26);
+  padding-left: 18px;
+  padding-right: 18px;
 }
-
-.app-bar-action {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-}
-
-.app-bar-action-text {
-  color: #fff;
-  font-size: 28px;
-}
-
 .logo {
-  color: #fff;
+  color: #ffffff;
   font-size: 20px;
   font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.logo-accent {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  margin-left: 8px;
+  margin-top: 4px;
 }
 
-/* ---- Filter tabs ---- */
 .filters {
+  position: relative;
   display: flex;
   flex-direction: row;
-  background-color: #03a9f4;
-  padding-bottom: 4px;
 }
-
 .filter {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  border-bottom: 2px solid transparent;
+  height: 44px;
 }
-
-.filter--active {
-  border-bottom: 2px solid #fff;
-}
-
+.filter:active { background-color: rgba(255, 255, 255, 0.08); }
 .filter-text {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 15px;
+  transition: color 0.25s ease, font-weight 0.25s ease;
 }
-
 .filter-text--active {
-  color: #fff;
-  font-weight: 600;
+  color: #ffffff;
+  font-weight: 700;
+}
+.filter-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 33.333%;
+  height: 3px;
+  border-radius: 3px;
+  background-color: #ffffff;
+  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
-/* ---- Timeline ---- */
+/* ===== Timeline — the only scroller ===== */
 .timeline {
   flex: 1;
   width: 100%;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-top: 80px;
+  padding-top: 96px;
 }
-
-.empty-text {
-  color: #9e9e9e;
-  font-size: 15px;
+.empty-badge {
+  width: 66px;
+  height: 66px;
+  border-radius: 33px;
+  background-color: rgba(3, 169, 244, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  animation: float 3s ease-in-out infinite;
 }
+.empty-badge-text { color: #03a9f4; font-size: 30px; }
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+.empty-text { color: #5b636b; font-size: 17px; font-weight: 600; }
+.empty-hint { color: #9aa1a9; font-size: 13px; margin-top: 6px; }
 
 .day-group {
-  width: 96%;
-  margin-left: 2%;
-  margin-top: 7px;
-  background-color: #fff;
-  border-radius: 2px;
+  width: 94%;
+  margin-left: 3%;
+  margin-top: 10px;
+  background-color: #ffffff;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.26);
+  box-shadow: 0px 3px 12px rgba(45, 60, 80, 0.08);
+  animation: group-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes group-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .day-header {
@@ -105,198 +136,256 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
+  height: 42px;
   padding-left: 16px;
   padding-right: 16px;
-  background-color: #fafafa;
-  border-bottom: 1px solid #eee;
+  background-color: #fbfcfe;
+  border-bottom: 1px solid #eef1f4;
 }
-
-.day-type {
-  font-size: 14px;
-  font-weight: 600;
-  color: #424242;
+.day-type-wrap { display: flex; flex-direction: row; align-items: center; }
+.today-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background-color: #03a9f4;
+  margin-right: 7px;
+  animation: pulse 2s ease-in-out infinite;
 }
-
-.day-type--today {
-  color: #03a9f4;
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
+  100% { transform: scale(1); opacity: 1; }
 }
-
-.day-date {
-  font-size: 12px;
-  color: #9e9e9e;
-}
+.day-type { font-size: 14px; font-weight: 700; color: #3a424b; }
+.day-type--today { color: #0288d1; }
+.day-date { font-size: 12px; color: #9aa1a9; }
 
 /* ---- Todo item ---- */
 .todo {
   display: flex;
   flex-direction: row;
   align-items: center;
-  min-height: 48px;
-  padding-left: 12px;
-  padding-right: 12px;
-  border-bottom: 1px solid #f2f2f2;
+  /* fixed height (not min-height) keeps the row geometry identical on native
+     and web — min-height + body padding produced stray top/bottom gaps on the
+     first/last row under Lynx's native flex layout. */
+  height: 52px;
+  padding-left: 14px;
+  padding-right: 10px;
+  border-bottom: 1px solid #f4f6f8;
+  transition: background-color 0.2s ease;
+  animation: todo-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
-.todo--editing {
-  background-color: #f5fbff;
+.todo:active { background-color: #f7fafc; }
+.todo--editing { background-color: #f2faff; }
+@keyframes todo-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .checkbox {
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  border: 2px solid #bdbdbd;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  border: 2px solid #cfd6dd;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 13px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
-
-.checkbox--checked {
-  background-color: #03a9f4;
-  border: 2px solid #03a9f4;
-}
-
+.checkbox:active { transform: scale(0.88); }
+.checkbox--checked { background-color: #03a9f4; border-color: #03a9f4; }
 .checkbox-mark {
-  color: #fff;
-  font-size: 13px;
+  color: #ffffff;
+  font-size: 14px;
+  opacity: 0;
+  transform: scale(0.3);
+  transition: opacity 0.18s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.checkbox-mark--on { opacity: 1; transform: scale(1); }
 
-.todo-body {
-  flex: 1;
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-
-.todo-text {
-  font-size: 15px;
-  color: #333;
-}
-
-.todo-text--done {
-  color: #bdbdbd;
-  text-decoration: line-through;
-}
-
+/* the row height is fixed, so the body just centers its single line (no
+   vertical padding, which is what caused the native gaps). */
+.todo-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.todo-text { font-size: 15px; line-height: 20px; color: #2b2f33; transition: color 0.25s ease; }
+.todo-text--done { color: #c2c9d0; text-decoration: line-through; }
 .todo-input {
-  font-size: 15px;
-  color: #333;
+  width: 100%;
   height: 24px;
+  font-size: 15px;
+  line-height: 20px;
+  color: #2b2f33;
+  background-color: transparent;
+  border: none;
+  outline: none;
 }
 
 .delete {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 17px;
 }
+.delete:active { background-color: #ffecec; }
+.delete-text { color: #d6dbe0; font-size: 15px; }
 
-.delete-text {
-  color: #e0e0e0;
-  font-size: 15px;
-}
+.timeline-spacer { height: calc(104px + env(safe-area-inset-bottom)); }
 
-.timeline-spacer {
-  height: 96px;
-}
-
-/* ---- Composer (INPUT mode) ---- */
-.composer {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-}
-
-.composer-input {
-  height: 120px;
-  background-color: #fff;
-  border-radius: 2px;
-  padding: 12px;
-  font-size: 16px;
-  color: #333;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.26);
-}
-
-.composer-label {
-  margin-top: 20px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #757575;
-}
-
-.picker {
-  width: 100%;
-  height: 44px;
-}
-
-.chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding-left: 14px;
-  padding-right: 14px;
-  margin-right: 8px;
-  border-radius: 18px;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-}
-
-.chip--active {
-  background-color: #03a9f4;
-  border: 1px solid #03a9f4;
-}
-
-.chip-text {
-  font-size: 13px;
-  color: #616161;
-  white-space: nowrap;
-}
-
-.chip-text--active {
-  color: #fff;
-}
-
-.add-btn {
-  margin-top: 24px;
-  height: 48px;
-  border-radius: 2px;
-  background-color: #03a9f4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.26);
-}
-
-.add-btn-text {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* ---- Floating action button ---- */
+/* ===== Floating action button ===== */
 .fab {
   position: fixed;
-  right: 20px;
-  bottom: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: #ff5b45;
+  right: 22px;
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  width: 58px;
+  height: 58px;
+  border-radius: 29px;
+  z-index: 50;
+  background-image: linear-gradient(145deg, #ff7a5c 0%, #ff5b45 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 8px 20px rgba(255, 91, 69, 0.45);
+  animation: fab-in 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.fab:active { transform: scale(0.92); }
+@keyframes fab-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.fab-icon { color: #ffffff; font-size: 32px; line-height: 32px; }
+
+/* ===== Full-screen add page (slides down) ===== */
+.addpage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background-image: linear-gradient(165deg, #3fb9f6 0%, #2196e8 55%, #1e88e5 100%);
+  transform: translateY(-100%);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-bottom 0.25s ease;
+}
+.addpage--open { transform: translateY(0); }
+
+.addpage-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: calc(56px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  padding-left: 10px;
+  padding-right: 18px;
+}
+.addpage-back {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+}
+.addpage-back:active { background-color: rgba(255, 255, 255, 0.18); }
+.addpage-back-text { color: #ffffff; font-size: 30px; line-height: 30px; }
+.addpage-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  margin-left: 4px;
 }
 
-.fab--close {
-  background-color: #607d8b;
+/* Full-height composer — the input owns the page; the controls sit in a bar
+   pinned to the bottom, which is lifted above the soft keyboard by the
+   keyboard-avoidance offset (see App.vue / web index.html). */
+.addpage-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+}
+.addpage-ph {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  font-size: 22px;
+  line-height: 32px;
+  color: rgba(255, 255, 255, 0.68);
+}
+/* On web this Lynx <textarea> renders as a real <textarea>, so strip its
+   default focus outline, border, and resize grip directly (no ::part needed). */
+.addpage-input {
+  flex: 1;
+  padding: 22px;
+  font-size: 22px;
+  line-height: 32px;
+  color: #ffffff;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  resize: none;
 }
 
-.fab-icon {
-  color: #fff;
-  font-size: 30px;
+.addpage-bottom {
+  padding-top: 6px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+.addpage-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+/* tappable field that opens a picker sheet (day-type / date) */
+.addpage-field {
+  flex: 1;
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 14px;
+  padding-right: 12px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.18);
+  transition: background-color 0.18s ease;
+}
+.addpage-field:active { background-color: rgba(255, 255, 255, 0.3); }
+/* even 10px gaps: both fields push the next control away (day | date | 添加) */
+.addpage-field { margin-right: 10px; }
+.addpage-field-text {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.addpage-field-caret {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  margin-left: 6px;
+}
+.addpage-submit {
+  flex-shrink: 0;
+  height: 44px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-radius: 22px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 6px 16px rgba(0, 60, 110, 0.25);
+}
+.addpage-submit:active { transform: scale(0.96); }
+.addpage-submit-text {
+  color: #0288d1;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
 }

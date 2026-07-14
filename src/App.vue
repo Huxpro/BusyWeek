@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue-lynx'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue-lynx'
 
 import './App.css'
+import { syncNativeInputOnMount } from './nativeInput.js'
 import type { Filter, Timeline, Todo } from './types.js'
 import { loadTimeline, saveTimeline } from './store.js'
-import {
-  getDay,
-  getDayType,
-  getDiffDate,
-  getPickerLabel,
-  getTodayDate,
-} from './util.js'
+import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
+import DatePickerSheet from './components/DatePickerSheet.vue'
+import DayPickerSheet from './components/DayPickerSheet.vue'
 
 type AppState = 'LIST' | 'INPUT'
 
@@ -20,32 +24,74 @@ const timeline = ref<Timeline>({})
 const activeFilter = ref<Filter>('all')
 const editingId = ref<string | null>(null)
 
-// the "new todo" being composed in INPUT mode
+// the "new todo" being composed on the add page
 const newTodoText = ref('')
-const newTodoDayType = ref(0)
+const newTodoDate = ref(getTodayDate())
 
-// the day-picker offers the same relative days as the original <select>
-const dayTypes = [0, 1, 2, 3, 4, 5, 6, 7]
+// cross-platform pickers (built from Lynx primitives — work on web + native)
+const dayPickerOpen = ref(false)
+const datePickerOpen = ref(false)
+
+// soft-keyboard height (device-independent px), used to lift the composer's
+// bottom bar clear of the keyboard on native. Driven by Lynx's global
+// `keyboardstatuschanged` event.
+const keyboardHeight = ref(0)
+
+// day-type + weekday label for the currently chosen date
+const dayTypeLabel = computed(
+  () => `${getDayType(newTodoDate.value)} ${getDay(newTodoDate.value)}`,
+)
+// short "M月D日" for the date field
+const prettyDate = computed(() => {
+  const { month0, day } = parseDate(newTodoDate.value)
+  return `${month0 + 1}月${day}日`
+})
 
 const filters: { value: Filter; label: string }[] = [
   { value: 'all', label: '全部' },
   { value: 'active', label: '在忙' },
   { value: 'done', label: '完成' },
 ]
+const filterIndex = computed(() =>
+  Math.max(0, filters.findIndex((f) => f.value === activeFilter.value)),
+)
+
+// --- keyboard avoidance (native) -------------------------------------------
+// Lynx has no keyboard-height CSS/viewport primitive, so the documented
+// approach is to listen for the `keyboardstatuschanged` global event and
+// offset the view yourself. `height` is in device-independent px (same unit
+// as Lynx CSS px), so it maps 1:1 onto paddingBottom.
+// https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
+function onKeyboardStatus(status: string, height: number) {
+  keyboardHeight.value = status === 'on' ? height : 0
+}
+let removeKbListener: (() => void) | undefined
+function bindKeyboard() {
+  // Guarded: on Lynx-for-Web the runtime resizes <lynx-view> to the visual
+  // viewport (web/index.html) and does not emit this event, so this no-ops.
+  try {
+    if (typeof lynx === 'undefined') return
+    const emitter = (lynx as any).getJSModule?.('GlobalEventEmitter')
+    if (!emitter?.addListener) return
+    emitter.addListener('keyboardstatuschanged', onKeyboardStatus)
+    removeKbListener = () =>
+      emitter.removeListener?.('keyboardstatuschanged', onKeyboardStatus)
+  } catch {
+    /* GlobalEventEmitter unavailable — web handles avoidance separately */
+  }
+}
 
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
+  bindKeyboard()
   timeline.value = await loadTimeline()
 })
+
+onUnmounted(() => removeKbListener?.())
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
 // --- derived view ----------------------------------------------------------
-/**
- * Days sorted by date, with each day's todos filtered by the active filter.
- * Days left with no matching todos are dropped — same behaviour as the
- * original `ifDayShow` / `ifTodoShow` pair.
- */
 const visibleDays = computed(() => {
   const tl = timeline.value
   return Object.keys(tl)
@@ -69,21 +115,115 @@ function isToday(dateStr: string): boolean {
 }
 
 function genId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
 // --- actions ---------------------------------------------------------------
+async function openInput() {
+  newTodoText.value = ''
+  newTodoDate.value = getTodayDate()
+  state.value = 'INPUT'
+  await nextTick()
+  setComposerValue(newTodoText.value)
+  focusComposer()
+}
+function closeInput() {
+  state.value = 'LIST'
+}
 function toggleInput() {
-  state.value = state.value === 'LIST' ? 'INPUT' : 'LIST'
+  if (state.value === 'LIST') openInput()
+  else closeInput()
 }
 
-function selectDayType(dayType: number) {
-  newTodoDayType.value = dayType
+// keyboard dismiss: blur the textarea (hides the soft keyboard)
+const taEl = ref<{ blur?: () => void; focus?: () => void } | null>(null)
+function focusComposer() {
+  taEl.value?.focus?.()
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        .invoke({ method: 'focus', fail: () => {} })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable — the web focus() call above covers it */
+  }
+}
+function setComposerValue(value: string) {
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        // vue-lynx 0.4.0 only updates the native `value` attribute after mount;
+        // iOS requires the element UI method for programmatic resets (#203).
+        .invoke({ method: 'setValue', params: { value }, fail: () => {} })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable — web reflects the value attribute directly */
+  }
+}
+function dismissKb() {
+  // web: the x-textarea custom element exposes blur()
+  taEl.value?.blur?.()
+  // native: no DOM blur() — invoke the element's blur UI method via SelectorQuery
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        .invoke({ method: 'blur' })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable (e.g. web runtime) — the blur() above covers it */
+  }
+}
+
+// swipe-up-to-close gesture on the add page (it slides down from the top, so
+// an upward flick sends it back up). A deliberate, mostly-vertical drag only,
+// so tapping the textarea / picking a date never triggers it.
+let swipeStartY = 0
+let swipeStartX = 0
+function onAddTouchStart(e: {
+  touches?: { clientX: number; clientY: number }[]
+  changedTouches?: { clientX: number; clientY: number }[]
+}) {
+  const t = e.touches?.[0] ?? e.changedTouches?.[0]
+  swipeStartY = t?.clientY ?? 0
+  swipeStartX = t?.clientX ?? 0
+}
+function onAddTouchEnd(e: {
+  touches?: { clientX: number; clientY: number }[]
+  changedTouches?: { clientX: number; clientY: number }[]
+}) {
+  const t = e.changedTouches?.[0] ?? e.touches?.[0]
+  if (!t) return
+  const up = swipeStartY - t.clientY
+  const dx = Math.abs(t.clientX - swipeStartX)
+  if (up > 80 && up > dx) {
+    dismissKb()
+    closeInput()
+  }
+}
+
+// open a picker sheet, dismissing the keyboard first so it can't overlap
+function openDayPicker() {
+  dismissKb()
+  dayPickerOpen.value = true
+}
+function openDatePicker() {
+  dismissKb()
+  datePickerOpen.value = true
 }
 
 function addTodo() {
-  const dayType = newTodoDayType.value
-  const date = getDiffDate(dayType)
+  dismissKb()
+  const date = newTodoDate.value
+  const dayType = getDateDiff(date, getTodayDate())
   const text = newTodoText.value.trim() || '写点啥呀！'
 
   const tl = timeline.value
@@ -91,18 +231,45 @@ function addTodo() {
     tl[date] = { date, todos: [] }
   }
   tl[date].todos.push({ id: genId(), date, dayType, done: false, text })
-
-  // reset composer but keep the chosen day, then return to the list
-  newTodoText.value = ''
-  state.value = 'LIST'
+  closeInput()
 }
 
 function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
+// tap a todo's text → swap to the edit <input>; v-focus (below) focuses it
+// on mount so it edits in a single tap.
 function startEdit(todo: Todo) {
   editingId.value = todo.id
+}
+
+// Seed and focus the edit input after it exists in the native tree. vue-lynx
+// 0.4.0 only pushes the mounted `value` attribute, which iOS ignores once the
+// control is live, so setValue must run before focus (vue-lynx #203).
+const vFocus = {
+  mounted(
+    el: { focus?: () => void },
+    binding: { value?: { id?: string; value?: string } },
+  ) {
+    const id = binding.value?.id
+    if (!id) return
+
+    void syncNativeInputOnMount({
+      el,
+      id,
+      value: binding.value?.value ?? '',
+      nextTick,
+      createSelectorQuery:
+        typeof lynx === 'undefined'
+          ? undefined
+          : () =>
+              (lynx as unknown as { createSelectorQuery: () => any })
+                .createSelectorQuery(),
+    }).catch(() => {
+      /* ignore — falls back to tapping the field again */
+    })
+  },
 }
 
 function finishEdit(dayKey: string, todo: Todo) {
@@ -126,43 +293,51 @@ function removeTodo(dayKey: string, id: string) {
 
 <template>
   <view class="app">
-    <!-- App bar -->
-    <view class="app-bar">
-      <view v-if="state === 'INPUT'" class="app-bar-action" @tap="toggleInput">
-        <text class="app-bar-action-text">‹</text>
+    <!-- ===== Pinned header (never scrolls) ===== -->
+    <view class="header">
+      <view class="app-bar">
+        <text class="bw-text logo">BusyWeek!</text>
+        <text class="bw-text logo-accent">好忙啊</text>
       </view>
-      <text class="logo">BusyWeek!</text>
-    </view>
-
-    <!-- Filter tabs -->
-    <view class="filters">
-      <view
-        v-for="f in filters"
-        :key="f.value"
-        class="filter"
-        :class="{ 'filter--active': activeFilter === f.value }"
-        @tap="activeFilter = f.value"
-      >
-        <text
-          class="filter-text"
-          :class="{ 'filter-text--active': activeFilter === f.value }"
-          >{{ f.label }}</text
+      <view class="filters">
+        <view
+          v-for="f in filters"
+          :key="f.value"
+          class="filter"
+          @tap="activeFilter = f.value"
         >
+          <text
+            class="bw-text filter-text"
+            :class="{ 'filter-text--active': activeFilter === f.value }"
+            >{{ f.label }}</text
+          >
+        </view>
+        <view
+          class="filter-indicator"
+          :style="{ transform: `translateX(${filterIndex * 100}%)` }"
+        />
       </view>
     </view>
 
-    <!-- LIST mode: the timeline -->
-    <scroll-view v-if="state === 'LIST'" class="timeline">
+    <!-- ===== Only this list scrolls ===== -->
+    <scroll-view class="timeline" scroll-orientation="vertical">
       <view v-if="isEmpty" class="empty">
-        <text class="empty-text">这周还不忙，点 + 添加事项吧</text>
+        <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
+        <text class="bw-text empty-text">这周还不忙</text>
+        <text class="bw-text empty-hint">点右下角 + 添加事项吧</text>
       </view>
 
       <view v-for="day in visibleDays" :key="day.key" class="day-group">
         <view class="day-header">
-          <text class="day-type" :class="{ 'day-type--today': isToday(day.key) }">{{
-            getDayType(day.key)
-          }}</text>
-          <text class="day-date">{{ day.key }} {{ getDay(day.key) }}</text>
+          <view class="day-type-wrap">
+            <view v-if="isToday(day.key)" class="today-dot" />
+            <text
+              class="bw-text day-type"
+              :class="{ 'day-type--today': isToday(day.key) }"
+              >{{ getDayType(day.key) }}</text
+            >
+          </view>
+          <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
         </view>
 
         <view
@@ -176,69 +351,104 @@ function removeTodo(dayKey: string, id: string) {
             :class="{ 'checkbox--checked': todo.done }"
             @tap="checkTodo(todo)"
           >
-            <text v-if="todo.done" class="checkbox-mark">✓</text>
+            <text
+              class="bw-text checkbox-mark"
+              :class="{ 'checkbox-mark--on': todo.done }"
+              >✓</text
+            >
           </view>
-
           <view class="todo-body">
+            <!-- display as text; a single tap swaps to the input, which
+                 v-focus focuses immediately (the original's v-todo-focus
+                 pattern) so editing takes one tap. -->
             <text
               v-if="editingId !== todo.id"
-              class="todo-text"
+              class="bw-text todo-text"
               :class="{ 'todo-text--done': todo.done }"
               @tap="startEdit(todo)"
               >{{ todo.text }}</text
             >
             <input
               v-else
+              v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
+              :id="'edit-' + todo.id"
               class="todo-input"
               v-model="todo.text"
               @blur="finishEdit(day.key, todo)"
               @confirm="finishEdit(day.key, todo)"
             />
           </view>
-
           <view class="delete" @tap="removeTodo(day.key, todo.id)">
-            <text class="delete-text">✕</text>
+            <text class="bw-text delete-text">✕</text>
           </view>
         </view>
       </view>
 
-      <!-- bottom spacer so the FAB never covers the last item -->
       <view class="timeline-spacer" />
     </scroll-view>
 
-    <!-- INPUT mode: compose a new todo -->
-    <view v-else class="composer">
-      <textarea
-        class="composer-input"
-        v-model="newTodoText"
-        placeholder="又有事情忙啦？"
-      />
+    <!-- ===== Floating action button (list mode) ===== -->
+    <view v-if="state === 'LIST'" class="fab" @tap="openInput">
+      <text class="bw-text fab-icon">＋</text>
+    </view>
 
-      <text class="composer-label">什么时候？</text>
-      <scroll-view scroll-orientation="horizontal" class="picker">
-        <view
-          v-for="t in dayTypes"
-          :key="t"
-          class="chip"
-          :class="{ 'chip--active': newTodoDayType === t }"
-          @tap="selectDayType(t)"
-        >
-          <text
-            class="chip-text"
-            :class="{ 'chip-text--active': newTodoDayType === t }"
-            >{{ getPickerLabel(t) }}</text
-          >
+    <!-- ===== Full-screen add page (slides down from the top) =====
+         paddingBottom = keyboardHeight lifts the bottom bar above the soft
+         keyboard on native (Lynx `keyboardstatuschanged`); on web the runtime
+         resizes <lynx-view> to the visual viewport instead, so this stays 0. -->
+    <view
+      class="addpage"
+      :class="{ 'addpage--open': state === 'INPUT' }"
+      :style="{ paddingBottom: keyboardHeight ? `${keyboardHeight}px` : '' }"
+      @touchstart="onAddTouchStart"
+      @touchend="onAddTouchEnd"
+    >
+      <view class="addpage-bar">
+        <view class="addpage-back" @tap="closeInput">
+          <text class="bw-text addpage-back-text">‹</text>
         </view>
-      </scroll-view>
+        <text class="bw-text addpage-title">添加事项</text>
+      </view>
 
-      <view class="add-btn" @tap="addTodo">
-        <text class="add-btn-text">添加</text>
+      <view class="addpage-input-wrap">
+        <text v-if="!newTodoText" class="bw-text addpage-ph">又有事情忙啦？</text>
+        <textarea
+          id="addpage-ta"
+          ref="taEl"
+          class="addpage-input"
+          v-model="newTodoText"
+        />
+      </view>
+
+      <view class="addpage-bottom">
+        <view class="addpage-row">
+          <!-- day-type field → opens the cross-platform day picker sheet -->
+          <view class="addpage-field" @tap="openDayPicker">
+            <text class="bw-text addpage-field-text">{{ dayTypeLabel }}</text>
+            <text class="bw-text addpage-field-caret">▾</text>
+          </view>
+          <!-- date field → opens the cross-platform calendar sheet -->
+          <view class="addpage-field" @tap="openDatePicker">
+            <text class="bw-text addpage-field-text">{{ prettyDate }}</text>
+            <text class="bw-text addpage-field-caret">📅</text>
+          </view>
+          <view class="addpage-submit" @tap="addTodo">
+            <text class="bw-text addpage-submit-text">添加</text>
+          </view>
+        </view>
       </view>
     </view>
 
-    <!-- Floating action button -->
-    <view class="fab" :class="{ 'fab--close': state === 'INPUT' }" @tap="toggleInput">
-      <text class="fab-icon">{{ state === 'INPUT' ? '✕' : '+' }}</text>
-    </view>
+    <!-- ===== Cross-platform pickers (Lynx primitives; web + native) ===== -->
+    <DayPickerSheet
+      :open="dayPickerOpen"
+      v-model="newTodoDate"
+      @close="dayPickerOpen = false"
+    />
+    <DatePickerSheet
+      :open="datePickerOpen"
+      v-model="newTodoDate"
+      @close="datePickerOpen = false"
+    />
   </view>
 </template>

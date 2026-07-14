@@ -63,4 +63,54 @@ export function getPickerLabel(dayType: number): string {
   return `${base} ${getDay(getDiffDate(dayType))}`
 }
 
+// ---- Calendar helpers (for the cross-platform date picker) ----------------
+
+export interface DayCell {
+  /** `yyyy-mm-dd`, or '' for a leading/trailing blank. */
+  date: string
+  /** day-of-month number, or 0 for a blank. */
+  day: number
+}
+
+/** `年月` header label, e.g. "2026年7月". */
+export function getMonthLabel(year: number, month0: number): string {
+  return `${year}年${month0 + 1}月`
+}
+
+/**
+ * Build the 6×7 grid of day cells for a month (leading blanks so the 1st lands
+ * under its weekday). `month0` is 0-based (0 = January).
+ */
+export function buildMonthCells(year: number, month0: number): DayCell[] {
+  const firstWeekday = new Date(year, month0, 1).getDay()
+  const daysInMonth = new Date(year, month0 + 1, 0).getDate()
+  const cells: DayCell[] = []
+  for (let i = 0; i < firstWeekday; i++) cells.push({ date: '', day: 0 })
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: getDateStr(new Date(year, month0, d)), day: d })
+  }
+  while (cells.length % 7 !== 0) cells.push({ date: '', day: 0 })
+  return cells
+}
+
+/** Step a `{year, month0}` by `delta` months, normalizing across year bounds. */
+export function stepMonth(
+  year: number,
+  month0: number,
+  delta: number,
+): { year: number; month0: number } {
+  const d = new Date(year, month0 + delta, 1)
+  return { year: d.getFullYear(), month0: d.getMonth() }
+}
+
+/** Parse a `yyyy-mm-dd` string into `{year, month0, day}`. */
+export function parseDate(dateStr: string): {
+  year: number
+  month0: number
+  day: number
+} {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return { year: y, month0: (m || 1) - 1, day: d || 1 }
+}
+
 export { DAY_TYPES }

@@ -5,7 +5,9 @@ import { pluginVueLynx } from 'vue-lynx/plugin'
 
 export default defineConfig({
   environments: {
+    // Native (iOS/Android) bundle.
     lynx: {},
+    // Lynx Web Platform bundle.
     web: {},
   },
   plugins: [

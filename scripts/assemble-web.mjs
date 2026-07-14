@@ -1,5 +1,5 @@
-// Assemble a static, self-contained site for GitHub Pages (or any static host),
-// hosting BOTH editions of BusyWeek side by side:
+// Assemble a static, self-contained site (deployed on Vercel), hosting BOTH
+// editions of BusyWeek side by side:
 //
 //   /         -> the Vue Lynx version (this project's web build)
 //   /legacy/  -> the original Vue 0.12 web edition (from legacy/src)
@@ -10,8 +10,7 @@
 //   3. copies the original web app into `dist/legacy/`, stubbing its (long
 //      dead) LeanCloud SDK so it boots without the CDN
 //
-// The Lynx runtime is bundled locally (no CDN) and all URLs are relative, so
-// the result works under the GitHub Pages project subpath.
+// The Lynx runtime is bundled locally (no CDN) and all URLs are relative.
 
 import { createRequire } from 'node:module'
 import { cp, mkdir, copyFile, access, writeFile, readFile } from 'node:fs/promises'
@@ -42,19 +41,15 @@ const runtimeSrc = path.join(
 await mkdir(dist, { recursive: true })
 await cp(runtimeSrc, path.join(dist, 'static'), { recursive: true })
 await copyFile(path.join(root, 'web', 'index.html'), path.join(dist, 'index.html'))
-// Disable Jekyll so GitHub Pages serves the runtime folders/files verbatim.
-await writeFile(path.join(dist, '.nojekyll'), '')
 
-// Preserve the Pages custom domain. The deploy force-pushes a fresh gh-pages
-// branch, so the CNAME must be re-emitted on every build or the custom domain
-// (huangxuan.me) breaks with a 404.
-const cnameSrc = path.join(root, 'web', 'CNAME')
-try {
-  await access(cnameSrc)
-  await copyFile(cnameSrc, path.join(dist, 'CNAME'))
-} catch {
-  // no custom domain configured — skip
-}
+// Web app icons + PWA manifest (cross-platform home-screen / favicon support).
+await cp(path.join(root, 'web', 'icons'), path.join(dist, 'icons'), {
+  recursive: true,
+})
+await copyFile(
+  path.join(root, 'web', 'manifest.webmanifest'),
+  path.join(dist, 'manifest.webmanifest'),
+)
 
 // --- Original edition at /legacy/ -----------------------------------------
 // Copy the original web app verbatim, then neutralize its LeanCloud (AV)
@@ -95,4 +90,3 @@ console.log('  - dist/index.html        (Lynx host page,  served at /)')
 console.log('  - dist/main.web.bundle   (Lynx app)')
 console.log('  - dist/static/           (Lynx web runtime)')
 console.log('  - dist/legacy/           (original web edition, served at /legacy/)')
-console.log('  - dist/.nojekyll + CNAME')
