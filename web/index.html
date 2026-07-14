@@ -64,39 +64,20 @@
         border: none;
       }
 
-      /* Top-right overflow menu (⋯): Lynx bundle URL + legacy version. */
+      /* Header-triggered overflow menu: Lynx bundle URL + legacy version. */
       .ovf {
         position: fixed;
         right: 12px;
-        top: calc(10px + env(safe-area-inset-top));
+        top: calc(62px + env(safe-area-inset-top));
         z-index: 2147483647;
         font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           sans-serif;
+        pointer-events: none;
       }
-      .ovf-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: none;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        font-size: 22px;
-        line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        -webkit-backdrop-filter: blur(6px);
-        backdrop-filter: blur(6px);
-        transition: background 0.2s ease, transform 0.15s ease;
-      }
-      .ovf-btn:hover { background: rgba(255, 255, 255, 0.32); }
-      .ovf-btn:active { transform: scale(0.94); }
       .ovf-menu {
-        position: absolute;
+        position: relative;
         right: 0;
-        top: 44px;
+        top: 0;
         min-width: 218px;
         padding: 6px;
         border-radius: 14px;
@@ -307,20 +288,10 @@
       })()
     </script>
 
-    <!-- Top-right overflow menu: copy the native Lynx bundle URL, or open the
-         original legacy web edition. -->
+    <!-- Hidden Web menu: tapping the BusyWeek brand in the Lynx header opens
+         it. There is intentionally no floating Web-only trigger button. -->
     <div class="ovf" id="ovf">
-      <button
-        class="ovf-btn"
-        id="ovf-btn"
-        type="button"
-        aria-label="更多"
-        aria-haspopup="true"
-        aria-expanded="false"
-      >
-        ⋯
-      </button>
-      <div class="ovf-menu" role="menu">
+      <div class="ovf-menu" role="menu" aria-hidden="true">
         <button class="ovf-item" id="ovf-copy" type="button" role="menuitem">
           <span class="ovf-ico">📱</span>
           <span class="ovf-txt">
@@ -340,7 +311,7 @@
     <script>
       ;(function () {
         var root = document.getElementById('ovf')
-        var btn = document.getElementById('ovf-btn')
+        var menu = root.querySelector('.ovf-menu')
         var copy = document.getElementById('ovf-copy')
         var copyLabel = document.getElementById('ovf-copy-label')
         // ?fullscreen=true so Lynx Explorer opens the bundle full-screen
@@ -349,12 +320,32 @@
         copy.title = url
         function setOpen(open) {
           root.classList.toggle('open', open)
-          btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+          menu.setAttribute('aria-hidden', open ? 'false' : 'true')
         }
-        btn.addEventListener('click', function (e) {
+        function toggleMenu(e) {
           e.stopPropagation()
           setOpen(!root.classList.contains('open'))
-        })
+        }
+        function bindHeaderBrand() {
+          var host = document.getElementById('busyweek-view')
+          var brand = host && host.shadowRoot && host.shadowRoot.querySelector('.brand')
+          if (!brand) {
+            requestAnimationFrame(bindHeaderBrand)
+            return
+          }
+          brand.setAttribute('role', 'button')
+          brand.setAttribute('tabindex', '0')
+          brand.setAttribute('aria-label', '更多')
+          brand.setAttribute('aria-haspopup', 'true')
+          brand.addEventListener('click', toggleMenu)
+          brand.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              toggleMenu(e)
+            }
+          })
+        }
+        bindHeaderBrand()
         document.addEventListener('click', function (e) {
           if (!root.contains(e.target)) setOpen(false)
         })

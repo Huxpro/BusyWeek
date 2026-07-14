@@ -23,7 +23,7 @@ type AppState = 'LIST' | 'INPUT'
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
-const showCompleted = ref(false)
+const showCompleted = ref(true)
 const editingId = ref<string | null>(null)
 
 // the "new todo" being composed on the add page

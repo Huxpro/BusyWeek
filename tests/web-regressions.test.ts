@@ -149,6 +149,18 @@ test('uses one app-bar show-completed control instead of filter tabs', () => {
   assert.match(appSource, /stored \?\? createStarterTimeline\(getTodayDate\(\)\)/)
 })
 
+test('completed visibility starts enabled', () => {
+  assert.match(appSource, /const showCompleted = ref\(true\)/)
+})
+
+test('the hidden Web menu is triggered by the header brand', () => {
+  assert.doesNotMatch(webHost, /class="ovf-btn"/)
+  assert.doesNotMatch(webHost, /id="ovf-btn"/)
+  assert.match(webHost, /querySelector\(['"]\.brand['"]\)/)
+  assert.match(webHost, /brand\.addEventListener\(['"]click['"]/)
+  assert.match(webHost, /brand\.addEventListener\(['"]keydown['"]/)
+})
+
 test('native scroll views use bounded single linear content children', () => {
   assert.match(
     appSource,
