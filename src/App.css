@@ -97,8 +97,14 @@
 /* ===== Timeline — the only scroller ===== */
 .timeline {
   flex: 1;
+  height: 0;
   width: 100%;
   padding-top: 10px;
+}
+.timeline-content {
+  display: linear;
+  linear-direction: column;
+  width: 100%;
 }
 .day-list,
 .day-todos {

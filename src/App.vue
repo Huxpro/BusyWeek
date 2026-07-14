@@ -321,6 +321,7 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- ===== Only this list scrolls ===== -->
     <scroll-view class="timeline" scroll-orientation="vertical">
+      <view class="timeline-content">
       <view v-if="isEmpty" class="empty">
         <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
         <text class="bw-text empty-text">{{ emptyText }}</text>
@@ -402,6 +403,7 @@ function removeTodo(dayKey: string, id: string) {
       </TransitionGroup>
 
       <view class="timeline-spacer" />
+      </view>
     </scroll-view>
 
     <!-- ===== Floating action button (list mode) ===== -->

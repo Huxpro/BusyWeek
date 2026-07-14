@@ -32,19 +32,21 @@ function pick(offset: number) {
       </view>
 
       <scroll-view class="dp-list" scroll-orientation="vertical">
-        <view
-          v-for="o in options"
-          :key="o"
-          class="dp-item"
-          :class="{ 'dp-item--active': isActive(o) }"
-          @tap="pick(o)"
-        >
-          <text
-            class="bw-text dp-item-text"
-            :class="{ 'dp-item-text--active': isActive(o) }"
-            >{{ getPickerLabel(o) }}</text
+        <view class="dp-content">
+          <view
+            v-for="o in options"
+            :key="o"
+            class="dp-item"
+            :class="{ 'dp-item--active': isActive(o) }"
+            @tap="pick(o)"
           >
-          <text v-if="isActive(o)" class="bw-text dp-check">✓</text>
+            <text
+              class="bw-text dp-item-text"
+              :class="{ 'dp-item-text--active': isActive(o) }"
+              >{{ getPickerLabel(o) }}</text
+            >
+            <text v-if="isActive(o)" class="bw-text dp-check">✓</text>
+          </view>
         </view>
       </scroll-view>
     </view>

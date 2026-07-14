@@ -6,6 +6,14 @@ import { loadTimeline, saveTimeline } from '../src/store.ts'
 
 const appSource = readFileSync(new URL('../src/App.vue', import.meta.url), 'utf8')
 const appCss = readFileSync(new URL('../src/App.css', import.meta.url), 'utf8')
+const dayPickerSource = readFileSync(
+  new URL('../src/components/DayPickerSheet.vue', import.meta.url),
+  'utf8',
+)
+const dayPickerCss = readFileSync(
+  new URL('../src/components/daypicker.css', import.meta.url),
+  'utf8',
+)
 const storeSource = readFileSync(new URL('../src/store.ts', import.meta.url), 'utf8')
 const webHost = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8')
 
@@ -139,6 +147,26 @@ test('uses one app-bar show-completed control instead of filter tabs', () => {
   assert.match(appSource, /class="completed-toggle"/)
   assert.match(appSource, /showCompleted/)
   assert.match(appSource, /stored \?\? createStarterTimeline\(getTodayDate\(\)\)/)
+})
+
+test('native scroll views use bounded single linear content children', () => {
+  assert.match(
+    appSource,
+    /<scroll-view class="timeline"[^>]*>\s*<view class="timeline-content">/s,
+  )
+  assert.match(appCss, /\.timeline\s*\{[^}]*height:\s*0/s)
+  assert.match(
+    appCss,
+    /\.timeline-content\s*\{[^}]*display:\s*linear[^}]*linear-direction:\s*column/s,
+  )
+  assert.match(
+    dayPickerSource,
+    /<scroll-view class="dp-list"[^>]*>\s*<view class="dp-content">/s,
+  )
+  assert.match(
+    dayPickerCss,
+    /\.dp-content\s*\{[^}]*display:\s*linear[^}]*linear-direction:\s*column/s,
+  )
 })
 
 test('todo insertion and removal are owned by an explicit Vue transition group', () => {
