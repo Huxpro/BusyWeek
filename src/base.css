@@ -20,6 +20,15 @@
 
 text {
   font-family: var(--bw-font);
+  /* Vue renders fragment boundaries (for v-for/v-if) as empty <text> nodes.
+     Lynx native otherwise gives each anchor a 14px layout box. */
+  height: 0px;
   /* Crisper glyphs on the web target; ignored on native. */
   -webkit-font-smoothing: antialiased;
+}
+
+/* Lynx CSS does not support attribute selectors, so intentional text nodes
+   opt into this class while Vue's anonymous fragment anchors stay collapsed. */
+.bw-text {
+  height: auto;
 }

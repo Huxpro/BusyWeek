@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue-lynx'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue-lynx'
 
 import './App.css'
 import type { Filter, Timeline, Todo } from './types.js'
@@ -111,10 +118,13 @@ function genId(): string {
 }
 
 // --- actions ---------------------------------------------------------------
-function openInput() {
+async function openInput() {
   newTodoText.value = ''
   newTodoDate.value = getTodayDate()
   state.value = 'INPUT'
+  await nextTick()
+  setComposerValue(newTodoText.value)
+  focusComposer()
 }
 function closeInput() {
   state.value = 'LIST'
@@ -125,7 +135,36 @@ function toggleInput() {
 }
 
 // keyboard dismiss: blur the textarea (hides the soft keyboard)
-const taEl = ref<{ blur?: () => void } | null>(null)
+const taEl = ref<{ blur?: () => void; focus?: () => void } | null>(null)
+function focusComposer() {
+  taEl.value?.focus?.()
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        .invoke({ method: 'focus', fail: () => {} })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable — the web focus() call above covers it */
+  }
+}
+function setComposerValue(value: string) {
+  try {
+    if (typeof lynx !== 'undefined') {
+      ;(lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery()
+        .select('#addpage-ta')
+        // vue-lynx 0.4.0 only updates the native `value` attribute after mount;
+        // iOS requires the element UI method for programmatic resets (#203).
+        .invoke({ method: 'setValue', params: { value }, fail: () => {} })
+        .exec()
+    }
+  } catch {
+    /* SelectorQuery unavailable — web reflects the value attribute directly */
+  }
+}
 function dismissKb() {
   // web: the x-textarea custom element exposes blur()
   taEl.value?.blur?.()
@@ -255,8 +294,8 @@ function removeTodo(dayKey: string, id: string) {
     <!-- ===== Pinned header (never scrolls) ===== -->
     <view class="header">
       <view class="app-bar">
-        <text class="logo">BusyWeek!</text>
-        <text class="logo-accent">好忙啊</text>
+        <text class="bw-text logo">BusyWeek!</text>
+        <text class="bw-text logo-accent">好忙啊</text>
       </view>
       <view class="filters">
         <view
@@ -266,7 +305,7 @@ function removeTodo(dayKey: string, id: string) {
           @tap="activeFilter = f.value"
         >
           <text
-            class="filter-text"
+            class="bw-text filter-text"
             :class="{ 'filter-text--active': activeFilter === f.value }"
             >{{ f.label }}</text
           >
@@ -281,9 +320,9 @@ function removeTodo(dayKey: string, id: string) {
     <!-- ===== Only this list scrolls ===== -->
     <scroll-view class="timeline" scroll-orientation="vertical">
       <view v-if="isEmpty" class="empty">
-        <view class="empty-badge"><text class="empty-badge-text">✓</text></view>
-        <text class="empty-text">这周还不忙</text>
-        <text class="empty-hint">点右下角 + 添加事项吧</text>
+        <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
+        <text class="bw-text empty-text">这周还不忙</text>
+        <text class="bw-text empty-hint">点右下角 + 添加事项吧</text>
       </view>
 
       <view v-for="day in visibleDays" :key="day.key" class="day-group">
@@ -291,12 +330,12 @@ function removeTodo(dayKey: string, id: string) {
           <view class="day-type-wrap">
             <view v-if="isToday(day.key)" class="today-dot" />
             <text
-              class="day-type"
+              class="bw-text day-type"
               :class="{ 'day-type--today': isToday(day.key) }"
               >{{ getDayType(day.key) }}</text
             >
           </view>
-          <text class="day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
+          <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
         </view>
 
         <view
@@ -311,7 +350,7 @@ function removeTodo(dayKey: string, id: string) {
             @tap="checkTodo(todo)"
           >
             <text
-              class="checkbox-mark"
+              class="bw-text checkbox-mark"
               :class="{ 'checkbox-mark--on': todo.done }"
               >✓</text
             >
@@ -322,7 +361,7 @@ function removeTodo(dayKey: string, id: string) {
                  pattern) so editing takes one tap. -->
             <text
               v-if="editingId !== todo.id"
-              class="todo-text"
+              class="bw-text todo-text"
               :class="{ 'todo-text--done': todo.done }"
               @tap="startEdit(todo)"
               >{{ todo.text }}</text
@@ -338,7 +377,7 @@ function removeTodo(dayKey: string, id: string) {
             />
           </view>
           <view class="delete" @tap="removeTodo(day.key, todo.id)">
-            <text class="delete-text">✕</text>
+            <text class="bw-text delete-text">✕</text>
           </view>
         </view>
       </view>
@@ -348,7 +387,7 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- ===== Floating action button (list mode) ===== -->
     <view v-if="state === 'LIST'" class="fab" @tap="openInput">
-      <text class="fab-icon">＋</text>
+      <text class="bw-text fab-icon">＋</text>
     </view>
 
     <!-- ===== Full-screen add page (slides down from the top) =====
@@ -364,13 +403,13 @@ function removeTodo(dayKey: string, id: string) {
     >
       <view class="addpage-bar">
         <view class="addpage-back" @tap="closeInput">
-          <text class="addpage-back-text">‹</text>
+          <text class="bw-text addpage-back-text">‹</text>
         </view>
-        <text class="addpage-title">添加事项</text>
+        <text class="bw-text addpage-title">添加事项</text>
       </view>
 
       <view class="addpage-input-wrap">
-        <text v-if="!newTodoText" class="addpage-ph">又有事情忙啦？</text>
+        <text v-if="!newTodoText" class="bw-text addpage-ph">又有事情忙啦？</text>
         <textarea
           id="addpage-ta"
           ref="taEl"
@@ -383,16 +422,16 @@ function removeTodo(dayKey: string, id: string) {
         <view class="addpage-row">
           <!-- day-type field → opens the cross-platform day picker sheet -->
           <view class="addpage-field" @tap="openDayPicker">
-            <text class="addpage-field-text">{{ dayTypeLabel }}</text>
-            <text class="addpage-field-caret">▾</text>
+            <text class="bw-text addpage-field-text">{{ dayTypeLabel }}</text>
+            <text class="bw-text addpage-field-caret">▾</text>
           </view>
           <!-- date field → opens the cross-platform calendar sheet -->
           <view class="addpage-field" @tap="openDatePicker">
-            <text class="addpage-field-text">{{ prettyDate }}</text>
-            <text class="addpage-field-caret">📅</text>
+            <text class="bw-text addpage-field-text">{{ prettyDate }}</text>
+            <text class="bw-text addpage-field-caret">📅</text>
           </view>
           <view class="addpage-submit" @tap="addTodo">
-            <text class="addpage-submit-text">添加</text>
+            <text class="bw-text addpage-submit-text">添加</text>
           </view>
         </view>
       </view>

@@ -25,9 +25,9 @@ function pick(offset: number) {
     <view class="sheet-backdrop" @tap="emit('close')" />
     <view class="sheet-panel">
       <view class="sheet-header">
-        <text class="sheet-title">什么时候？</text>
+        <text class="bw-text sheet-title">什么时候？</text>
         <view class="sheet-done" @tap="emit('close')">
-          <text class="sheet-done-text">完成</text>
+          <text class="bw-text sheet-done-text">完成</text>
         </view>
       </view>
 
@@ -40,11 +40,11 @@ function pick(offset: number) {
           @tap="pick(o)"
         >
           <text
-            class="dp-item-text"
+            class="bw-text dp-item-text"
             :class="{ 'dp-item-text--active': isActive(o) }"
             >{{ getPickerLabel(o) }}</text
           >
-          <text v-if="isActive(o)" class="dp-check">✓</text>
+          <text v-if="isActive(o)" class="bw-text dp-check">✓</text>
         </view>
       </scroll-view>
     </view>

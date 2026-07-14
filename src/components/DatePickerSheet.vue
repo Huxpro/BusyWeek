@@ -51,25 +51,25 @@ function pick(date: string) {
     <view class="sheet-backdrop" @tap="emit('close')" />
     <view class="sheet-panel">
       <view class="sheet-header">
-        <text class="sheet-title">选择日期</text>
+        <text class="bw-text sheet-title">选择日期</text>
         <view class="sheet-done" @tap="emit('close')">
-          <text class="sheet-done-text">完成</text>
+          <text class="bw-text sheet-done-text">完成</text>
         </view>
       </view>
 
       <view class="cal-monthbar">
         <view class="cal-navbtn" @tap="step(-1)">
-          <text class="cal-navtext">‹</text>
+          <text class="bw-text cal-navtext">‹</text>
         </view>
-        <text class="cal-monthlabel">{{ monthLabel }}</text>
+        <text class="bw-text cal-monthlabel">{{ monthLabel }}</text>
         <view class="cal-navbtn" @tap="step(1)">
-          <text class="cal-navtext">›</text>
+          <text class="bw-text cal-navtext">›</text>
         </view>
       </view>
 
       <view class="cal-weekrow">
         <view v-for="w in WEEKDAYS" :key="w" class="cal-weekcell">
-          <text class="cal-weektext">{{ w }}</text>
+          <text class="bw-text cal-weektext">{{ w }}</text>
         </view>
       </view>
 
@@ -85,7 +85,7 @@ function pick(date: string) {
           }"
           @tap="pick(c.date)"
         >
-          <text v-if="c.day" class="cal-daytext">{{ c.day }}</text>
+          <text v-if="c.day" class="bw-text cal-daytext">{{ c.day }}</text>
         </view>
       </view>
     </view>
