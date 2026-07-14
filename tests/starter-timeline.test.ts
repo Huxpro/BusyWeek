@@ -8,7 +8,7 @@ test('creates three pending instructional todos for the supplied date', () => {
   const todos = timeline['2026-07-14'].todos
 
   assert.deepEqual(todos.map((todo) => todo.text), [
-    '打开右上角查看已完成',
+    '右上角可显示或隐藏已完成',
     '点击文字编辑事项',
     '点击圆圈完成事项',
   ])
