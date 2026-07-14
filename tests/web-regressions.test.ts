@@ -193,4 +193,8 @@ test('motion has a reduced-motion fallback', () => {
   assert.match(webHost, /@media\s*\(prefers-reduced-motion:\s*reduce\)/)
   assert.match(webHost, /\.todo-enter-active[\s\S]*transition-duration:\s*0\.01ms/)
   assert.match(webHost, /\.addpage[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.completed-toggle-label[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.completed-toggle-track[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.completed-toggle-thumb[^}]*transition-duration:\s*0\.01ms/s)
+  assert.doesNotMatch(webHost, /\.filter-indicator/)
 })
