@@ -14,7 +14,7 @@
   to { opacity: 1; }
 }
 
-/* ===== Pinned header (app bar + filters never scroll) ===== */
+/* ===== Pinned app bar ===== */
 .header {
   position: relative;
   z-index: 10;
@@ -32,9 +32,16 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   height: 56px;
   padding-left: 18px;
   padding-right: 18px;
+}
+.brand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
 }
 .logo {
   color: #ffffff;
@@ -49,38 +56,43 @@
   margin-top: 4px;
 }
 
-.filters {
-  position: relative;
+.completed-toggle {
   display: flex;
   flex-direction: row;
-}
-.filter {
-  flex: 1;
-  display: flex;
   align-items: center;
   justify-content: center;
   height: 44px;
+  padding-left: 10px;
 }
-.filter:active { background-color: rgba(255, 255, 255, 0.08); }
-.filter-text {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 15px;
-  transition: color 0.25s ease, font-weight 0.25s ease;
+.completed-toggle-label {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 13px;
+  margin-right: 8px;
+  transition: color 0.2s ease;
 }
-.filter-text--active {
-  color: #ffffff;
-  font-weight: 700;
+.completed-toggle-label--on { color: #ffffff; }
+.completed-toggle-track {
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.28);
+  transition: background-color 0.22s ease;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
-.filter-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 33.333%;
-  height: 3px;
-  border-radius: 3px;
+.completed-toggle-track--on { background-color: rgba(255, 255, 255, 0.55); }
+.completed-toggle-thumb {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border-radius: 9px;
   background-color: #ffffff;
-  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.5, 1);
+  box-shadow: 0px 1px 4px rgba(0, 60, 100, 0.28);
+  transform: translateX(0);
+  transition: transform 0.24s cubic-bezier(0.34, 1.4, 0.5, 1);
 }
+.completed-toggle-thumb--on { transform: translateX(16px); }
 
 /* ===== Timeline — the only scroller ===== */
 .timeline {

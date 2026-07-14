@@ -133,6 +133,14 @@ test('store reads Lynx lexical NativeModules before global fallbacks', () => {
   assert.match(storeSource, /\? NativeModules/)
 })
 
+test('uses one app-bar show-completed control instead of filter tabs', () => {
+  assert.doesNotMatch(appSource, /class="filters"/)
+  assert.doesNotMatch(appSource, /activeFilter/)
+  assert.match(appSource, /class="completed-toggle"/)
+  assert.match(appSource, /showCompleted/)
+  assert.match(appSource, /stored \?\? createStarterTimeline\(getTodayDate\(\)\)/)
+})
+
 test('todo insertion and removal are owned by an explicit Vue transition group', () => {
   assert.match(appSource, /<TransitionGroup\b[^>]*name="todo"/s)
   assert.match(appSource, /<TransitionGroup\b[^>]*:duration="\{ enter: 280, leave: 200 \}"/s)

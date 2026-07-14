@@ -10,8 +10,10 @@ import {
 
 import './App.css'
 import { syncNativeInputOnMount } from './nativeInput.js'
-import type { Filter, Timeline, Todo } from './types.js'
+import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
+import { getVisibleDays } from './timelineView.js'
+import type { Timeline, Todo } from './types.js'
 import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
 import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
@@ -21,7 +23,7 @@ type AppState = 'LIST' | 'INPUT'
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
-const activeFilter = ref<Filter>('all')
+const showCompleted = ref(false)
 const editingId = ref<string | null>(null)
 
 // the "new todo" being composed on the add page
@@ -46,15 +48,6 @@ const prettyDate = computed(() => {
   const { month0, day } = parseDate(newTodoDate.value)
   return `${month0 + 1}月${day}日`
 })
-
-const filters: { value: Filter; label: string }[] = [
-  { value: 'all', label: '全部' },
-  { value: 'active', label: '在忙' },
-  { value: 'done', label: '完成' },
-]
-const filterIndex = computed(() =>
-  Math.max(0, filters.findIndex((f) => f.value === activeFilter.value)),
-)
 
 // --- keyboard avoidance (native) -------------------------------------------
 // Lynx has no keyboard-height CSS/viewport primitive, so the documented
@@ -84,7 +77,8 @@ function bindKeyboard() {
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
   bindKeyboard()
-  timeline.value = await loadTimeline()
+  const stored = await loadTimeline()
+  timeline.value = stored ?? createStarterTimeline(getTodayDate())
 })
 
 onUnmounted(() => removeKbListener?.())
@@ -92,22 +86,25 @@ onUnmounted(() => removeKbListener?.())
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
 // --- derived view ----------------------------------------------------------
-const visibleDays = computed(() => {
-  const tl = timeline.value
-  return Object.keys(tl)
-    .sort()
-    .map((key) => {
-      const todos = tl[key].todos.filter((todo) => {
-        if (activeFilter.value === 'active') return !todo.done
-        if (activeFilter.value === 'done') return todo.done
-        return true
-      })
-      return { key, todos }
-    })
-    .filter((day) => day.todos.length > 0)
-})
+const visibleDays = computed(() =>
+  getVisibleDays(timeline.value, showCompleted.value),
+)
 
 const isEmpty = computed(() => visibleDays.value.length === 0)
+const hasStoredTodos = computed(() =>
+  Object.values(timeline.value).some((day) => day.todos.length > 0),
+)
+const hasOnlyHiddenCompleted = computed(
+  () => !showCompleted.value && hasStoredTodos.value && isEmpty.value,
+)
+const emptyText = computed(() =>
+  hasOnlyHiddenCompleted.value ? '待忙事项都完成了' : '这周还不忙',
+)
+const emptyHint = computed(() =>
+  hasOnlyHiddenCompleted.value
+    ? '打开右上角查看已完成'
+    : '点右下角 + 添加事项吧',
+)
 
 // --- helpers exposed to the template ---------------------------------------
 function isToday(dateStr: string): boolean {
@@ -296,26 +293,29 @@ function removeTodo(dayKey: string, id: string) {
     <!-- ===== Pinned header (never scrolls) ===== -->
     <view class="header">
       <view class="app-bar">
-        <text class="bw-text logo">BusyWeek!</text>
-        <text class="bw-text logo-accent">好忙啊</text>
-      </view>
-      <view class="filters">
-        <view
-          v-for="f in filters"
-          :key="f.value"
-          class="filter"
-          @tap="activeFilter = f.value"
-        >
-          <text
-            class="bw-text filter-text"
-            :class="{ 'filter-text--active': activeFilter === f.value }"
-            >{{ f.label }}</text
-          >
+        <view class="brand">
+          <text class="bw-text logo">BusyWeek!</text>
+          <text class="bw-text logo-accent">好忙啊</text>
         </view>
         <view
-          class="filter-indicator"
-          :style="{ transform: `translateX(${filterIndex * 100}%)` }"
-        />
+          class="completed-toggle"
+          @tap="showCompleted = !showCompleted"
+        >
+          <text
+            class="bw-text completed-toggle-label"
+            :class="{ 'completed-toggle-label--on': showCompleted }"
+            >显示已完成</text
+          >
+          <view
+            class="completed-toggle-track"
+            :class="{ 'completed-toggle-track--on': showCompleted }"
+          >
+            <view
+              class="completed-toggle-thumb"
+              :class="{ 'completed-toggle-thumb--on': showCompleted }"
+            />
+          </view>
+        </view>
       </view>
     </view>
 
@@ -323,8 +323,8 @@ function removeTodo(dayKey: string, id: string) {
     <scroll-view class="timeline" scroll-orientation="vertical">
       <view v-if="isEmpty" class="empty">
         <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
-        <text class="bw-text empty-text">这周还不忙</text>
-        <text class="bw-text empty-hint">点右下角 + 添加事项吧</text>
+        <text class="bw-text empty-text">{{ emptyText }}</text>
+        <text class="bw-text empty-hint">{{ emptyHint }}</text>
       </view>
 
       <!-- Explicit durations are required by Vue Lynx: the background thread
