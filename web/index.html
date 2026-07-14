@@ -137,8 +137,58 @@
     </style>
   </head>
   <body>
-    <!-- `url` is relative, so this works under any base path. -->
-    <lynx-view url="./main.web.bundle" height="100vh" width="100vw"></lynx-view>
+    <!-- The bundle URL is assigned after the web NativeModule bridge is ready. -->
+    <lynx-view id="busyweek-view" height="100vh" width="100vw"></lynx-view>
+
+    <script>
+      // Vue Lynx runs application code in a worker, where window.localStorage
+      // does not exist. Expose the same NativeLocalStorageModule contract used
+      // on iOS/Android and execute its storage operations in the host window.
+      ;(function installWebStorageModule() {
+        var el = document.getElementById('busyweek-view')
+        var moduleSource = `
+          export default function (_NativeModules, NativeModulesCall) {
+            return {
+              setStorageItem: function (key, value) {
+                NativeModulesCall('setStorageItem', { key: key, value: value })
+              },
+              getStorageItem: function (key, callback) {
+                NativeModulesCall('getStorageItem', { key: key }).then(callback)
+              },
+              clearStorage: function () {
+                NativeModulesCall('clearStorage', {})
+              }
+            }
+          }
+        `
+        var moduleUrl = URL.createObjectURL(
+          new Blob([moduleSource], { type: 'text/javascript' }),
+        )
+
+        customElements.whenDefined('lynx-view').then(function () {
+          el.onNativeModulesCall = function (name, data, moduleName) {
+            if (moduleName !== 'NativeLocalStorageModule') return null
+            try {
+              if (name === 'getStorageItem') {
+                return localStorage.getItem(data.key)
+              }
+              if (name === 'setStorageItem') {
+                localStorage.setItem(data.key, data.value)
+                return null
+              }
+              if (name === 'clearStorage') {
+                localStorage.removeItem('busyWeek')
+              }
+            } catch (error) {
+              console.warn('BusyWeek storage is unavailable', error)
+            }
+            return null
+          }
+          el.nativeModulesMap = { NativeLocalStorageModule: moduleUrl }
+          el.setAttribute('url', './main.web.bundle')
+        })
+      })()
+    </script>
 
     <script>
       // Keyboard avoidance (web): resize the Lynx viewport to the visual
@@ -156,6 +206,102 @@
         vv.addEventListener('resize', sync)
         vv.addEventListener('scroll', sync)
         sync()
+      })()
+    </script>
+
+    <script>
+      // Rspeedy's Lynx CSS pipeline intentionally omits browser media queries.
+      // Inject the legacy desktop adaptation into the web runtime's open
+      // shadow root after the app stylesheet has mounted. This keeps native
+      // layout unchanged while letting the browser own responsive behaviour.
+      ;(function installWebEnhancements() {
+        var host = document.querySelector('lynx-view')
+        if (!host) return
+        function inject() {
+          var root = host.shadowRoot
+          if (!root || !root.querySelector('.app')) {
+            requestAnimationFrame(inject)
+            return
+          }
+          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
+          // constants do not yet enable the element-level event bridge. A
+          // listener on the custom element activates its existing lynxinput
+          // forwarding before the composer can receive real keystrokes.
+          var textarea = root.querySelector('#addpage-ta')
+          if (textarea) textarea.addEventListener('lynxinput', function () {})
+          if (root.getElementById('busyweek-web-responsive')) return
+          var style = document.createElement('style')
+          style.id = 'busyweek-web-responsive'
+          style.textContent = `
+            @media all and (min-width: 640px) {
+              .timeline:not([l-e-name]) {
+                width: 70%;
+                margin-left: 15%;
+              }
+              .addpage:not([l-e-name]) {
+                width: 500px;
+                height: 60%;
+                left: auto;
+                right: 86px;
+                top: auto;
+                bottom: 63px;
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 18px 48px rgba(24, 65, 94, 0.28);
+                transform: translateY(100vh);
+              }
+              .addpage--open:not([l-e-name]) { transform: translateY(0); }
+              .addpage-bar:not([l-e-name]) {
+                height: 56px;
+                padding-top: 0;
+              }
+              .addpage-bottom:not([l-e-name]) { padding-bottom: 20px; }
+            }
+
+            @media all and (min-width: 800px) {
+              .delete:not([l-e-name]) {
+                opacity: 0;
+                transition: opacity 180ms ease, background-color 180ms ease;
+              }
+              .todo:hover .delete:not([l-e-name]),
+              .todo--editing .delete:not([l-e-name]) { opacity: 1; }
+            }
+
+            @media all and (min-width: 1000px) {
+              .timeline:not([l-e-name]) {
+                width: 57%;
+                margin-left: 21.5%;
+              }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .todo-enter-active:not([l-e-name]),
+              .todo-leave-active:not([l-e-name]),
+              .day-enter-active:not([l-e-name]),
+              .day-leave-active:not([l-e-name]) {
+                transition-duration: 0.01ms;
+              }
+              .addpage:not([l-e-name]),
+              .filter-indicator:not([l-e-name]),
+              .sheet-backdrop:not([l-e-name]),
+              .sheet-panel:not([l-e-name]),
+              .checkbox:not([l-e-name]),
+              .checkbox-mark:not([l-e-name]),
+              .delete:not([l-e-name]) {
+                transition-duration: 0.01ms;
+              }
+              .app:not([l-e-name]),
+              .empty-badge:not([l-e-name]),
+              .today-dot:not([l-e-name]),
+              .fab:not([l-e-name]) {
+                animation-duration: 0.01ms;
+                animation-iteration-count: 1;
+              }
+            }
+          `
+          root.appendChild(style)
+        }
+        inject()
       })()
     </script>
 

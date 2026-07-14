@@ -327,62 +327,79 @@ function removeTodo(dayKey: string, id: string) {
         <text class="bw-text empty-hint">点右下角 + 添加事项吧</text>
       </view>
 
-      <view v-for="day in visibleDays" :key="day.key" class="day-group">
-        <view class="day-header">
-          <view class="day-type-wrap">
-            <view v-if="isToday(day.key)" class="today-dot" />
-            <text
-              class="bw-text day-type"
-              :class="{ 'day-type--today': isToday(day.key) }"
-              >{{ getDayType(day.key) }}</text
-            >
+      <!-- Explicit durations are required by Vue Lynx: the background thread
+           cannot read getComputedStyle(). The outer group covers new/empty
+           dates; the inner group covers rows within an existing date. -->
+      <TransitionGroup
+        name="day"
+        tag="view"
+        class="day-list"
+        :duration="{ enter: 320, leave: 220 }"
+      >
+        <view v-for="day in visibleDays" :key="day.key" class="day-group">
+          <view class="day-header">
+            <view class="day-type-wrap">
+              <view v-if="isToday(day.key)" class="today-dot" />
+              <text
+                class="bw-text day-type"
+                :class="{ 'day-type--today': isToday(day.key) }"
+                >{{ getDayType(day.key) }}</text
+              >
+            </view>
+            <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
           </view>
-          <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
-        </view>
 
-        <view
-          v-for="todo in day.todos"
-          :key="todo.id"
-          class="todo"
-          :class="{ 'todo--editing': editingId === todo.id }"
-        >
-          <view
-            class="checkbox"
-            :class="{ 'checkbox--checked': todo.done }"
-            @tap="checkTodo(todo)"
+          <TransitionGroup
+            name="todo"
+            tag="view"
+            class="day-todos"
+            :duration="{ enter: 280, leave: 200 }"
           >
-            <text
-              class="bw-text checkbox-mark"
-              :class="{ 'checkbox-mark--on': todo.done }"
-              >✓</text
+            <view
+              v-for="todo in day.todos"
+              :key="todo.id"
+              class="todo"
+              :class="{ 'todo--editing': editingId === todo.id }"
             >
-          </view>
-          <view class="todo-body">
-            <!-- display as text; a single tap swaps to the input, which
-                 v-focus focuses immediately (the original's v-todo-focus
-                 pattern) so editing takes one tap. -->
-            <text
-              v-if="editingId !== todo.id"
-              class="bw-text todo-text"
-              :class="{ 'todo-text--done': todo.done }"
-              @tap="startEdit(todo)"
-              >{{ todo.text }}</text
-            >
-            <input
-              v-else
-              v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
-              :id="'edit-' + todo.id"
-              class="todo-input"
-              v-model="todo.text"
-              @blur="finishEdit(day.key, todo)"
-              @confirm="finishEdit(day.key, todo)"
-            />
-          </view>
-          <view class="delete" @tap="removeTodo(day.key, todo.id)">
-            <text class="bw-text delete-text">✕</text>
-          </view>
+              <view
+                class="checkbox"
+                :class="{ 'checkbox--checked': todo.done }"
+                @tap="checkTodo(todo)"
+              >
+                <text
+                  class="bw-text checkbox-mark"
+                  :class="{ 'checkbox-mark--on': todo.done }"
+                  >✓</text
+                >
+              </view>
+              <view class="todo-body">
+                <!-- display as text; a single tap swaps to the input, which
+                     v-focus focuses immediately (the original's v-todo-focus
+                     pattern) so editing takes one tap. -->
+                <text
+                  v-if="editingId !== todo.id"
+                  class="bw-text todo-text"
+                  :class="{ 'todo-text--done': todo.done }"
+                  @tap="startEdit(todo)"
+                  >{{ todo.text }}</text
+                >
+                <input
+                  v-else
+                  v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
+                  :id="'edit-' + todo.id"
+                  class="todo-input"
+                  v-model="todo.text"
+                  @blur="finishEdit(day.key, todo)"
+                  @confirm="finishEdit(day.key, todo)"
+                />
+              </view>
+              <view class="delete" @tap="removeTodo(day.key, todo.id)">
+                <text class="bw-text delete-text">✕</text>
+              </view>
+            </view>
+          </TransitionGroup>
         </view>
-      </view>
+      </TransitionGroup>
 
       <view class="timeline-spacer" />
     </scroll-view>
