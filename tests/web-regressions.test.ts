@@ -79,6 +79,47 @@ test('web persistence uses localStorage when the native module is unavailable', 
   }
 })
 
+test('missing storage is distinct from an explicitly stored empty timeline', async () => {
+  const previousNativeModules = globalThis.NativeModules
+  const previousLocalStorage = globalThis.localStorage
+  const values = new Map<string, string>()
+
+  Object.defineProperty(globalThis, 'NativeModules', {
+    configurable: true,
+    value: undefined,
+  })
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem(key: string) {
+        return values.get(key) ?? null
+      },
+      setItem(key: string, value: string) {
+        values.set(key, value)
+      },
+    },
+  })
+
+  try {
+    assert.equal(await loadTimeline(), null)
+
+    values.set('busyWeek', '{}')
+    assert.deepEqual(await loadTimeline(), {})
+
+    values.set('busyWeek', '{not valid json')
+    assert.equal(await loadTimeline(), null)
+  } finally {
+    Object.defineProperty(globalThis, 'NativeModules', {
+      configurable: true,
+      value: previousNativeModules,
+    })
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: previousLocalStorage,
+    })
+  }
+})
+
 test('the web host exposes localStorage through NativeLocalStorageModule', () => {
   assert.match(webHost, /nativeModulesMap/)
   assert.match(webHost, /NativeLocalStorageModule/)

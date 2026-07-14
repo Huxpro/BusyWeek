@@ -64,19 +64,20 @@ function getBrowserStorage(): BrowserStorage | undefined {
 // In-memory fallback so the app works even without the native module.
 const memory = new Map<string, string>()
 
-function parse(raw: string | null | undefined): Timeline {
-  if (!raw) {
-    return {}
-  }
+function parse(raw: string | null | undefined): Timeline | null {
+  if (raw == null) return null
+
   try {
-    return JSON.parse(raw) as Timeline
+    const value = JSON.parse(raw) as unknown
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+    return value as Timeline
   } catch {
-    return {}
+    return null
   }
 }
 
-/** Load the persisted timeline. Resolves to `{}` when nothing is stored. */
-export function loadTimeline(): Promise<Timeline> {
+/** Load persisted data, or `null` when no valid stored value exists. */
+export function loadTimeline(): Promise<Timeline | null> {
   return new Promise((resolve) => {
     const native = getNativeStorage()
     if (native) {
