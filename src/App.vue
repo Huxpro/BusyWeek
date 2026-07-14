@@ -12,6 +12,7 @@ import './App.css'
 import { syncNativeInputOnMount } from './nativeInput.js'
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
+import { createTimelineMotionLayout } from './timelineMotion.js'
 import { getVisibleDays } from './timelineView.js'
 import type { Timeline, Todo } from './types.js'
 import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
@@ -89,6 +90,27 @@ watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 const visibleDays = computed(() =>
   getVisibleDays(timeline.value, showCompleted.value),
 )
+const motionLayout = computed(() =>
+  createTimelineMotionLayout(visibleDays.value),
+)
+const dayListStyle = computed(() => ({
+  height: `${motionLayout.value.height}px`,
+}))
+
+function daySlotStyle(dayKey: string) {
+  const offset = motionLayout.value.days[dayKey]?.offset ?? 0
+  return { transform: `translateY(${offset}px)` }
+}
+
+function dayTodosStyle(dayKey: string) {
+  const height = motionLayout.value.days[dayKey]?.todosHeight ?? 0
+  return { height: `${height}px` }
+}
+
+function todoSlotStyle(dayKey: string, todoId: string) {
+  const offset = motionLayout.value.days[dayKey]?.todoOffsets[todoId] ?? 0
+  return { transform: `translateY(${offset}px)` }
+}
 
 const isEmpty = computed(() => visibleDays.value.length === 0)
 const hasStoredTodos = computed(() =>
@@ -335,9 +357,16 @@ function removeTodo(dayKey: string, id: string) {
         name="day"
         tag="view"
         class="day-list"
+        :style="dayListStyle"
         :duration="{ enter: 320, leave: 220 }"
       >
-        <view v-for="day in visibleDays" :key="day.key" class="day-group">
+        <view
+          v-for="day in visibleDays"
+          :key="day.key"
+          class="day-slot"
+          :style="daySlotStyle(day.key)"
+        >
+        <view class="day-group">
           <view class="day-header">
             <view class="day-type-wrap">
               <view v-if="isToday(day.key)" class="today-dot" />
@@ -354,11 +383,16 @@ function removeTodo(dayKey: string, id: string) {
             name="todo"
             tag="view"
             class="day-todos"
+            :style="dayTodosStyle(day.key)"
             :duration="{ enter: 280, leave: 200 }"
           >
             <view
               v-for="todo in day.todos"
               :key="todo.id"
+              class="todo-slot"
+              :style="todoSlotStyle(day.key, todo.id)"
+            >
+            <view
               class="todo"
               :class="{ 'todo--editing': editingId === todo.id }"
             >
@@ -398,7 +432,9 @@ function removeTodo(dayKey: string, id: string) {
                 <text class="bw-text delete-text">✕</text>
               </view>
             </view>
+            </view>
           </TransitionGroup>
+        </view>
         </view>
       </TransitionGroup>
 

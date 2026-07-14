@@ -106,11 +106,30 @@
   linear-direction: column;
   width: 100%;
 }
-.day-list,
+.day-list {
+  position: relative;
+  width: 100%;
+  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.day-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
 .day-todos {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  position: relative;
+  width: 100%;
+  transition: height 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.todo-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 52px;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .empty {
@@ -191,6 +210,7 @@
      and web — min-height + body padding produced stray top/bottom gaps on the
      first/last row under Lynx's native flex layout. */
   height: 52px;
+  width: 100%;
   padding-left: 14px;
   padding-right: 10px;
   border-bottom: 1px solid #f4f6f8;
@@ -199,38 +219,37 @@
 .todo:active { background-color: #f7fafc; }
 .todo--editing { background-color: #f2faff; }
 
-/* Vue transition classes: rows give direct add/remove feedback, while the
-   day transition handles the first or last todo for a date. Only transform
-   and opacity animate, keeping the native and web paths compositor-friendly. */
-.todo-enter-active {
+/* Slot transforms own reordering (Vue Lynx TransitionGroup has no FLIP move
+   phase); nested rows/cards own presence so the two transforms never clash. */
+.todo-enter-active .todo {
   transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 220ms cubic-bezier(0.25, 1, 0.5, 1);
 }
-.todo-leave-active {
+.todo-leave-active .todo {
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 160ms cubic-bezier(0.25, 1, 0.5, 1);
 }
-.todo-enter-from {
+.todo-enter-from .todo {
   opacity: 0;
   transform: translateY(-10px) scale(0.985);
 }
-.todo-leave-to {
+.todo-leave-to .todo {
   opacity: 0;
   transform: translateX(-24px) scale(0.985);
 }
-.day-enter-active {
+.day-enter-active .day-group {
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 260ms cubic-bezier(0.25, 1, 0.5, 1);
 }
-.day-leave-active {
+.day-leave-active .day-group {
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 180ms cubic-bezier(0.25, 1, 0.5, 1);
 }
-.day-enter-from {
+.day-enter-from .day-group {
   opacity: 0;
   transform: translateY(14px) scale(0.985);
 }
-.day-leave-to {
+.day-leave-to .day-group {
   opacity: 0;
   transform: translateX(-28px) scale(0.985);
 }

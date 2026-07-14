@@ -181,6 +181,20 @@ test('native scroll views use bounded single linear content children', () => {
   )
 })
 
+test('Clear-style motion gives retained todos and day cards explicit slots', () => {
+  assert.match(appSource, /createTimelineMotionLayout/)
+  assert.match(appSource, /const motionLayout = computed/)
+  assert.match(appSource, /class="day-list"[\s\S]*:style="dayListStyle"/)
+  assert.match(appSource, /class="day-slot"[\s\S]*:style="daySlotStyle\(day\.key\)"/)
+  assert.match(appSource, /class="day-todos"[\s\S]*:style="dayTodosStyle\(day\.key\)"/)
+  assert.match(appSource, /class="todo-slot"[\s\S]*:style="todoSlotStyle\(day\.key, todo\.id\)"/)
+  assert.match(appCss, /\.day-list\s*\{[^}]*position:\s*relative[^}]*transition:\s*height/s)
+  assert.match(appCss, /\.day-slot\s*\{[^}]*position:\s*absolute[^}]*transition:\s*transform/s)
+  assert.match(appCss, /\.todo-slot\s*\{[^}]*position:\s*absolute[^}]*transition:\s*transform/s)
+  assert.match(appCss, /\.todo-enter-active\s+\.todo/)
+  assert.match(appCss, /\.day-enter-active\s+\.day-group/)
+})
+
 test('todo insertion and removal are owned by an explicit Vue transition group', () => {
   assert.match(appSource, /<TransitionGroup\b[^>]*name="todo"/s)
   assert.match(appSource, /<TransitionGroup\b[^>]*:duration="\{ enter: 280, leave: 200 \}"/s)
@@ -208,5 +222,9 @@ test('motion has a reduced-motion fallback', () => {
   assert.match(webHost, /\.completed-toggle-label[^}]*transition-duration:\s*0\.01ms/s)
   assert.match(webHost, /\.completed-toggle-track[^}]*transition-duration:\s*0\.01ms/s)
   assert.match(webHost, /\.completed-toggle-thumb[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.day-slot[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.todo-slot[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.day-list[^}]*transition-duration:\s*0\.01ms/s)
+  assert.match(webHost, /\.day-todos[^}]*transition-duration:\s*0\.01ms/s)
   assert.doesNotMatch(webHost, /\.filter-indicator/)
 })

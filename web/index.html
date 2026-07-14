@@ -256,10 +256,14 @@
             }
 
             @media (prefers-reduced-motion: reduce) {
-              .todo-enter-active:not([l-e-name]),
-              .todo-leave-active:not([l-e-name]),
-              .day-enter-active:not([l-e-name]),
-              .day-leave-active:not([l-e-name]) {
+              .todo-enter-active:not([l-e-name]) .todo:not([l-e-name]),
+              .todo-leave-active:not([l-e-name]) .todo:not([l-e-name]),
+              .day-enter-active:not([l-e-name]) .day-group:not([l-e-name]),
+              .day-leave-active:not([l-e-name]) .day-group:not([l-e-name]),
+              .day-slot:not([l-e-name]),
+              .todo-slot:not([l-e-name]),
+              .day-list:not([l-e-name]),
+              .day-todos:not([l-e-name]) {
                 transition-duration: 0.01ms;
               }
               .addpage:not([l-e-name]),
