@@ -9,6 +9,7 @@ import {
 } from 'vue-lynx'
 
 import './App.css'
+import { syncNativeInputOnMount } from './nativeInput.js'
 import type { Filter, Timeline, Todo } from './types.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
@@ -243,30 +244,31 @@ function startEdit(todo: Todo) {
   editingId.value = todo.id
 }
 
-// focus the edit input the instant it appears (mirrors the original's
-// v-todo-focus). web: the element exposes focus(); native: invoke the blur/
-// focus UI method via SelectorQuery on the element's id.
+// Seed and focus the edit input after it exists in the native tree. vue-lynx
+// 0.4.0 only pushes the mounted `value` attribute, which iOS ignores once the
+// control is live, so setValue must run before focus (vue-lynx #203).
 const vFocus = {
-  // binding.value is the element's `id` ATTRIBUTE (el.id here would be Lynx's
-  // internal numeric node id, not the selector we set).
-  mounted(el: { focus?: () => void }, binding: { value?: string }) {
-    const id = binding?.value
-    const focus = () => {
-      el?.focus?.() // web: no-op across the worker boundary, harmless
-      if (typeof lynx === 'undefined' || !id) return
-      try {
-        ;(lynx as unknown as { createSelectorQuery: () => any })
-          .createSelectorQuery()
-          .select(`#${id}`)
-          // fail cb is required — without it a missing node throws uncaught
-          .invoke({ method: 'focus', fail: () => {} })
-          .exec()
-      } catch {
-        /* ignore — falls back to tapping the field again */
-      }
-    }
-    // defer so the input is committed to the native tree before we query it
-    Promise.resolve().then(focus)
+  mounted(
+    el: { focus?: () => void },
+    binding: { value?: { id?: string; value?: string } },
+  ) {
+    const id = binding.value?.id
+    if (!id) return
+
+    void syncNativeInputOnMount({
+      el,
+      id,
+      value: binding.value?.value ?? '',
+      nextTick,
+      createSelectorQuery:
+        typeof lynx === 'undefined'
+          ? undefined
+          : () =>
+              (lynx as unknown as { createSelectorQuery: () => any })
+                .createSelectorQuery(),
+    }).catch(() => {
+      /* ignore — falls back to tapping the field again */
+    })
   },
 }
 
@@ -368,7 +370,7 @@ function removeTodo(dayKey: string, id: string) {
             >
             <input
               v-else
-              v-focus="'edit-' + todo.id"
+              v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
               :id="'edit-' + todo.id"
               class="todo-input"
               v-model="todo.text"
