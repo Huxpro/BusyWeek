@@ -10,9 +10,24 @@ import {
 
 import './App.css'
 import { syncNativeInputOnMount } from './nativeInput.js'
-import type { Filter, Timeline, Todo } from './types.js'
+import {
+  getElementKeyboardHeight,
+  type NativeKeyboardEvent,
+} from './nativeKeyboard.js'
+import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
-import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
+import { createTimelineMotionLayout } from './timelineMotion.js'
+import { getVisibleDays } from './timelineView.js'
+import type { Timeline, Todo } from './types.js'
+import {
+  getDateDiff,
+  getDay,
+  getDayType,
+  getDiffDate,
+  getPickerLabel,
+  getTodayDate,
+  parseDate,
+} from './util.js'
 import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
 
@@ -21,7 +36,7 @@ type AppState = 'LIST' | 'INPUT'
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
-const activeFilter = ref<Filter>('all')
+const showCompleted = ref(true)
 const editingId = ref<string | null>(null)
 
 // the "new todo" being composed on the add page
@@ -33,9 +48,16 @@ const dayPickerOpen = ref(false)
 const datePickerOpen = ref(false)
 
 // soft-keyboard height (device-independent px), used to lift the composer's
-// bottom bar clear of the keyboard on native. Driven by Lynx's global
-// `keyboardstatuschanged` event.
+// bottom bar clear of the keyboard on native. The input element event works
+// on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
+
+// Fast relative-day choices complement (rather than replace) the full day and
+// calendar pickers. Fixed choices keep the strip predictable on small screens.
+const quickDayOffsets = [0, 1, 2, 3, 4, 5, 6, 7]
+const selectedDayOffset = computed(() =>
+  getDateDiff(newTodoDate.value, getTodayDate()),
+)
 
 // day-type + weekday label for the currently chosen date
 const dayTypeLabel = computed(
@@ -47,23 +69,16 @@ const prettyDate = computed(() => {
   return `${month0 + 1}月${day}日`
 })
 
-const filters: { value: Filter; label: string }[] = [
-  { value: 'all', label: '全部' },
-  { value: 'active', label: '在忙' },
-  { value: 'done', label: '完成' },
-]
-const filterIndex = computed(() =>
-  Math.max(0, filters.findIndex((f) => f.value === activeFilter.value)),
-)
-
 // --- keyboard avoidance (native) -------------------------------------------
-// Lynx has no keyboard-height CSS/viewport primitive, so the documented
-// approach is to listen for the `keyboardstatuschanged` global event and
-// offset the view yourself. `height` is in device-independent px (same unit
-// as Lynx CSS px), so it maps 1:1 onto paddingBottom.
+// Lynx has no keyboard-height CSS/viewport primitive, so native events update
+// an explicit offset. `height` is in device-independent px (the same unit as
+// Lynx CSS px), so it maps 1:1 onto paddingBottom.
 // https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
 function onKeyboardStatus(status: string, height: number) {
   keyboardHeight.value = status === 'on' ? height : 0
+}
+function onComposerKeyboard(event: NativeKeyboardEvent) {
+  keyboardHeight.value = getElementKeyboardHeight(event)
 }
 let removeKbListener: (() => void) | undefined
 function bindKeyboard() {
@@ -84,7 +99,8 @@ function bindKeyboard() {
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
   bindKeyboard()
-  timeline.value = await loadTimeline()
+  const stored = await loadTimeline()
+  timeline.value = stored ?? createStarterTimeline(getTodayDate())
 })
 
 onUnmounted(() => removeKbListener?.())
@@ -92,22 +108,46 @@ onUnmounted(() => removeKbListener?.())
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
 // --- derived view ----------------------------------------------------------
-const visibleDays = computed(() => {
-  const tl = timeline.value
-  return Object.keys(tl)
-    .sort()
-    .map((key) => {
-      const todos = tl[key].todos.filter((todo) => {
-        if (activeFilter.value === 'active') return !todo.done
-        if (activeFilter.value === 'done') return todo.done
-        return true
-      })
-      return { key, todos }
-    })
-    .filter((day) => day.todos.length > 0)
-})
+const visibleDays = computed(() =>
+  getVisibleDays(timeline.value, showCompleted.value),
+)
+const motionLayout = computed(() =>
+  createTimelineMotionLayout(visibleDays.value),
+)
+const dayListStyle = computed(() => ({
+  height: `${motionLayout.value.height}px`,
+}))
+
+function daySlotStyle(dayKey: string) {
+  const offset = motionLayout.value.days[dayKey]?.offset ?? 0
+  return { transform: `translateY(${offset}px)` }
+}
+
+function dayTodosStyle(dayKey: string) {
+  const height = motionLayout.value.days[dayKey]?.todosHeight ?? 0
+  return { height: `${height}px` }
+}
+
+function todoSlotStyle(dayKey: string, todoId: string) {
+  const offset = motionLayout.value.days[dayKey]?.todoOffsets[todoId] ?? 0
+  return { transform: `translateY(${offset}px)` }
+}
 
 const isEmpty = computed(() => visibleDays.value.length === 0)
+const hasStoredTodos = computed(() =>
+  Object.values(timeline.value).some((day) => day.todos.length > 0),
+)
+const hasOnlyHiddenCompleted = computed(
+  () => !showCompleted.value && hasStoredTodos.value && isEmpty.value,
+)
+const emptyText = computed(() =>
+  hasOnlyHiddenCompleted.value ? '待忙事项都完成了' : '这周还不忙',
+)
+const emptyHint = computed(() =>
+  hasOnlyHiddenCompleted.value
+    ? '打开右上角查看已完成'
+    : '点右下角 + 添加事项吧',
+)
 
 // --- helpers exposed to the template ---------------------------------------
 function isToday(dateStr: string): boolean {
@@ -220,6 +260,10 @@ function openDatePicker() {
   datePickerOpen.value = true
 }
 
+function pickQuickDay(offset: number) {
+  newTodoDate.value = getDiffDate(offset)
+}
+
 function addTodo() {
   dismissKb()
   const date = newTodoDate.value
@@ -238,7 +282,7 @@ function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
-// tap a todo's text → swap to the edit <input>; v-focus (below) focuses it
+// tap a todo's body → swap to the edit <input>; v-focus (below) focuses it
 // on mount so it edits in a single tap.
 function startEdit(todo: Todo) {
   editingId.value = todo.id
@@ -296,95 +340,148 @@ function removeTodo(dayKey: string, id: string) {
     <!-- ===== Pinned header (never scrolls) ===== -->
     <view class="header">
       <view class="app-bar">
-        <text class="bw-text logo">BusyWeek!</text>
-        <text class="bw-text logo-accent">好忙啊</text>
-      </view>
-      <view class="filters">
-        <view
-          v-for="f in filters"
-          :key="f.value"
-          class="filter"
-          @tap="activeFilter = f.value"
-        >
-          <text
-            class="bw-text filter-text"
-            :class="{ 'filter-text--active': activeFilter === f.value }"
-            >{{ f.label }}</text
-          >
+        <view class="brand">
+          <text class="bw-text logo">BusyWeek!</text>
+          <text class="bw-text logo-accent">好忙啊</text>
         </view>
         <view
-          class="filter-indicator"
-          :style="{ transform: `translateX(${filterIndex * 100}%)` }"
-        />
+          class="completed-toggle"
+          @tap="showCompleted = !showCompleted"
+        >
+          <text
+            class="bw-text completed-toggle-label"
+            :class="{ 'completed-toggle-label--on': showCompleted }"
+            >显示已完成</text
+          >
+          <view
+            class="completed-toggle-track"
+            :class="{ 'completed-toggle-track--on': showCompleted }"
+          >
+            <view
+              class="completed-toggle-thumb"
+              :class="{ 'completed-toggle-thumb--on': showCompleted }"
+            />
+          </view>
+        </view>
       </view>
     </view>
 
     <!-- ===== Only this list scrolls ===== -->
-    <scroll-view class="timeline" scroll-orientation="vertical">
+    <scroll-view
+      id="timeline-scroll"
+      class="timeline"
+      scroll-orientation="vertical"
+      :scroll-y="true"
+    >
+      <view class="timeline-content">
+      <!-- Explicit durations are required by Vue Lynx: the background thread
+           cannot read getComputedStyle(). The outer group covers new/empty
+           dates; the inner group covers rows within an existing date. -->
+      <TransitionGroup
+        name="day"
+        tag="view"
+        class="day-list"
+        :style="dayListStyle"
+        :duration="{ enter: 320, leave: 220 }"
+      >
+        <view
+          v-for="day in visibleDays"
+          :key="day.key"
+          class="day-slot"
+          :style="daySlotStyle(day.key)"
+        >
+        <view class="day-group">
+          <view class="day-header">
+            <view class="day-type-wrap">
+              <view v-if="isToday(day.key)" class="today-dot" />
+              <text
+                class="bw-text day-type"
+                :class="{ 'day-type--today': isToday(day.key) }"
+                >{{ getDayType(day.key) }}</text
+              >
+            </view>
+            <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
+          </view>
+
+          <TransitionGroup
+            name="todo"
+            tag="view"
+            class="day-todos"
+            :style="dayTodosStyle(day.key)"
+            :duration="{ enter: 280, leave: 200 }"
+          >
+            <view
+              v-for="(todo, todoIndex) in day.todos"
+              :key="todo.id"
+              class="todo-slot"
+              :style="todoSlotStyle(day.key, todo.id)"
+            >
+            <view
+              class="todo"
+              :class="{
+                'todo--editing': editingId === todo.id,
+                'todo--last': todoIndex === day.todos.length - 1,
+              }"
+            >
+              <view
+                class="checkbox-hit"
+                @tap.stop="checkTodo(todo)"
+              >
+                <view
+                  class="checkbox"
+                  :class="{ 'checkbox--checked': todo.done }"
+                >
+                  <text
+                    class="bw-text checkbox-mark"
+                    :class="{ 'checkbox-mark--on': todo.done }"
+                    >✓</text
+                  >
+                </view>
+              </view>
+              <view class="todo-body" @tap="startEdit(todo)">
+                <!-- display as text; a single tap swaps to the input, which
+                     v-focus focuses immediately (the original's v-todo-focus
+                     pattern) so editing takes one tap. -->
+                <text
+                  v-if="editingId !== todo.id"
+                  class="bw-text todo-text"
+                  :class="{ 'todo-text--done': todo.done }"
+                  >{{ todo.text }}</text
+                >
+                <input
+                  v-else
+                  v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
+                  :id="'edit-' + todo.id"
+                  class="todo-input"
+                  v-model="todo.text"
+                  @blur="finishEdit(day.key, todo)"
+                  @confirm="finishEdit(day.key, todo)"
+                />
+              </view>
+              <view
+                class="delete"
+                @tap.stop="removeTodo(day.key, todo.id)"
+              >
+                <text class="bw-text delete-text">✕</text>
+              </view>
+            </view>
+            </view>
+          </TransitionGroup>
+        </view>
+        </view>
+      </TransitionGroup>
+
+      <!-- Keep the empty state after the collapsing list. When the final
+           visible day leaves, it follows the animated list height upward
+           instead of being inserted above and pushing the card downward. -->
       <view v-if="isEmpty" class="empty">
         <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
-        <text class="bw-text empty-text">这周还不忙</text>
-        <text class="bw-text empty-hint">点右下角 + 添加事项吧</text>
-      </view>
-
-      <view v-for="day in visibleDays" :key="day.key" class="day-group">
-        <view class="day-header">
-          <view class="day-type-wrap">
-            <view v-if="isToday(day.key)" class="today-dot" />
-            <text
-              class="bw-text day-type"
-              :class="{ 'day-type--today': isToday(day.key) }"
-              >{{ getDayType(day.key) }}</text
-            >
-          </view>
-          <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
-        </view>
-
-        <view
-          v-for="todo in day.todos"
-          :key="todo.id"
-          class="todo"
-          :class="{ 'todo--editing': editingId === todo.id }"
-        >
-          <view
-            class="checkbox"
-            :class="{ 'checkbox--checked': todo.done }"
-            @tap="checkTodo(todo)"
-          >
-            <text
-              class="bw-text checkbox-mark"
-              :class="{ 'checkbox-mark--on': todo.done }"
-              >✓</text
-            >
-          </view>
-          <view class="todo-body">
-            <!-- display as text; a single tap swaps to the input, which
-                 v-focus focuses immediately (the original's v-todo-focus
-                 pattern) so editing takes one tap. -->
-            <text
-              v-if="editingId !== todo.id"
-              class="bw-text todo-text"
-              :class="{ 'todo-text--done': todo.done }"
-              @tap="startEdit(todo)"
-              >{{ todo.text }}</text
-            >
-            <input
-              v-else
-              v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
-              :id="'edit-' + todo.id"
-              class="todo-input"
-              v-model="todo.text"
-              @blur="finishEdit(day.key, todo)"
-              @confirm="finishEdit(day.key, todo)"
-            />
-          </view>
-          <view class="delete" @tap="removeTodo(day.key, todo.id)">
-            <text class="bw-text delete-text">✕</text>
-          </view>
-        </view>
+        <text class="bw-text empty-text">{{ emptyText }}</text>
+        <text class="bw-text empty-hint">{{ emptyHint }}</text>
       </view>
 
       <view class="timeline-spacer" />
+      </view>
     </scroll-view>
 
     <!-- ===== Floating action button (list mode) ===== -->
@@ -394,11 +491,14 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- ===== Full-screen add page (slides down from the top) =====
          paddingBottom = keyboardHeight lifts the bottom bar above the soft
-         keyboard on native (Lynx `keyboardstatuschanged`); on web the runtime
+         keyboard on native (textarea keyboard events); on web the runtime
          resizes <lynx-view> to the visual viewport instead, so this stays 0. -->
     <view
       class="addpage"
-      :class="{ 'addpage--open': state === 'INPUT' }"
+      :class="{
+        'addpage--open': state === 'INPUT',
+        'addpage--keyboard': keyboardHeight > 0,
+      }"
       :style="{ paddingBottom: keyboardHeight ? `${keyboardHeight}px` : '' }"
       @touchstart="onAddTouchStart"
       @touchend="onAddTouchEnd"
@@ -410,17 +510,41 @@ function removeTodo(dayKey: string, id: string) {
         <text class="bw-text addpage-title">添加事项</text>
       </view>
 
-      <view class="addpage-input-wrap">
-        <text v-if="!newTodoText" class="bw-text addpage-ph">又有事情忙啦？</text>
+      <view class="addpage-input-wrap" @tap="focusComposer">
         <textarea
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
           v-model="newTodoText"
+          placeholder="又有事情忙啦？"
+          @keyboard="onComposerKeyboard"
+          @keyboardheightchange="onComposerKeyboard"
         />
       </view>
 
       <view class="addpage-bottom">
+        <scroll-view
+          id="quick-days-scroll"
+          class="quick-days"
+          scroll-orientation="horizontal"
+          :scroll-x="true"
+        >
+          <view
+            v-for="offset in quickDayOffsets"
+            :key="offset"
+            class="quick-day"
+            :class="{ 'quick-day--active': selectedDayOffset === offset }"
+            @tap="pickQuickDay(offset)"
+          >
+            <text
+              class="bw-text quick-day-text"
+              :class="{
+                'quick-day-text--active': selectedDayOffset === offset,
+              }"
+              >{{ getPickerLabel(offset) }}</text
+            >
+          </view>
+        </scroll-view>
         <view class="addpage-row">
           <!-- day-type field → opens the cross-platform day picker sheet -->
           <view class="addpage-field" @tap="openDayPicker">

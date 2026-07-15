@@ -6,6 +6,11 @@
   height: 320px;
   padding-top: 4px;
 }
+.dp-content {
+  display: linear;
+  linear-direction: column;
+  width: 100%;
+}
 .dp-item {
   display: flex;
   flex-direction: row;

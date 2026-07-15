@@ -14,7 +14,7 @@
   to { opacity: 1; }
 }
 
-/* ===== Pinned header (app bar + filters never scroll) ===== */
+/* ===== Pinned app bar ===== */
 .header {
   position: relative;
   z-index: 10;
@@ -32,9 +32,16 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   height: 56px;
   padding-left: 18px;
   padding-right: 18px;
+}
+.brand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
 }
 .logo {
   color: #ffffff;
@@ -49,44 +56,80 @@
   margin-top: 4px;
 }
 
-.filters {
-  position: relative;
+.completed-toggle {
   display: flex;
   flex-direction: row;
-}
-.filter {
-  flex: 1;
-  display: flex;
   align-items: center;
   justify-content: center;
   height: 44px;
+  padding-left: 10px;
 }
-.filter:active { background-color: rgba(255, 255, 255, 0.08); }
-.filter-text {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 15px;
-  transition: color 0.25s ease, font-weight 0.25s ease;
+.completed-toggle-label {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 13px;
+  margin-right: 8px;
+  transition: color 0.2s ease;
 }
-.filter-text--active {
-  color: #ffffff;
-  font-weight: 700;
+.completed-toggle-label--on { color: #ffffff; }
+.completed-toggle-track {
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.28);
+  transition: background-color 0.22s ease;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
-.filter-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 33.333%;
-  height: 3px;
-  border-radius: 3px;
+.completed-toggle-track--on { background-color: rgba(255, 255, 255, 0.55); }
+.completed-toggle-thumb {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border-radius: 9px;
   background-color: #ffffff;
-  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.5, 1);
+  box-shadow: 0px 1px 4px rgba(0, 60, 100, 0.28);
+  transform: translateX(0);
+  transition: transform 0.24s cubic-bezier(0.34, 1.4, 0.5, 1);
 }
+.completed-toggle-thumb--on { transform: translateX(16px); }
 
 /* ===== Timeline — the only scroller ===== */
 .timeline {
   flex: 1;
+  height: 0;
   width: 100%;
   padding-top: 10px;
+}
+.timeline-content {
+  display: linear;
+  linear-direction: column;
+  width: 100%;
+}
+.day-list {
+  position: relative;
+  width: 100%;
+  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.day-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.day-todos {
+  position: relative;
+  width: 100%;
+  transition: height 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.todo-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 52px;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .empty {
@@ -117,6 +160,9 @@
 .empty-hint { color: #9aa1a9; font-size: 13px; margin-top: 6px; }
 
 .day-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   width: 94%;
   margin-left: 3%;
   margin-top: 10px;
@@ -124,11 +170,6 @@
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0px 3px 12px rgba(45, 60, 80, 0.08);
-  animation: group-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes group-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .day-header {
@@ -169,19 +210,61 @@
      and web — min-height + body padding produced stray top/bottom gaps on the
      first/last row under Lynx's native flex layout. */
   height: 52px;
-  padding-left: 14px;
+  width: 100%;
+  padding-left: 4px;
   padding-right: 10px;
   border-bottom: 1px solid #f4f6f8;
-  transition: background-color 0.2s ease;
-  animation: todo-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.todo:active { background-color: #f7fafc; }
-.todo--editing { background-color: #f2faff; }
-@keyframes todo-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+.todo--last { border-bottom-width: 0; }
+
+/* Slot transforms own reordering (Vue Lynx TransitionGroup has no FLIP move
+   phase); nested rows/cards own presence so the two transforms never clash. */
+.todo-leave-active,
+.day-leave-active {
+  z-index: 2;
+}
+.todo-enter-active .todo {
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.todo-leave-active .todo {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.todo-enter-from .todo {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.985);
+}
+.todo-leave-to .todo {
+  opacity: 0;
+  transform: translateX(-24px) scale(0.985);
+}
+.day-enter-active .day-group {
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.day-leave-active .day-group {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.day-enter-from .day-group {
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+}
+.day-leave-to .day-group {
+  opacity: 0;
+  transform: translateX(-28px) scale(0.985);
 }
 
+.checkbox-hit {
+  flex-shrink: 0;
+  width: 44px;
+  height: 52px;
+  margin-right: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .checkbox {
   width: 24px;
   height: 24px;
@@ -190,10 +273,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 13px;
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
-.checkbox:active { transform: scale(0.88); }
+.checkbox-hit:active .checkbox { transform: scale(0.88); }
 .checkbox--checked { background-color: #03a9f4; border-color: #03a9f4; }
 .checkbox-mark {
   color: #ffffff;
@@ -307,15 +389,6 @@
   position: relative;
   display: flex;
 }
-.addpage-ph {
-  position: absolute;
-  top: 22px;
-  left: 22px;
-  right: 22px;
-  font-size: 22px;
-  line-height: 32px;
-  color: rgba(255, 255, 255, 0.68);
-}
 /* On web this Lynx <textarea> renders as a real <textarea>, so strip its
    default focus outline, border, and resize grip directly (no ::part needed). */
 .addpage-input {
@@ -329,11 +402,46 @@
   outline: none;
   resize: none;
 }
+.addpage-input::placeholder {
+  color: rgba(255, 255, 255, 0.68);
+}
 
 .addpage-bottom {
   padding-top: 6px;
   padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
+.addpage--keyboard .addpage-bottom { padding-bottom: 8px; }
+
+/* Quick relative-day choices. Fixed-width direct children let both the legacy
+   scroll-x flag and modern scroll-orientation calculate real overflow. */
+.quick-days {
+  width: 100%;
+  height: 50px;
+  padding-left: 18px;
+  padding-right: 8px;
+  margin-bottom: 8px;
+}
+.quick-day {
+  flex-shrink: 0;
+  width: 106px;
+  height: 44px;
+  margin-right: 8px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.quick-day:active { transform: scale(0.96); }
+.quick-day--active { background-color: #ffffff; }
+.quick-day-text {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.quick-day-text--active { color: #0288d1; }
 .addpage-row {
   display: flex;
   flex-direction: row;

@@ -64,39 +64,22 @@
         border: none;
       }
 
-      /* Top-right overflow menu (⋯): Lynx bundle URL + legacy version. */
+      /* Header-triggered overflow menu: Lynx bundle URL + legacy version. */
       .ovf {
         position: fixed;
-        right: 12px;
-        top: calc(10px + env(safe-area-inset-top));
+        left: 12px;
+        right: auto;
+        top: calc(62px + env(safe-area-inset-top));
         z-index: 2147483647;
         font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           sans-serif;
+        pointer-events: none;
       }
-      .ovf-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: none;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        font-size: 22px;
-        line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        -webkit-backdrop-filter: blur(6px);
-        backdrop-filter: blur(6px);
-        transition: background 0.2s ease, transform 0.15s ease;
-      }
-      .ovf-btn:hover { background: rgba(255, 255, 255, 0.32); }
-      .ovf-btn:active { transform: scale(0.94); }
       .ovf-menu {
-        position: absolute;
-        right: 0;
-        top: 44px;
+        position: relative;
+        left: 0;
+        right: auto;
+        top: 0;
         min-width: 218px;
         padding: 6px;
         border-radius: 14px;
@@ -104,7 +87,7 @@
         box-shadow: 0 12px 32px rgba(10, 30, 60, 0.3);
         opacity: 0;
         transform: translateY(-6px) scale(0.98);
-        transform-origin: top right;
+        transform-origin: top left;
         pointer-events: none;
         transition: opacity 0.18s ease, transform 0.18s ease;
       }
@@ -137,8 +120,58 @@
     </style>
   </head>
   <body>
-    <!-- `url` is relative, so this works under any base path. -->
-    <lynx-view url="./main.web.bundle" height="100vh" width="100vw"></lynx-view>
+    <!-- The bundle URL is assigned after the web NativeModule bridge is ready. -->
+    <lynx-view id="busyweek-view" height="100vh" width="100vw"></lynx-view>
+
+    <script>
+      // Vue Lynx runs application code in a worker, where window.localStorage
+      // does not exist. Expose the same NativeLocalStorageModule contract used
+      // on iOS/Android and execute its storage operations in the host window.
+      ;(function installWebStorageModule() {
+        var el = document.getElementById('busyweek-view')
+        var moduleSource = `
+          export default function (_NativeModules, NativeModulesCall) {
+            return {
+              setStorageItem: function (key, value) {
+                NativeModulesCall('setStorageItem', { key: key, value: value })
+              },
+              getStorageItem: function (key, callback) {
+                NativeModulesCall('getStorageItem', { key: key }).then(callback)
+              },
+              clearStorage: function () {
+                NativeModulesCall('clearStorage', {})
+              }
+            }
+          }
+        `
+        var moduleUrl = URL.createObjectURL(
+          new Blob([moduleSource], { type: 'text/javascript' }),
+        )
+
+        customElements.whenDefined('lynx-view').then(function () {
+          el.onNativeModulesCall = function (name, data, moduleName) {
+            if (moduleName !== 'NativeLocalStorageModule') return null
+            try {
+              if (name === 'getStorageItem') {
+                return localStorage.getItem(data.key)
+              }
+              if (name === 'setStorageItem') {
+                localStorage.setItem(data.key, data.value)
+                return null
+              }
+              if (name === 'clearStorage') {
+                localStorage.removeItem('busyWeek')
+              }
+            } catch (error) {
+              console.warn('BusyWeek storage is unavailable', error)
+            }
+            return null
+          }
+          el.nativeModulesMap = { NativeLocalStorageModule: moduleUrl }
+          el.setAttribute('url', './main.web.bundle')
+        })
+      })()
+    </script>
 
     <script>
       // Keyboard avoidance (web): resize the Lynx viewport to the visual
@@ -159,20 +192,148 @@
       })()
     </script>
 
-    <!-- Top-right overflow menu: copy the native Lynx bundle URL, or open the
-         original legacy web edition. -->
+    <script>
+      // Rspeedy's Lynx CSS pipeline intentionally omits browser media queries.
+      // Inject the legacy desktop adaptation into the web runtime's open
+      // shadow root after the app stylesheet has mounted. This keeps native
+      // layout unchanged while letting the browser own responsive behaviour.
+      ;(function installWebEnhancements() {
+        var host = document.querySelector('lynx-view')
+        if (!host) return
+        function inject() {
+          var root = host.shadowRoot
+          if (!root || !root.querySelector('.app')) {
+            requestAnimationFrame(inject)
+            return
+          }
+          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
+          // constants do not yet enable the element-level event bridge. A
+          // listener on the custom element activates its existing lynxinput
+          // forwarding before the composer can receive real keystrokes.
+          var textarea = root.querySelector('#addpage-ta')
+          if (textarea) textarea.addEventListener('lynxinput', function () {})
+          if (root.getElementById('busyweek-web-responsive')) return
+          var style = document.createElement('style')
+          style.id = 'busyweek-web-responsive'
+          style.textContent = `
+            .addpage-input:not([l-e-name])::part(textarea)::placeholder {
+              color: rgba(255, 255, 255, 0.68);
+            }
+
+            @media all and (min-width: 640px) {
+              .timeline:not([l-e-name]) {
+                width: 70%;
+                margin-left: 15%;
+              }
+              .addpage:not([l-e-name]) {
+                width: 500px;
+                height: 60%;
+                left: auto;
+                right: 86px;
+                top: auto;
+                bottom: 63px;
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 18px 48px rgba(24, 65, 94, 0.28);
+                transform: translateY(100vh);
+              }
+              .addpage--open:not([l-e-name]) { transform: translateY(0); }
+              .addpage-bar:not([l-e-name]) {
+                height: 56px;
+                padding-top: 0;
+              }
+              .addpage-bottom:not([l-e-name]) { padding-bottom: 20px; }
+              .sheet-panel:not([l-e-name]) {
+                width: 500px;
+                align-self: flex-end;
+                margin-right: 86px;
+                margin-bottom: 63px;
+                border-radius: 18px;
+                padding-bottom: 12px;
+                overflow: hidden;
+                opacity: 0;
+                transform: translateY(24px) scale(0.98);
+                transform-origin: bottom right;
+                box-shadow: 0 18px 48px rgba(24, 65, 94, 0.28);
+                transition: opacity 180ms ease,
+                  transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+              }
+              .sheet-root--open:not([l-e-name]) .sheet-panel:not([l-e-name]) {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+              .dp-list:not([l-e-name]) { height: 208px; }
+              .dp-content:not([l-e-name]) {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+              }
+              .dp-item:not([l-e-name]) {
+                width: 50%;
+                box-sizing: border-box;
+              }
+            }
+
+            @media all and (min-width: 800px) {
+              .delete:not([l-e-name]) {
+                opacity: 0;
+                transition: opacity 180ms ease, background-color 180ms ease;
+              }
+              .todo:hover .delete:not([l-e-name]),
+              .todo--editing .delete:not([l-e-name]) { opacity: 1; }
+            }
+
+            @media all and (min-width: 1000px) {
+              .timeline:not([l-e-name]) {
+                width: 57%;
+                margin-left: 21.5%;
+              }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .todo-enter-active:not([l-e-name]) .todo:not([l-e-name]),
+              .todo-leave-active:not([l-e-name]) .todo:not([l-e-name]),
+              .day-enter-active:not([l-e-name]) .day-group:not([l-e-name]),
+              .day-leave-active:not([l-e-name]) .day-group:not([l-e-name]),
+              .day-slot:not([l-e-name]),
+              .todo-slot:not([l-e-name]),
+              .day-list:not([l-e-name]),
+              .day-todos:not([l-e-name]) {
+                transition-duration: 0.01ms;
+              }
+              .addpage:not([l-e-name]),
+              .completed-toggle-label:not([l-e-name]),
+              .completed-toggle-track:not([l-e-name]),
+              .completed-toggle-thumb:not([l-e-name]),
+              .sheet-backdrop:not([l-e-name]),
+              .sheet-panel:not([l-e-name]),
+              .checkbox:not([l-e-name]),
+              .checkbox-mark:not([l-e-name]),
+              .delete:not([l-e-name]) {
+                transition-duration: 0.01ms;
+              }
+              .quick-day:not([l-e-name]) {
+                transition-duration: 0.01ms;
+              }
+              .app:not([l-e-name]),
+              .empty-badge:not([l-e-name]),
+              .today-dot:not([l-e-name]),
+              .fab:not([l-e-name]) {
+                animation-duration: 0.01ms;
+                animation-iteration-count: 1;
+              }
+            }
+          `
+          root.appendChild(style)
+        }
+        inject()
+      })()
+    </script>
+
+    <!-- Hidden Web menu: tapping the BusyWeek brand in the Lynx header opens
+         it. There is intentionally no floating Web-only trigger button. -->
     <div class="ovf" id="ovf">
-      <button
-        class="ovf-btn"
-        id="ovf-btn"
-        type="button"
-        aria-label="更多"
-        aria-haspopup="true"
-        aria-expanded="false"
-      >
-        ⋯
-      </button>
-      <div class="ovf-menu" role="menu">
+      <div class="ovf-menu" role="menu" aria-hidden="true">
         <button class="ovf-item" id="ovf-copy" type="button" role="menuitem">
           <span class="ovf-ico">📱</span>
           <span class="ovf-txt">
@@ -192,7 +353,7 @@
     <script>
       ;(function () {
         var root = document.getElementById('ovf')
-        var btn = document.getElementById('ovf-btn')
+        var menu = root.querySelector('.ovf-menu')
         var copy = document.getElementById('ovf-copy')
         var copyLabel = document.getElementById('ovf-copy-label')
         // ?fullscreen=true so Lynx Explorer opens the bundle full-screen
@@ -201,12 +362,32 @@
         copy.title = url
         function setOpen(open) {
           root.classList.toggle('open', open)
-          btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+          menu.setAttribute('aria-hidden', open ? 'false' : 'true')
         }
-        btn.addEventListener('click', function (e) {
+        function toggleMenu(e) {
           e.stopPropagation()
           setOpen(!root.classList.contains('open'))
-        })
+        }
+        function bindHeaderBrand() {
+          var host = document.getElementById('busyweek-view')
+          var brand = host && host.shadowRoot && host.shadowRoot.querySelector('.brand')
+          if (!brand) {
+            requestAnimationFrame(bindHeaderBrand)
+            return
+          }
+          brand.setAttribute('role', 'button')
+          brand.setAttribute('tabindex', '0')
+          brand.setAttribute('aria-label', '更多')
+          brand.setAttribute('aria-haspopup', 'true')
+          brand.addEventListener('click', toggleMenu)
+          brand.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              toggleMenu(e)
+            }
+          })
+        }
+        bindHeaderBrand()
         document.addEventListener('click', function (e) {
           if (!root.contains(e.target)) setOpen(false)
         })

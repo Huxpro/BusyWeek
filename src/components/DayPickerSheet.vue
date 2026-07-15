@@ -21,7 +21,11 @@ function pick(offset: number) {
 </script>
 
 <template>
-  <view class="sheet-root" :class="{ 'sheet-root--open': open }">
+  <view
+    v-if="open"
+    class="sheet-root"
+    :class="{ 'sheet-root--open': open }"
+  >
     <view class="sheet-backdrop" @tap="emit('close')" />
     <view class="sheet-panel">
       <view class="sheet-header">
@@ -31,20 +35,27 @@ function pick(offset: number) {
         </view>
       </view>
 
-      <scroll-view class="dp-list" scroll-orientation="vertical">
-        <view
-          v-for="o in options"
-          :key="o"
-          class="dp-item"
-          :class="{ 'dp-item--active': isActive(o) }"
-          @tap="pick(o)"
-        >
-          <text
-            class="bw-text dp-item-text"
-            :class="{ 'dp-item-text--active': isActive(o) }"
-            >{{ getPickerLabel(o) }}</text
+      <scroll-view
+        id="day-picker-scroll"
+        class="dp-list"
+        scroll-orientation="vertical"
+        :scroll-y="true"
+      >
+        <view class="dp-content">
+          <view
+            v-for="o in options"
+            :key="o"
+            class="dp-item"
+            :class="{ 'dp-item--active': isActive(o) }"
+            @tap="pick(o)"
           >
-          <text v-if="isActive(o)" class="bw-text dp-check">✓</text>
+            <text
+              class="bw-text dp-item-text"
+              :class="{ 'dp-item-text--active': isActive(o) }"
+              >{{ getPickerLabel(o) }}</text
+            >
+            <text v-if="isActive(o)" class="bw-text dp-check">✓</text>
+          </view>
         </view>
       </scroll-view>
     </view>
