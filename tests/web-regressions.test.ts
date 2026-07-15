@@ -299,6 +299,50 @@ test('only the todo body starts editing and the final row has no duplicate divid
   )
 })
 
+test('todo editing routes both native keyboard events into timeline avoidance', () => {
+  assert.match(appSource, /keepTodoEditAboveKeyboard/)
+  assert.match(appSource, /const editKeyboardHeight = ref\(0\)/)
+  assert.match(
+    appSource,
+    /<input[\s\S]*?v-else[\s\S]*?@focus="onEditFocus\(todo\.id\)"[\s\S]*?@keyboard="onEditKeyboard\(todo\.id, \$event\)"[\s\S]*?@keyboardheightchange="onEditKeyboard\(todo\.id, \$event\)"[\s\S]*?\/>/,
+  )
+  assert.match(
+    appSource,
+    /function onKeyboardStatus\([\s\S]*?editingId\.value[\s\S]*?setEditKeyboardHeight/,
+  )
+})
+
+test('timeline gains a temporary keyboard spacer with delayed race-safe cleanup', () => {
+  assert.match(appSource, /id="app-root"\s+class="app"/)
+  assert.match(
+    appSource,
+    /<view class="timeline-spacer"\s*\/>\s*<view\s+class="edit-keyboard-spacer"\s+:style="editKeyboardSpacerStyle"\s*\/>/s,
+  )
+  assert.match(
+    appSource,
+    /const editKeyboardSpacerStyle = computed\([\s\S]*?editKeyboardSpacerHeight\.value/,
+  )
+  assert.match(appSource, /setTimeout\([\s\S]*?320/)
+  assert.match(appSource, /editAvoidanceGeneration/)
+  assert.match(
+    appCss,
+    /\.edit-keyboard-spacer\s*\{[^}]*height:\s*0[^}]*width:\s*100%/s,
+  )
+})
+
+test('unmount invalidates in-flight edit keyboard avoidance work', () => {
+  const start = appSource.indexOf('onUnmounted(() => {')
+  const end = appSource.indexOf('\n})', start)
+  const unmountBlock = appSource.slice(start, end + 3)
+
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  assert.match(unmountBlock, /editAvoidanceGeneration \+= 1/)
+  assert.match(unmountBlock, /editingId\.value = null/)
+  assert.match(unmountBlock, /editKeyboardHeight\.value = 0/)
+  assert.match(unmountBlock, /editKeyboardSpacerHeight\.value = 0/)
+})
+
 test('Clear-style motion gives retained todos and day cards explicit slots', () => {
   assert.match(appSource, /createTimelineMotionLayout/)
   assert.match(appSource, /const motionLayout = computed/)

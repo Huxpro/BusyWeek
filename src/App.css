@@ -314,6 +314,11 @@
 .delete-text { color: #d6dbe0; font-size: 15px; }
 
 .timeline-spacer { height: calc(104px + env(safe-area-inset-bottom)); }
+.edit-keyboard-spacer {
+  flex-shrink: 0;
+  height: 0;
+  width: 100%;
+}
 
 /* ===== Floating action button ===== */
 .fab {

@@ -10,7 +10,7 @@
     "preview": "rspeedy preview"
   },
   "dependencies": {
-    "@lynx-js/web-core": "https://pkg.pr.new/@lynx-js/web-core@2971",
+    "@lynx-js/web-core": "https://pkg.pr.new/@lynx-js/web-core@043cd321bd84da9cb3c3cf928e3888b561f207c6",
     "vue": "^3.5.0",
     "vue-lynx": "0.4.0"
   },

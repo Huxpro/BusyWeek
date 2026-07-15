@@ -18,6 +18,7 @@ import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
 import { getVisibleDays } from './timelineView.js'
+import { keepTodoEditAboveKeyboard } from './todoKeyboardAvoidance.js'
 import type { Timeline, Todo } from './types.js'
 import {
   getDateDiff,
@@ -52,6 +53,14 @@ const datePickerOpen = ref(false)
 // on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
 
+// Edit inputs live inside the main timeline instead of the full-screen
+// composer. Their keyboard needs extra scroll range plus an explicit scroll
+// adjustment; Lynx does not perform either automatically for built-in input.
+const editKeyboardHeight = ref(0)
+const editKeyboardSpacerHeight = ref(0)
+let editAvoidanceGeneration = 0
+let editKeyboardCleanupTimer: ReturnType<typeof setTimeout> | undefined
+
 // Fast relative-day choices complement (rather than replace) the full day and
 // calendar pickers. Fixed choices keep the strip predictable on small screens.
 const quickDayOffsets = [0, 1, 2, 3, 4, 5, 6, 7]
@@ -75,7 +84,12 @@ const prettyDate = computed(() => {
 // Lynx CSS px), so it maps 1:1 onto paddingBottom.
 // https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
 function onKeyboardStatus(status: string, height: number) {
-  keyboardHeight.value = status === 'on' ? height : 0
+  const nextHeight = status === 'on' ? height : 0
+  if (editingId.value) {
+    setEditKeyboardHeight(editingId.value, nextHeight)
+  } else {
+    keyboardHeight.value = nextHeight
+  }
 }
 function onComposerKeyboard(event: NativeKeyboardEvent) {
   keyboardHeight.value = getElementKeyboardHeight(event)
@@ -103,7 +117,15 @@ onMounted(async () => {
   timeline.value = stored ?? createStarterTimeline(getTodayDate())
 })
 
-onUnmounted(() => removeKbListener?.())
+onUnmounted(() => {
+  removeKbListener?.()
+  editAvoidanceGeneration += 1
+  editingId.value = null
+  editKeyboardHeight.value = 0
+  editKeyboardSpacerHeight.value = 0
+  if (editKeyboardCleanupTimer) clearTimeout(editKeyboardCleanupTimer)
+  editKeyboardCleanupTimer = undefined
+})
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 
@@ -116,6 +138,9 @@ const motionLayout = computed(() =>
 )
 const dayListStyle = computed(() => ({
   height: `${motionLayout.value.height}px`,
+}))
+const editKeyboardSpacerStyle = computed(() => ({
+  height: `${editKeyboardSpacerHeight.value}px`,
 }))
 
 function daySlotStyle(dayKey: string) {
@@ -285,7 +310,78 @@ function checkTodo(todo: Todo) {
 // tap a todo's body → swap to the edit <input>; v-focus (below) focuses it
 // on mount so it edits in a single tap.
 function startEdit(todo: Todo) {
+  cancelEditKeyboardCleanup()
+  editAvoidanceGeneration += 1
   editingId.value = todo.id
+}
+
+function cancelEditKeyboardCleanup() {
+  if (!editKeyboardCleanupTimer) return
+  clearTimeout(editKeyboardCleanupTimer)
+  editKeyboardCleanupTimer = undefined
+}
+
+// Keep the dummy until iOS finishes its keyboard dismissal animation. Clearing
+// the scroll range immediately on blur can clamp the list before the keyboard
+// has left the screen and produces a visible jump.
+function scheduleEditKeyboardCleanup() {
+  cancelEditKeyboardCleanup()
+  const generation = ++editAvoidanceGeneration
+  editKeyboardCleanupTimer = setTimeout(() => {
+    if (generation !== editAvoidanceGeneration) return
+    editKeyboardHeight.value = 0
+    editKeyboardSpacerHeight.value = 0
+    editKeyboardCleanupTimer = undefined
+  }, 320)
+}
+
+function setEditKeyboardHeight(todoId: string, height: number) {
+  if (editingId.value !== todoId) return
+
+  if (!Number.isFinite(height) || height <= 0) {
+    scheduleEditKeyboardCleanup()
+    return
+  }
+
+  cancelEditKeyboardCleanup()
+  editKeyboardHeight.value = height
+  // Expand first so even the last row has enough range when measurement and
+  // scrollTo run. The measured plan can reduce this for a viewport whose
+  // bottom already sits above the screen bottom.
+  editKeyboardSpacerHeight.value = height
+  const generation = ++editAvoidanceGeneration
+
+  if (typeof lynx === 'undefined') return
+
+  void keepTodoEditAboveKeyboard({
+    inputId: todoId,
+    keyboardHeight: height,
+    nextTick,
+    createSelectorQuery: () =>
+      (lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery(),
+    isCurrent: () =>
+      generation === editAvoidanceGeneration && editingId.value === todoId,
+    onSpacerHeight: (spacerHeight) => {
+      if (
+        generation === editAvoidanceGeneration &&
+        editingId.value === todoId
+      ) {
+        editKeyboardSpacerHeight.value = spacerHeight
+      }
+    },
+  }).catch(() => {
+    /* input disappeared or the host lacks a query method — never red-screen */
+  })
+}
+
+function onEditFocus(todoId: string) {
+  if (editingId.value !== todoId || editKeyboardHeight.value <= 0) return
+  setEditKeyboardHeight(todoId, editKeyboardHeight.value)
+}
+
+function onEditKeyboard(todoId: string, event: NativeKeyboardEvent) {
+  setEditKeyboardHeight(todoId, getElementKeyboardHeight(event))
 }
 
 // Seed and focus the edit input after it exists in the native tree. vue-lynx
@@ -319,6 +415,7 @@ const vFocus = {
 function finishEdit(dayKey: string, todo: Todo) {
   if (editingId.value !== todo.id) return
   editingId.value = null
+  scheduleEditKeyboardCleanup()
   todo.text = todo.text.trim()
   if (!todo.text) {
     removeTodo(dayKey, todo.id)
@@ -326,6 +423,10 @@ function finishEdit(dayKey: string, todo: Todo) {
 }
 
 function removeTodo(dayKey: string, id: string) {
+  if (editingId.value === id) {
+    editingId.value = null
+    scheduleEditKeyboardCleanup()
+  }
   const day = timeline.value[dayKey]
   if (!day) return
   day.todos = day.todos.filter((todo) => todo.id !== id)
@@ -336,7 +437,7 @@ function removeTodo(dayKey: string, id: string) {
 </script>
 
 <template>
-  <view class="app">
+  <view id="app-root" class="app">
     <!-- ===== Pinned header (never scrolls) ===== -->
     <view class="header">
       <view class="app-bar">
@@ -454,6 +555,9 @@ function removeTodo(dayKey: string, id: string) {
                   :id="'edit-' + todo.id"
                   class="todo-input"
                   v-model="todo.text"
+                  @focus="onEditFocus(todo.id)"
+                  @keyboard="onEditKeyboard(todo.id, $event)"
+                  @keyboardheightchange="onEditKeyboard(todo.id, $event)"
                   @blur="finishEdit(day.key, todo)"
                   @confirm="finishEdit(day.key, todo)"
                 />
@@ -481,6 +585,10 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="timeline-spacer" />
+      <view
+        class="edit-keyboard-spacer"
+        :style="editKeyboardSpacerStyle"
+      />
       </view>
     </scroll-view>
 
