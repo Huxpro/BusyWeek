@@ -15,7 +15,15 @@ import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
 import { getVisibleDays } from './timelineView.js'
 import type { Timeline, Todo } from './types.js'
-import { getDateDiff, getDay, getDayType, getTodayDate, parseDate } from './util.js'
+import {
+  getDateDiff,
+  getDay,
+  getDayType,
+  getDiffDate,
+  getPickerLabel,
+  getTodayDate,
+  parseDate,
+} from './util.js'
 import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
 
@@ -39,6 +47,13 @@ const datePickerOpen = ref(false)
 // bottom bar clear of the keyboard on native. Driven by Lynx's global
 // `keyboardstatuschanged` event.
 const keyboardHeight = ref(0)
+
+// Fast relative-day choices complement (rather than replace) the full day and
+// calendar pickers. Fixed choices keep the strip predictable on small screens.
+const quickDayOffsets = [0, 1, 2, 3, 4, 5, 6, 7]
+const selectedDayOffset = computed(() =>
+  getDateDiff(newTodoDate.value, getTodayDate()),
+)
 
 // day-type + weekday label for the currently chosen date
 const dayTypeLabel = computed(
@@ -239,6 +254,10 @@ function openDatePicker() {
   datePickerOpen.value = true
 }
 
+function pickQuickDay(offset: number) {
+  newTodoDate.value = getDiffDate(offset)
+}
+
 function addTodo() {
   dismissKb()
   const date = newTodoDate.value
@@ -257,7 +276,7 @@ function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
-// tap a todo's text → swap to the edit <input>; v-focus (below) focuses it
+// tap a todo's body → swap to the edit <input>; v-focus (below) focuses it
 // on mount so it edits in a single tap.
 function startEdit(todo: Todo) {
   editingId.value = todo.id
@@ -342,14 +361,13 @@ function removeTodo(dayKey: string, id: string) {
     </view>
 
     <!-- ===== Only this list scrolls ===== -->
-    <scroll-view class="timeline" scroll-orientation="vertical">
+    <scroll-view
+      id="timeline-scroll"
+      class="timeline"
+      scroll-orientation="vertical"
+      :scroll-y="true"
+    >
       <view class="timeline-content">
-      <view v-if="isEmpty" class="empty">
-        <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
-        <text class="bw-text empty-text">{{ emptyText }}</text>
-        <text class="bw-text empty-hint">{{ emptyHint }}</text>
-      </view>
-
       <!-- Explicit durations are required by Vue Lynx: the background thread
            cannot read getComputedStyle(). The outer group covers new/empty
            dates; the inner group covers rows within an existing date. -->
@@ -387,27 +405,34 @@ function removeTodo(dayKey: string, id: string) {
             :duration="{ enter: 280, leave: 200 }"
           >
             <view
-              v-for="todo in day.todos"
+              v-for="(todo, todoIndex) in day.todos"
               :key="todo.id"
               class="todo-slot"
               :style="todoSlotStyle(day.key, todo.id)"
             >
             <view
               class="todo"
-              :class="{ 'todo--editing': editingId === todo.id }"
+              :class="{
+                'todo--editing': editingId === todo.id,
+                'todo--last': todoIndex === day.todos.length - 1,
+              }"
             >
               <view
-                class="checkbox"
-                :class="{ 'checkbox--checked': todo.done }"
-                @tap="checkTodo(todo)"
+                class="checkbox-hit"
+                @tap.stop="checkTodo(todo)"
               >
-                <text
-                  class="bw-text checkbox-mark"
-                  :class="{ 'checkbox-mark--on': todo.done }"
-                  >✓</text
+                <view
+                  class="checkbox"
+                  :class="{ 'checkbox--checked': todo.done }"
                 >
+                  <text
+                    class="bw-text checkbox-mark"
+                    :class="{ 'checkbox-mark--on': todo.done }"
+                    >✓</text
+                  >
+                </view>
               </view>
-              <view class="todo-body">
+              <view class="todo-body" @tap="startEdit(todo)">
                 <!-- display as text; a single tap swaps to the input, which
                      v-focus focuses immediately (the original's v-todo-focus
                      pattern) so editing takes one tap. -->
@@ -415,7 +440,6 @@ function removeTodo(dayKey: string, id: string) {
                   v-if="editingId !== todo.id"
                   class="bw-text todo-text"
                   :class="{ 'todo-text--done': todo.done }"
-                  @tap="startEdit(todo)"
                   >{{ todo.text }}</text
                 >
                 <input
@@ -428,7 +452,10 @@ function removeTodo(dayKey: string, id: string) {
                   @confirm="finishEdit(day.key, todo)"
                 />
               </view>
-              <view class="delete" @tap="removeTodo(day.key, todo.id)">
+              <view
+                class="delete"
+                @tap.stop="removeTodo(day.key, todo.id)"
+              >
                 <text class="bw-text delete-text">✕</text>
               </view>
             </view>
@@ -437,6 +464,15 @@ function removeTodo(dayKey: string, id: string) {
         </view>
         </view>
       </TransitionGroup>
+
+      <!-- Keep the empty state after the collapsing list. When the final
+           visible day leaves, it follows the animated list height upward
+           instead of being inserted above and pushing the card downward. -->
+      <view v-if="isEmpty" class="empty">
+        <view class="empty-badge"><text class="bw-text empty-badge-text">✓</text></view>
+        <text class="bw-text empty-text">{{ emptyText }}</text>
+        <text class="bw-text empty-hint">{{ emptyHint }}</text>
+      </view>
 
       <view class="timeline-spacer" />
       </view>
@@ -453,7 +489,10 @@ function removeTodo(dayKey: string, id: string) {
          resizes <lynx-view> to the visual viewport instead, so this stays 0. -->
     <view
       class="addpage"
-      :class="{ 'addpage--open': state === 'INPUT' }"
+      :class="{
+        'addpage--open': state === 'INPUT',
+        'addpage--keyboard': keyboardHeight > 0,
+      }"
       :style="{ paddingBottom: keyboardHeight ? `${keyboardHeight}px` : '' }"
       @touchstart="onAddTouchStart"
       @touchend="onAddTouchEnd"
@@ -466,16 +505,38 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="addpage-input-wrap">
-        <text v-if="!newTodoText" class="bw-text addpage-ph">又有事情忙啦？</text>
         <textarea
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
           v-model="newTodoText"
+          placeholder="又有事情忙啦？"
         />
       </view>
 
       <view class="addpage-bottom">
+        <scroll-view
+          id="quick-days-scroll"
+          class="quick-days"
+          scroll-orientation="horizontal"
+          :scroll-x="true"
+        >
+          <view
+            v-for="offset in quickDayOffsets"
+            :key="offset"
+            class="quick-day"
+            :class="{ 'quick-day--active': selectedDayOffset === offset }"
+            @tap="pickQuickDay(offset)"
+          >
+            <text
+              class="bw-text quick-day-text"
+              :class="{
+                'quick-day-text--active': selectedDayOffset === offset,
+              }"
+              >{{ getPickerLabel(offset) }}</text
+            >
+          </view>
+        </scroll-view>
         <view class="addpage-row">
           <!-- day-type field → opens the cross-platform day picker sheet -->
           <view class="addpage-field" @tap="openDayPicker">

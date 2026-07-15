@@ -211,16 +211,18 @@
      first/last row under Lynx's native flex layout. */
   height: 52px;
   width: 100%;
-  padding-left: 14px;
+  padding-left: 4px;
   padding-right: 10px;
   border-bottom: 1px solid #f4f6f8;
-  transition: background-color 0.2s ease;
 }
-.todo:active { background-color: #f7fafc; }
-.todo--editing { background-color: #f2faff; }
+.todo--last { border-bottom-width: 0; }
 
 /* Slot transforms own reordering (Vue Lynx TransitionGroup has no FLIP move
    phase); nested rows/cards own presence so the two transforms never clash. */
+.todo-leave-active,
+.day-leave-active {
+  z-index: 2;
+}
 .todo-enter-active .todo {
   transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 220ms cubic-bezier(0.25, 1, 0.5, 1);
@@ -254,6 +256,15 @@
   transform: translateX(-28px) scale(0.985);
 }
 
+.checkbox-hit {
+  flex-shrink: 0;
+  width: 44px;
+  height: 52px;
+  margin-right: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .checkbox {
   width: 24px;
   height: 24px;
@@ -262,10 +273,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 13px;
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
-.checkbox:active { transform: scale(0.88); }
+.checkbox-hit:active .checkbox { transform: scale(0.88); }
 .checkbox--checked { background-color: #03a9f4; border-color: #03a9f4; }
 .checkbox-mark {
   color: #ffffff;
@@ -379,15 +389,6 @@
   position: relative;
   display: flex;
 }
-.addpage-ph {
-  position: absolute;
-  top: 22px;
-  left: 22px;
-  right: 22px;
-  font-size: 22px;
-  line-height: 32px;
-  color: rgba(255, 255, 255, 0.68);
-}
 /* On web this Lynx <textarea> renders as a real <textarea>, so strip its
    default focus outline, border, and resize grip directly (no ::part needed). */
 .addpage-input {
@@ -401,11 +402,46 @@
   outline: none;
   resize: none;
 }
+.addpage-input::placeholder {
+  color: rgba(255, 255, 255, 0.68);
+}
 
 .addpage-bottom {
   padding-top: 6px;
   padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
+.addpage--keyboard .addpage-bottom { padding-bottom: 8px; }
+
+/* Quick relative-day choices. Fixed-width direct children let both the legacy
+   scroll-x flag and modern scroll-orientation calculate real overflow. */
+.quick-days {
+  width: 100%;
+  height: 50px;
+  padding-left: 18px;
+  padding-right: 8px;
+  margin-bottom: 8px;
+}
+.quick-day {
+  flex-shrink: 0;
+  width: 106px;
+  height: 44px;
+  margin-right: 8px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.quick-day:active { transform: scale(0.96); }
+.quick-day--active { background-color: #ffffff; }
+.quick-day-text {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.quick-day-text--active { color: #0288d1; }
 .addpage-row {
   display: flex;
   flex-direction: row;

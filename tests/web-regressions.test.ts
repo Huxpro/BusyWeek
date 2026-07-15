@@ -164,7 +164,7 @@ test('the hidden Web menu is triggered by the header brand', () => {
 test('native scroll views use bounded single linear content children', () => {
   assert.match(
     appSource,
-    /<scroll-view class="timeline"[^>]*>\s*<view class="timeline-content">/s,
+    /<scroll-view[^>]*class="timeline"[^>]*>\s*<view class="timeline-content">/s,
   )
   assert.match(appCss, /\.timeline\s*\{[^}]*height:\s*0/s)
   assert.match(
@@ -173,11 +173,96 @@ test('native scroll views use bounded single linear content children', () => {
   )
   assert.match(
     dayPickerSource,
-    /<scroll-view class="dp-list"[^>]*>\s*<view class="dp-content">/s,
+    /<scroll-view[^>]*class="dp-list"[^>]*>\s*<view class="dp-content">/s,
   )
   assert.match(
     dayPickerCss,
     /\.dp-content\s*\{[^}]*display:\s*linear[^}]*linear-direction:\s*column/s,
+  )
+})
+
+test('native scroll views keep explicit legacy direction attributes', () => {
+  assert.match(
+    appSource,
+    /<scroll-view[^>]*id="timeline-scroll"[^>]*class="timeline"[^>]*scroll-orientation="vertical"[^>]*:scroll-y="true"/s,
+  )
+  assert.match(
+    dayPickerSource,
+    /<scroll-view[^>]*id="day-picker-scroll"[^>]*class="dp-list"[^>]*scroll-orientation="vertical"[^>]*:scroll-y="true"/s,
+  )
+})
+
+test('the composer uses the native textarea placeholder and compact keyboard spacing', () => {
+  assert.doesNotMatch(appSource, /class="bw-text addpage-ph"/)
+  assert.match(
+    appSource,
+    /<textarea[\s\S]*?id="addpage-ta"[\s\S]*?placeholder="又有事情忙啦？"[\s\S]*?\/>/,
+  )
+  assert.match(appCss, /\.addpage-input::placeholder\s*\{[^}]*color:/s)
+  assert.match(
+    webHost,
+    /\.addpage-input:not\(\[l-e-name\]\)::part\(textarea\)::placeholder\s*\{[^}]*color:/s,
+  )
+  assert.match(
+    appSource,
+    /'addpage--keyboard':\s*keyboardHeight\s*>\s*0/,
+  )
+  assert.match(
+    appCss,
+    /\.addpage--keyboard\s+\.addpage-bottom\s*\{[^}]*padding-bottom:\s*8px/s,
+  )
+  assert.match(
+    appCss,
+    /\.addpage-bottom\s*\{[^}]*padding-bottom:\s*calc\(28px\s*\+\s*env\(safe-area-inset-bottom\)\)/s,
+  )
+})
+
+test('the composer keeps its picker and adds a legacy-compatible quick-day scroller', () => {
+  assert.match(
+    appSource,
+    /id="quick-days-scroll"[^>]*class="quick-days"[^>]*scroll-orientation="horizontal"[^>]*:scroll-x="true"/s,
+  )
+  assert.match(appSource, /@tap="pickQuickDay\(offset\)"/)
+  assert.match(appSource, /quickDayOffsets/)
+  assert.match(appSource, /selectedDayOffset/)
+  assert.match(appSource, /@tap="openDayPicker"/)
+  assert.match(appSource, /@tap="openDatePicker"/)
+  assert.match(appCss, /\.quick-days\s*\{[^}]*height:\s*50px/s)
+  assert.match(
+    appCss,
+    /\.quick-day\s*\{[^}]*flex-shrink:\s*0[^}]*height:\s*44px/s,
+  )
+})
+
+test('only the todo body starts editing and the final row has no duplicate divider', () => {
+  assert.match(
+    appSource,
+    /class="checkbox-hit"[\s\S]*?@tap\.stop="checkTodo\(todo\)"/,
+  )
+  assert.match(
+    appSource,
+    /class="todo-body"[^>]*@tap="startEdit\(todo\)"/s,
+  )
+  assert.doesNotMatch(
+    appSource,
+    /class="bw-text todo-text"[^>]*@tap="startEdit\(todo\)"/s,
+  )
+  assert.match(
+    appSource,
+    /class="delete"[^>]*@tap\.stop="removeTodo\(day\.key, todo\.id\)"/s,
+  )
+  assert.doesNotMatch(appCss, /\.todo:active/)
+  assert.doesNotMatch(
+    appCss,
+    /\.todo--editing\s*\{[^}]*background-color:/s,
+  )
+  assert.match(
+    appSource,
+    /'todo--last':\s*todoIndex\s*===\s*day\.todos\.length\s*-\s*1/,
+  )
+  assert.match(
+    appCss,
+    /\.todo--last\s*\{[^}]*border-bottom-width:\s*0/s,
   )
 })
 
@@ -193,6 +278,17 @@ test('Clear-style motion gives retained todos and day cards explicit slots', () 
   assert.match(appCss, /\.todo-slot\s*\{[^}]*position:\s*absolute[^}]*transition:\s*transform/s)
   assert.match(appCss, /\.todo-enter-active\s+\.todo/)
   assert.match(appCss, /\.day-enter-active\s+\.day-group/)
+})
+
+test('Clear-style removal keeps the departing layer above movers and avoids empty-state pushdown', () => {
+  assert.match(
+    appCss,
+    /\.todo-leave-active,\s*\.day-leave-active\s*\{[^}]*z-index:\s*2/s,
+  )
+  assert.match(
+    appSource,
+    /<\/TransitionGroup>\s*<!--[\s\S]*?-->\s*<view v-if="isEmpty" class="empty">[\s\S]*?<view class="timeline-spacer"/,
+  )
 })
 
 test('todo insertion and removal are owned by an explicit Vue transition group', () => {
@@ -213,6 +309,37 @@ test('desktop CSS preserves the legacy centered timeline and floating composer',
   assert.match(webHost, /transform:\s*translateY\(100vh\)/)
   assert.match(webHost, /@media[^\{]*\(min-width:\s*1000px\)/)
   assert.match(webHost, /\.timeline[^\{]*\{[^}]*width:\s*57%[^}]*margin-left:\s*21\.5%/s)
+})
+
+test('the Web menu opens from the left and desktop pickers become anchored panels', () => {
+  assert.match(
+    webHost,
+    /\.ovf\s*\{[^}]*left:\s*12px[^}]*right:\s*auto/s,
+  )
+  assert.match(
+    webHost,
+    /\.ovf-menu\s*\{[^}]*left:\s*0[^}]*right:\s*auto[^}]*transform-origin:\s*top left/s,
+  )
+  assert.match(
+    webHost,
+    /\.sheet-panel:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*500px[^}]*align-self:\s*flex-end[^}]*margin-right:\s*86px[^}]*margin-bottom:\s*63px[^}]*border-radius:\s*18px/s,
+  )
+  assert.match(
+    webHost,
+    /\.sheet-root--open:not\(\[l-e-name\]\)\s+\.sheet-panel:not\(\[l-e-name\]\)\s*\{[^}]*opacity:\s*1[^}]*translateY\(0\)\s*scale\(1\)/s,
+  )
+  assert.match(
+    webHost,
+    /\.dp-list:not\(\[l-e-name\]\)\s*\{[^}]*height:\s*208px/s,
+  )
+  assert.match(
+    webHost,
+    /\.dp-content:not\(\[l-e-name\]\)\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s,
+  )
+  assert.match(
+    webHost,
+    /\.dp-item:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*50%/s,
+  )
 })
 
 test('motion has a reduced-motion fallback', () => {

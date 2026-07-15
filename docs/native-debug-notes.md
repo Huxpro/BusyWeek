@@ -189,3 +189,74 @@ CSS property Lynx-native treats differently from Lynx-web.
 2. If still there: add explicit `justify-content:flex-start` to `.day-group`.
 3. If still there: inspect the first `.todo` box in the Lynx devtool to see
    exactly which box (header / row / body) owns the extra pixels.
+
+---
+
+## Part C — follow-up: repeat focus, keyboard gap, and scrolling
+
+### Empty composer could not be focused again
+
+The composer previously drew its hint as an absolutely positioned sibling:
+
+```html
+<text class="addpage-ph">又有事情忙啦？</text>
+<textarea id="addpage-ta" />
+```
+
+The first focus worked because `openInput()` invoked the native `focus` UI
+method. After a blur, however, the empty-state text could own Native hit
+testing. Web happened to put `x-textarea` on top, which explains why the same
+sequence could not be reproduced there. The hint now uses the textarea's
+built-in `placeholder` attribute and `::placeholder` styling, so no sibling can
+intercept the second tap and native caret behavior remains intact.
+
+### Composer controls sat too far above the keyboard
+
+`keyboardHeight` already moves the page bottom to the keyboard top. The idle
+bottom bar then added another `28px + safe-area-inset-bottom`, producing a
+large double gap on iOS. Idle spacing is unchanged, but while the native
+`keyboardstatuschanged` event reports an open keyboard, the bottom padding is
+overridden to 8px.
+
+### Scroll direction compatibility
+
+The timeline and day picker previously declared only:
+
+```html
+scroll-orientation="vertical"
+```
+
+They now also pass the legacy direction as a real boolean:
+
+```html
+:scroll-y="true"
+```
+
+The quick-day strip similarly combines horizontal orientation with
+`:scroll-x="true"`. `scroll-orientation` replaced `scroll-x` / `scroll-y` in
+Lynx 3.0; keeping both same-direction declarations covers different Explorer
+hosts without changing modern behavior. The `sdkVersion` reported by Lynx
+DevTool is a protocol/client version and is **not** treated as proof of the
+embedded Lynx engine version.
+
+Stable inspection IDs:
+
+- `#timeline-scroll`
+- `#day-picker-scroll`
+- `#quick-days-scroll`
+
+### Physical-device acceptance
+
+1. Open the composer, blur it through either picker, close the picker, then
+   tap the still-empty textarea. The keyboard must return every time.
+2. With the keyboard open, the bottom controls should end about 8px above the
+   keyboard rather than above an additional safe-area-sized gap.
+3. Populate enough todos to exceed one screen. Query `#timeline-scroll` with
+   the scroll-view `getScrollInfo` UI method, call `scrollBy({ offset: 120 })`,
+   and verify the resulting vertical offset is greater than zero; then confirm
+   the same movement with a real finger drag.
+4. Open the day picker. Its eight 52px rows exceed the 320px viewport; repeat
+   `getScrollInfo` / `scrollBy` on `#day-picker-scroll` and finish with a real
+   finger drag to the final option.
+5. Horizontally drag `#quick-days-scroll` through all eight pills and select a
+   later day. The existing full day and calendar pickers must remain usable.

@@ -31,7 +31,12 @@ function pick(offset: number) {
         </view>
       </view>
 
-      <scroll-view class="dp-list" scroll-orientation="vertical">
+      <scroll-view
+        id="day-picker-scroll"
+        class="dp-list"
+        scroll-orientation="vertical"
+        :scroll-y="true"
+      >
         <view class="dp-content">
           <view
             v-for="o in options"
