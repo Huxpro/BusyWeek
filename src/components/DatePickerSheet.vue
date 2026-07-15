@@ -47,7 +47,11 @@ function pick(date: string) {
 </script>
 
 <template>
-  <view class="sheet-root" :class="{ 'sheet-root--open': open }">
+  <view
+    v-if="open"
+    class="sheet-root"
+    :class="{ 'sheet-root--open': open }"
+  >
     <view class="sheet-backdrop" @tap="emit('close')" />
     <view class="sheet-panel">
       <view class="sheet-header">

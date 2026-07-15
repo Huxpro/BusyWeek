@@ -10,6 +10,10 @@ const dayPickerSource = readFileSync(
   new URL('../src/components/DayPickerSheet.vue', import.meta.url),
   'utf8',
 )
+const datePickerSource = readFileSync(
+  new URL('../src/components/DatePickerSheet.vue', import.meta.url),
+  'utf8',
+)
 const dayPickerCss = readFileSync(
   new URL('../src/components/daypicker.css', import.meta.url),
   'utf8',
@@ -214,6 +218,35 @@ test('the composer uses the native textarea placeholder and compact keyboard spa
   assert.match(
     appCss,
     /\.addpage-bottom\s*\{[^}]*padding-bottom:\s*calc\(28px\s*\+\s*env\(safe-area-inset-bottom\)\)/s,
+  )
+})
+
+test('the composer consumes its native keyboard event without the vue-lynx global bridge', () => {
+  assert.match(
+    appSource,
+    /<textarea[\s\S]*?id="addpage-ta"[\s\S]*?@keyboard="onComposerKeyboard"[\s\S]*?\/>/,
+  )
+  assert.match(
+    appSource,
+    /function onComposerKeyboard\([\s\S]*?keyboardHeight\.value\s*=\s*getElementKeyboardHeight\(event\)/,
+  )
+})
+
+test('tapping the composer explicitly restores native focus after a picker blur', () => {
+  assert.match(
+    appSource,
+    /<view class="addpage-input-wrap"\s+@tap="focusComposer">/,
+  )
+})
+
+test('closed picker sheets unmount their native full-screen hit-test layers', () => {
+  assert.match(
+    dayPickerSource,
+    /<view[\s\S]*?v-if="open"[\s\S]*?class="sheet-root"[\s\S]*?:class="\{ 'sheet-root--open': open \}"/,
+  )
+  assert.match(
+    datePickerSource,
+    /<view[\s\S]*?v-if="open"[\s\S]*?class="sheet-root"[\s\S]*?:class="\{ 'sheet-root--open': open \}"/,
   )
 })
 

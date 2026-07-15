@@ -10,6 +10,10 @@ import {
 
 import './App.css'
 import { syncNativeInputOnMount } from './nativeInput.js'
+import {
+  getElementKeyboardHeight,
+  type NativeKeyboardEvent,
+} from './nativeKeyboard.js'
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
@@ -44,8 +48,8 @@ const dayPickerOpen = ref(false)
 const datePickerOpen = ref(false)
 
 // soft-keyboard height (device-independent px), used to lift the composer's
-// bottom bar clear of the keyboard on native. Driven by Lynx's global
-// `keyboardstatuschanged` event.
+// bottom bar clear of the keyboard on native. The input element event works
+// on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
 
 // Fast relative-day choices complement (rather than replace) the full day and
@@ -66,13 +70,15 @@ const prettyDate = computed(() => {
 })
 
 // --- keyboard avoidance (native) -------------------------------------------
-// Lynx has no keyboard-height CSS/viewport primitive, so the documented
-// approach is to listen for the `keyboardstatuschanged` global event and
-// offset the view yourself. `height` is in device-independent px (same unit
-// as Lynx CSS px), so it maps 1:1 onto paddingBottom.
+// Lynx has no keyboard-height CSS/viewport primitive, so native events update
+// an explicit offset. `height` is in device-independent px (the same unit as
+// Lynx CSS px), so it maps 1:1 onto paddingBottom.
 // https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
 function onKeyboardStatus(status: string, height: number) {
   keyboardHeight.value = status === 'on' ? height : 0
+}
+function onComposerKeyboard(event: NativeKeyboardEvent) {
+  keyboardHeight.value = getElementKeyboardHeight(event)
 }
 let removeKbListener: (() => void) | undefined
 function bindKeyboard() {
@@ -485,7 +491,7 @@ function removeTodo(dayKey: string, id: string) {
 
     <!-- ===== Full-screen add page (slides down from the top) =====
          paddingBottom = keyboardHeight lifts the bottom bar above the soft
-         keyboard on native (Lynx `keyboardstatuschanged`); on web the runtime
+         keyboard on native (textarea keyboard events); on web the runtime
          resizes <lynx-view> to the visual viewport instead, so this stays 0. -->
     <view
       class="addpage"
@@ -504,13 +510,15 @@ function removeTodo(dayKey: string, id: string) {
         <text class="bw-text addpage-title">添加事项</text>
       </view>
 
-      <view class="addpage-input-wrap">
+      <view class="addpage-input-wrap" @tap="focusComposer">
         <textarea
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
           v-model="newTodoText"
           placeholder="又有事情忙啦？"
+          @keyboard="onComposerKeyboard"
+          @keyboardheightchange="onComposerKeyboard"
         />
       </view>
 
