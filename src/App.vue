@@ -243,7 +243,7 @@ function dismissKb() {
       ;(lynx as unknown as { createSelectorQuery: () => any })
         .createSelectorQuery()
         .select('#addpage-ta')
-        .invoke({ method: 'blur' })
+        .invoke({ method: 'blur', fail: () => {} })
         .exec()
     }
   } catch {
@@ -292,6 +292,8 @@ function pickQuickDay(offset: number) {
 }
 
 function submitComposer() {
+  if (state.value !== 'INPUT') return
+
   const nextTimeline = commitComposerDraft(
     timeline.value,
     composerIntent.value,

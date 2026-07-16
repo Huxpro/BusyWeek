@@ -503,6 +503,27 @@ test('submitting commits once while cancel and back only discard the draft', () 
   )
 })
 
+test('composer submission rejects re-entry before committing', () => {
+  const submitComposer = getFunctionSource('submitComposer')
+  const stateGuard = submitComposer.indexOf(
+    "if (state.value !== 'INPUT') return",
+  )
+  const commit = submitComposer.indexOf('commitComposerDraft(')
+
+  assert.notEqual(stateGuard, -1)
+  assert.notEqual(commit, -1)
+  assert.ok(stateGuard < commit)
+})
+
+test('native composer blur absorbs invocation failures', () => {
+  const dismissKb = getFunctionSource('dismissKb')
+
+  assert.match(
+    dismissKb,
+    /\.invoke\(\{\s*method: ['"]blur['"],\s*fail: \(\) => \{\}\s*\}\)/,
+  )
+})
+
 test('inline edit state and keyboard avoidance are absent', () => {
   assert.doesNotMatch(appSource, /\beditingId\b/)
   assert.doesNotMatch(appSource, /edit-keyboard-spacer/)
