@@ -1049,7 +1049,7 @@ test('multiline todo CSS is uncapped and the measurement probe is inert', () => 
   )
   assert.match(
     webHost,
-    /\.todo-text:not\(\[l-e-name\]\)\s*\{[\s\S]*?white-space:\s*pre-wrap;[\s\S]*?word-break:\s*break-word;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?\}/,
+    /\.app:not\(\[l-e-name\]\)\s+\.todo-text:not\(\[l-e-name\]\)\s*\{[\s\S]*?white-space:\s*pre-wrap;[\s\S]*?word-break:\s*break-word;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?\}/,
   )
 })
 
