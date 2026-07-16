@@ -136,8 +136,9 @@ export function installTodoLongPress(root, testOptions = {}) {
       target.dispatchEvent(
         new CustomEventConstructor('longpress', {
           detail: { clientX: x, clientY: y },
-          bubbles: true,
-          composed: true,
+          bubbles: false,
+          composed: false,
+          cancelable: true,
         }),
       )
     } catch {

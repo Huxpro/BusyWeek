@@ -280,16 +280,23 @@ class FakeCustomEvent {
   detail: unknown
   bubbles: boolean
   composed: boolean
+  cancelable: boolean
   target: FakeElement | null = null
 
   constructor(
     type: string,
-    init: { detail?: unknown; bubbles?: boolean; composed?: boolean } = {},
+    init: {
+      detail?: unknown
+      bubbles?: boolean
+      composed?: boolean
+      cancelable?: boolean
+    } = {},
   ) {
     this.type = type
     this.detail = init.detail
     this.bubbles = init.bubbles ?? false
     this.composed = init.composed ?? false
+    this.cancelable = init.cancelable ?? false
   }
 }
 
@@ -383,7 +390,7 @@ function createInstallerHarness() {
   }
 }
 
-test('installer dispatches one composed bubbling longpress at 500ms from the original todo body', () => {
+test('installer dispatches one Lynx-compatible longpress at 500ms from the original todo body', () => {
   const harness = createInstallerHarness()
   const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
 
@@ -397,8 +404,9 @@ test('installer dispatches one composed bubbling longpress at 500ms from the ori
   assert.ok(event instanceof FakeCustomEvent)
   assert.equal(event.type, 'longpress')
   assert.deepEqual(event.detail, { clientX: 17, clientY: 29 })
-  assert.equal(event.bubbles, true)
-  assert.equal(event.composed, true)
+  assert.equal(event.bubbles, false)
+  assert.equal(event.composed, false)
+  assert.equal(event.cancelable, true)
   assert.equal(event.target, harness.todoBody)
   assert.equal(pointerDown.defaultPrevented, false)
   assert.equal(harness.todoBody.setPointerCaptureCount, 0)
