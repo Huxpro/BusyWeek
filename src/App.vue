@@ -7,6 +7,10 @@ import {
   ref,
   watch,
 } from 'vue-lynx'
+import {
+  clearTodoTextMeasurementCache,
+  measureTodoText,
+} from '@busyweek/text-layout-backend'
 
 import './App.css'
 import {
@@ -16,6 +20,11 @@ import {
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
+import {
+  TODO_MIN_ROW_HEIGHT,
+  rowHeightFromLayoutEvent,
+  rowHeightFromTextHeight,
+} from './todoTextLayout.js'
 import { getVisibleDays } from './timelineView.js'
 import {
   commitComposerDraft,
@@ -36,6 +45,8 @@ import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
 
 type AppState = 'LIST' | 'INPUT'
+
+const TODO_WIDTH_FALLBACK = 240
 
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
@@ -59,6 +70,13 @@ const datePickerOpen = ref(false)
 // bottom bar clear of the keyboard on native. The input element event works
 // on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
+
+// Pretext gives the background thread an immediate layout prediction. Native
+// renderer measurements below remain authoritative for font/bidi/emoji edges.
+const todoTextWidth = ref(TODO_WIDTH_FALLBACK)
+const correctedTodoHeights = ref<Record<string, number>>({})
+const todoTextLayoutRevision = ref(0)
+const lastTodoLayoutHeights = new Map<string, number>()
 
 // Fast relative-day choices complement (rather than replace) the full day and
 // calendar pickers. Fixed choices keep the strip predictable on small screens.
@@ -107,12 +125,16 @@ function bindKeyboard() {
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
   bindKeyboard()
+  await nextTick()
+  measureTodoWidthProbe()
   const stored = await loadTimeline()
   timeline.value = stored ?? createStarterTimeline(getTodayDate())
 })
 
 onUnmounted(() => {
   removeKbListener?.()
+  lastTodoLayoutHeights.clear()
+  clearTodoTextMeasurementCache()
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -121,8 +143,32 @@ watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 const visibleDays = computed(() =>
   getVisibleDays(timeline.value, showCompleted.value),
 )
+const predictedTodoHeights = computed(() => {
+  const heights: Record<string, number> = {}
+
+  for (const day of visibleDays.value) {
+    for (const todo of day.todos) {
+      const measurement = measureTodoText(todo.text, todoTextWidth.value)
+      const predictedHeight = rowHeightFromTextHeight(
+        measurement?.textHeight ?? 0,
+      )
+      const correctedHeight = correctedTodoHeights.value[todo.id]
+
+      heights[todo.id] =
+        typeof correctedHeight === 'number' &&
+        Number.isFinite(correctedHeight)
+          ? correctedHeight
+          : predictedHeight
+    }
+  }
+
+  return heights
+})
 const motionLayout = computed(() =>
-  createTimelineMotionLayout(visibleDays.value),
+  createTimelineMotionLayout(
+    visibleDays.value,
+    predictedTodoHeights.value,
+  ),
 )
 const dayListStyle = computed(() => ({
   height: `${motionLayout.value.height}px`,
@@ -140,7 +186,27 @@ function dayTodosStyle(dayKey: string) {
 
 function todoSlotStyle(dayKey: string, todoId: string) {
   const offset = motionLayout.value.days[dayKey]?.todoOffsets[todoId] ?? 0
-  return { transform: `translateY(${offset}px)` }
+  const height = resolveTodoLayoutHeight(dayKey, todoId)
+  return {
+    height: `${height}px`,
+    transform: `translateY(${offset}px)`,
+  }
+}
+
+function todoRowStyle(dayKey: string, todoId: string) {
+  const height = resolveTodoLayoutHeight(dayKey, todoId)
+  return { height: `${height}px` }
+}
+
+function resolveTodoLayoutHeight(dayKey: string, todoId: string): number {
+  const height = motionLayout.value.days[dayKey]?.todoHeights[todoId]
+
+  if (typeof height === 'number' && Number.isFinite(height)) {
+    lastTodoLayoutHeights.set(todoId, height)
+    return height
+  }
+
+  return lastTodoLayoutHeights.get(todoId) ?? TODO_MIN_ROW_HEIGHT
 }
 
 const isEmpty = computed(() => visibleDays.value.length === 0)
@@ -166,6 +232,87 @@ function isToday(dateStr: string): boolean {
 
 function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+function normalizeTodoWidth(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : null
+}
+
+function updateTodoTextWidth(width: number) {
+  if (!Number.isFinite(width) || width <= 0) return
+  if (Math.abs(width - todoTextWidth.value) <= 0.5) return
+
+  todoTextWidth.value = width
+  correctedTodoHeights.value = {}
+  // Uncapped x-text emits `layout` when connected, but does not observe width
+  // changes. Remount only its measurement node so renderer authority returns.
+  todoTextLayoutRevision.value += 1
+}
+
+function todoTextLayoutKey(todoId: string): string {
+  return `${todoId}:${todoTextLayoutRevision.value}`
+}
+
+function onTodoWidthProbeLayout(event: {
+  detail?: { width?: unknown; size?: { width?: unknown } }
+}) {
+  const width =
+    normalizeTodoWidth(event.detail?.width) ??
+    normalizeTodoWidth(event.detail?.size?.width)
+  if (width !== null) updateTodoTextWidth(width)
+}
+
+function measureTodoWidthProbe() {
+  try {
+    if (typeof lynx === 'undefined') return
+    ;(lynx as unknown as { createSelectorQuery: () => any })
+      .createSelectorQuery()
+      .select('#todo-width-probe-body')
+      .invoke({
+        method: 'boundingClientRect',
+        success: (result: {
+          width?: unknown
+          data?: { width?: unknown }
+        }) => {
+          const width =
+            normalizeTodoWidth(result?.width) ??
+            normalizeTodoWidth(result?.data?.width)
+          if (width !== null) updateTodoTextWidth(width)
+        },
+        fail: () => {},
+      })
+      .exec()
+  } catch {
+    /* The stable 240px fallback remains when SelectorQuery is unavailable. */
+  }
+}
+
+function onTodoTextLayout(todoId: string, event: unknown) {
+  const height = rowHeightFromLayoutEvent(event)
+  if (height === null) return
+
+  const currentHeight = correctedTodoHeights.value[todoId]
+  if (
+    typeof currentHeight === 'number' &&
+    Math.abs(currentHeight - height) <= 0.5
+  ) {
+    return
+  }
+
+  correctedTodoHeights.value = {
+    ...correctedTodoHeights.value,
+    [todoId]: height,
+  }
+}
+
+function clearCorrectedTodoHeight(todoId: string) {
+  if (!(todoId in correctedTodoHeights.value)) return
+
+  const nextHeights = { ...correctedTodoHeights.value }
+  delete nextHeights[todoId]
+  correctedTodoHeights.value = nextHeights
 }
 
 // --- actions ---------------------------------------------------------------
@@ -300,6 +447,9 @@ function submitComposer() {
     { text: composerText.value, date: composerDate.value },
     { today: getTodayDate(), idFactory: genId },
   )
+  if (composerIntent.value.kind === 'edit') {
+    clearCorrectedTodoHeight(composerIntent.value.todoId)
+  }
   timeline.value = nextTimeline
   closeComposer()
 }
@@ -357,6 +507,24 @@ function removeTodo(dayKey: string, id: string) {
       :scroll-y="true"
     >
       <view class="timeline-content">
+      <!-- Hidden exact-geometry row: its body is the real text column width,
+           independent of screen width and responsive timeline sizing. -->
+      <view
+        class="todo-width-probe"
+        accessibility-element="false"
+        user-interaction-enabled="false"
+      >
+        <view class="todo todo--last">
+          <view class="checkbox-hit"><view class="checkbox" /></view>
+          <view
+            id="todo-width-probe-body"
+            class="todo-body"
+            @layoutchange="onTodoWidthProbeLayout"
+          />
+          <view class="delete" />
+        </view>
+      </view>
+
       <!-- Explicit durations are required by Vue Lynx: the background thread
            cannot read getComputedStyle(). The outer group covers new/empty
            dates; the inner group covers rows within an existing date. -->
@@ -401,6 +569,7 @@ function removeTodo(dayKey: string, id: string) {
             >
             <view
               class="todo"
+              :style="todoRowStyle(day.key, todo.id)"
               :class="{
                 'todo--last': todoIndex === day.todos.length - 1,
               }"
@@ -426,7 +595,9 @@ function removeTodo(dayKey: string, id: string) {
               >
                 <text
                   class="bw-text todo-text"
+                  :key="todoTextLayoutKey(todo.id)"
                   :class="{ 'todo-text--done': todo.done }"
+                  @layout="onTodoTextLayout(todo.id, $event)"
                   >{{ todo.text }}</text
                 >
               </view>

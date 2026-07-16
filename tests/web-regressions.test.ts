@@ -300,7 +300,7 @@ test('the composer uses the native textarea placeholder and compact keyboard spa
   )
   assert.match(
     appCss,
-    /\.addpage--keyboard\s+\.addpage-bottom\s*\{[^}]*padding-bottom:\s*8px/s,
+    /\.addpage--keyboard\s+\.addpage-bottom\s*\{[^}]*padding-bottom:\s*14px/s,
   )
   assert.match(
     appCss,
@@ -565,6 +565,220 @@ test('Clear-style motion gives retained todos and day cards explicit slots', () 
   assert.match(appCss, /\.todo-slot\s*\{[^}]*position:\s*absolute[^}]*transition:\s*transform/s)
   assert.match(appCss, /\.todo-enter-active\s+\.todo/)
   assert.match(appCss, /\.day-enter-active\s+\.day-group/)
+})
+
+test('todo heights are predicted through the platform facade and renderer geometry', () => {
+  assert.match(
+    appSource,
+    /import\s*\{[\s\S]*?clearTodoTextMeasurementCache[\s\S]*?measureTodoText[\s\S]*?\}\s*from\s*['"]@busyweek\/text-layout-backend['"]/,
+  )
+  assert.match(
+    appSource,
+    /import\s*\{[\s\S]*?rowHeightFromLayoutEvent[\s\S]*?rowHeightFromTextHeight[\s\S]*?\}\s*from\s*['"]\.\/todoTextLayout\.js['"]/,
+  )
+  assert.match(appSource, /const TODO_WIDTH_FALLBACK = 240/)
+  assert.match(
+    appSource,
+    /const todoTextWidth = ref\(TODO_WIDTH_FALLBACK\)/,
+  )
+  assert.match(
+    appSource,
+    /const correctedTodoHeights = ref<Record<string, number>>\(\{\}\)/,
+  )
+  assert.match(
+    appSource,
+    /const predictedTodoHeights = computed\([\s\S]*?visibleDays\.value[\s\S]*?measureTodoText\(todo\.text,\s*todoTextWidth\.value\)[\s\S]*?rowHeightFromTextHeight\(\s*measurement\?\.textHeight\s*\?\?\s*0,?\s*\)[\s\S]*?correctedTodoHeights\.value\[todo\.id\]/,
+  )
+  assert.match(
+    appSource,
+    /createTimelineMotionLayout\(\s*visibleDays\.value,\s*predictedTodoHeights\.value,?\s*\)/,
+  )
+  assert.match(
+    appSource,
+    /onUnmounted\([\s\S]*?clearTodoTextMeasurementCache\(\)/,
+  )
+})
+
+test('one invisible exact-geometry probe resolves the todo text width', () => {
+  assert.equal(
+    [...appSource.matchAll(/class="todo-width-probe"/g)].length,
+    1,
+  )
+  assert.match(
+    appSource,
+    /class="todo-width-probe"[^>]*accessibility-element="false"[^>]*user-interaction-enabled="false"/,
+  )
+  assert.match(
+    appSource,
+    /class="todo-width-probe"[\s\S]*?class="checkbox-hit"[\s\S]*?id="todo-width-probe-body"[\s\S]*?class="todo-body"[\s\S]*?@layoutchange="onTodoWidthProbeLayout"[\s\S]*?class="delete"/,
+  )
+  assert.match(
+    appSource,
+    /event[\s\S]*?\.detail\?\.width[\s\S]*?\.detail\?\.size\?\.width/,
+  )
+
+  const measureTodoWidthProbe = getFunctionSource('measureTodoWidthProbe')
+  assert.match(measureTodoWidthProbe, /createSelectorQuery\(\)/)
+  assert.match(
+    measureTodoWidthProbe,
+    /\.select\(['"]#todo-width-probe-body['"]\)/,
+  )
+  assert.match(
+    measureTodoWidthProbe,
+    /\.invoke\(\{[\s\S]*?method:\s*['"]boundingClientRect['"][\s\S]*?success:[\s\S]*?fail:\s*\(\)\s*=>\s*\{\}/,
+  )
+  assert.match(
+    appSource,
+    /onMounted\(async\s*\(\)\s*=>\s*\{[\s\S]*?await nextTick\(\)[\s\S]*?measureTodoWidthProbe\(\)/,
+  )
+  assert.match(
+    appSource,
+    /Math\.abs\(width\s*-\s*todoTextWidth\.value\)\s*<=\s*0\.5/,
+  )
+  assert.match(
+    appSource,
+    /todoTextWidth\.value\s*=\s*width[\s\S]*?correctedTodoHeights\.value\s*=\s*\{\}/,
+  )
+})
+
+test('renderer layout corrects predictions without stale edit heights or loops', () => {
+  assert.match(
+    appSource,
+    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?@layout="onTodoTextLayout\(todo\.id, \$event\)"/,
+  )
+
+  const onTodoTextLayout = getFunctionSource('onTodoTextLayout')
+  assert.match(
+    onTodoTextLayout,
+    /rowHeightFromLayoutEvent\(event\)/,
+  )
+  assert.match(onTodoTextLayout, /if \(height === null\) return/)
+  assert.match(
+    onTodoTextLayout,
+    /Math\.abs\(currentHeight\s*-\s*height\)\s*<=\s*0\.5/,
+  )
+  assert.match(
+    onTodoTextLayout,
+    /correctedTodoHeights\.value\s*=\s*\{[\s\S]*?\.\.\.correctedTodoHeights\.value,[\s\S]*?\[todoId\]:\s*height/,
+  )
+
+  const submitComposer = getFunctionSource('submitComposer')
+  const correctionClear = submitComposer.indexOf(
+    'clearCorrectedTodoHeight(composerIntent.value.todoId)',
+  )
+  const timelineAssignment = submitComposer.indexOf(
+    'timeline.value = nextTimeline',
+  )
+  assert.notEqual(correctionClear, -1)
+  assert.notEqual(timelineAssignment, -1)
+  assert.ok(correctionClear < timelineAssignment)
+
+  const clearCorrectedTodoHeight = getFunctionSource(
+    'clearCorrectedTodoHeight',
+  )
+  assert.match(clearCorrectedTodoHeight, /delete nextHeights\[todoId\]/)
+  assert.match(
+    clearCorrectedTodoHeight,
+    /correctedTodoHeights\.value\s*=\s*nextHeights/,
+  )
+})
+
+test('probe width changes remount text so Web renderer corrections return', () => {
+  assert.match(
+    appSource,
+    /const todoTextLayoutRevision = ref\(0\)/,
+  )
+
+  const updateTodoTextWidth = getFunctionSource('updateTodoTextWidth')
+  const correctionReset = updateTodoTextWidth.indexOf(
+    'correctedTodoHeights.value = {}',
+  )
+  const revisionIncrement = updateTodoTextWidth.indexOf(
+    'todoTextLayoutRevision.value += 1',
+  )
+  assert.notEqual(correctionReset, -1)
+  assert.notEqual(revisionIncrement, -1)
+  assert.ok(correctionReset < revisionIncrement)
+
+  const todoTextLayoutKey = getFunctionSource('todoTextLayoutKey')
+  assert.match(todoTextLayoutKey, /todoTextLayoutRevision\.value/)
+  assert.match(
+    appSource,
+    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="todoTextLayoutKey\(todo\.id\)"[\s\S]*?@layout="onTodoTextLayout\(todo\.id, \$event\)"/,
+  )
+})
+
+test('variable-height slots and rows retain motion geometry while leaving', () => {
+  const todoSlotStyle = getFunctionSource('todoSlotStyle')
+  const todoRowStyle = getFunctionSource('todoRowStyle')
+  const resolveTodoLayoutHeight = getFunctionSource(
+    'resolveTodoLayoutHeight',
+  )
+
+  assert.match(todoSlotStyle, /transform:\s*`translateY\(\$\{offset\}px\)`/)
+  assert.match(todoSlotStyle, /height:\s*`\$\{height\}px`/)
+  assert.match(todoRowStyle, /height:\s*`\$\{height\}px`/)
+  assert.match(
+    resolveTodoLayoutHeight,
+    /motionLayout\.value\.days\[dayKey\]\?\.todoHeights\[todoId\]/,
+  )
+  assert.match(
+    resolveTodoLayoutHeight,
+    /lastTodoLayoutHeights\.get\(todoId\)/,
+  )
+  assert.match(
+    appSource,
+    /class="todo-slot"[\s\S]*?:style="todoSlotStyle\(day\.key, todo\.id\)"/,
+  )
+  assert.match(
+    appSource,
+    /class="todo"[\s\S]*?:style="todoRowStyle\(day\.key, todo\.id\)"/,
+  )
+})
+
+test('multiline todo CSS is uncapped and the measurement probe is inert', () => {
+  const todoSlotRule = appCss.match(/\.todo-slot\s*\{([^}]*)\}/s)?.[1]
+  const todoRule = appCss.match(/\.todo\s*\{([^}]*)\}/s)?.[1]
+  const checkboxHitRule = appCss.match(/\.checkbox-hit\s*\{([^}]*)\}/s)?.[1]
+  const todoBodyRule = appCss.match(/\.todo-body\s*\{([^}]*)\}/s)?.[1]
+  const todoTextRule = appCss.match(/\.todo-text\s*\{([^}]*)\}/s)?.[1]
+  const probeRule = appCss.match(/\.todo-width-probe\s*\{([^}]*)\}/s)?.[1]
+
+  assert.ok(todoSlotRule)
+  assert.ok(todoRule)
+  assert.ok(checkboxHitRule)
+  assert.ok(todoBodyRule)
+  assert.ok(todoTextRule)
+  assert.ok(probeRule)
+  assert.doesNotMatch(todoSlotRule, /(?:^|;)\s*height:\s*52px/)
+  assert.match(todoRule, /min-height:\s*52px/)
+  assert.match(todoRule, /height:\s*100%/)
+  assert.doesNotMatch(todoRule, /(?:^|[;\n])\s*height:\s*52px/)
+  assert.match(checkboxHitRule, /min-height:\s*52px/)
+  assert.match(checkboxHitRule, /height:\s*100%/)
+  assert.doesNotMatch(checkboxHitRule, /(?:^|[;\n])\s*height:\s*52px/)
+  assert.match(todoBodyRule, /padding-top:\s*8px/)
+  assert.match(todoBodyRule, /padding-bottom:\s*8px/)
+  assert.match(todoTextRule, /width:\s*100%/)
+  assert.match(todoTextRule, /flex-shrink:\s*0/)
+  assert.match(todoTextRule, /line-height:\s*20px/)
+  assert.match(todoTextRule, /word-break:\s*break-word/)
+  assert.doesNotMatch(todoTextRule, /max-height|max-lines|text-overflow|ellipsis/)
+  assert.match(probeRule, /position:\s*absolute/)
+  assert.match(probeRule, /width:\s*94%/)
+  assert.match(probeRule, /left:\s*3%/)
+  assert.match(probeRule, /opacity:\s*0/)
+  assert.match(probeRule, /pointer-events:\s*none/)
+  assert.match(
+    appCss,
+    /\.todo-body:active\s+\.todo-text\s*\{[^}]*(?:opacity|color):/s,
+  )
+})
+
+test('obsolete inline-edit selectors are absent from app and Web host CSS', () => {
+  for (const source of [appCss, webHost]) {
+    assert.doesNotMatch(source, /\.(?:todo-input|todo--editing|edit-keyboard-spacer)\b/)
+  }
 })
 
 test('Clear-style removal keeps the departing layer above movers and avoids empty-state pushdown', () => {
