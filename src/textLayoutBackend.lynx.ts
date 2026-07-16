@@ -11,7 +11,7 @@ export interface TodoTextMeasurement {
 }
 
 const PLATFORM_FONT = '15px sans-serif'
-const WHITE_SPACE = 'pre-wrap' as const
+const WHITE_SPACE = 'normal' as const
 const LINE_HEIGHT = 20
 
 const preparedTextCache = new Map<string, PreparedText>()

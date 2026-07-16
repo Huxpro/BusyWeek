@@ -312,8 +312,8 @@
   font-size: 15px;
   line-height: 20px;
   color: #2b2f33;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: normal;
+  word-break: break-all;
   transition: color 0.25s ease, opacity 0.16s ease;
 }
 .todo-body:active .todo-text { opacity: 0.68; }

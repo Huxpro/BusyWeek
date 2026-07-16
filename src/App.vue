@@ -45,6 +45,10 @@ import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
 
 type AppState = 'LIST' | 'INPUT'
+type TodoTextLayoutBinding = {
+  key: string
+  onLayout: (event: unknown) => void
+}
 
 const TODO_WIDTH_FALLBACK = 240
 
@@ -76,6 +80,8 @@ const keyboardHeight = ref(0)
 const todoTextWidth = ref(TODO_WIDTH_FALLBACK)
 const correctedTodoHeights = ref<Record<string, number>>({})
 const todoTextLayoutRevision = ref(0)
+const todoTextEditGenerations = new Map<string, number>()
+const todoTextLayoutBindings = new Map<string, TodoTextLayoutBinding>()
 const lastTodoLayoutHeights = new Map<string, number>()
 
 // Fast relative-day choices complement (rather than replace) the full day and
@@ -240,6 +246,22 @@ function normalizeTodoWidth(value: unknown): number | null {
     : null
 }
 
+function createTodoTextLayoutToken(
+  todoId: string,
+  editGeneration: number,
+  widthRevision: number,
+): string {
+  return `${todoId}:${editGeneration}:${widthRevision}`
+}
+
+function isCurrentTodoTextLayoutBinding(
+  bindings: Map<string, TodoTextLayoutBinding>,
+  todoId: string,
+  binding: TodoTextLayoutBinding,
+): boolean {
+  return bindings.get(todoId) === binding
+}
+
 function updateTodoTextWidth(width: number) {
   if (!Number.isFinite(width) || width <= 0) return
   if (Math.abs(width - todoTextWidth.value) <= 0.5) return
@@ -249,10 +271,39 @@ function updateTodoTextWidth(width: number) {
   // Uncapped x-text emits `layout` when connected, but does not observe width
   // changes. Remount only its measurement node so renderer authority returns.
   todoTextLayoutRevision.value += 1
+  todoTextLayoutBindings.clear()
 }
 
-function todoTextLayoutKey(todoId: string): string {
-  return `${todoId}:${todoTextLayoutRevision.value}`
+function refreshTodoTextLayoutAfterEdit(todoId: string) {
+  const currentGeneration = todoTextEditGenerations.get(todoId) ?? 0
+  todoTextEditGenerations.set(todoId, currentGeneration + 1)
+  todoTextLayoutBindings.delete(todoId)
+}
+
+function getTodoTextLayoutBinding(todoId: string): TodoTextLayoutBinding {
+  const key = createTodoTextLayoutToken(
+    todoId,
+    todoTextEditGenerations.get(todoId) ?? 0,
+    todoTextLayoutRevision.value,
+  )
+  const currentBinding = todoTextLayoutBindings.get(todoId)
+  if (currentBinding?.key === key) return currentBinding
+
+  const binding: TodoTextLayoutBinding = {
+    key,
+    onLayout: (event) => {
+      if (
+        !isCurrentTodoTextLayoutBinding(
+          todoTextLayoutBindings,
+          todoId,
+          binding,
+        )
+      ) return
+      onTodoTextLayout(todoId, event)
+    },
+  }
+  todoTextLayoutBindings.set(todoId, binding)
+  return binding
 }
 
 function onTodoWidthProbeLayout(event: {
@@ -448,6 +499,7 @@ function submitComposer() {
     { today: getTodayDate(), idFactory: genId },
   )
   if (composerIntent.value.kind === 'edit') {
+    refreshTodoTextLayoutAfterEdit(composerIntent.value.todoId)
     clearCorrectedTodoHeight(composerIntent.value.todoId)
   }
   timeline.value = nextTimeline
@@ -461,6 +513,7 @@ function checkTodo(todo: Todo) {
 function removeTodo(dayKey: string, id: string) {
   const day = timeline.value[dayKey]
   if (!day) return
+  todoTextLayoutBindings.delete(id)
   day.todos = day.todos.filter((todo) => todo.id !== id)
   if (day.todos.length === 0) {
     delete timeline.value[dayKey]
@@ -595,9 +648,9 @@ function removeTodo(dayKey: string, id: string) {
               >
                 <text
                   class="bw-text todo-text"
-                  :key="todoTextLayoutKey(todo.id)"
+                  :key="getTodoTextLayoutBinding(todo.id).key"
                   :class="{ 'todo-text--done': todo.done }"
-                  @layout="onTodoTextLayout(todo.id, $event)"
+                  @layout="getTodoTextLayoutBinding(todo.id).onLayout"
                   >{{ todo.text }}</text
                 >
               </view>

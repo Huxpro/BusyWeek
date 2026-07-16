@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
+import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
 import { loadTimeline, saveTimeline } from '../src/store.ts'
 
@@ -53,6 +54,19 @@ function getFunctionSource(name: string): string {
   assert.fail(`expected ${name}() to have a closing brace`)
 }
 
+function getExecutableFunction<T extends (...args: any[]) => any>(
+  name: string,
+): T {
+  const source = transpileModule(getFunctionSource(name), {
+    compilerOptions: {
+      module: ModuleKind.None,
+      target: ScriptTarget.ES2022,
+    },
+  }).outputText
+
+  return Function(`${source}\nreturn ${name}`)() as T
+}
+
 const nativeTextLayoutBackendSource = readOptionalSource(
   '../src/textLayoutBackend.lynx.ts',
 )
@@ -93,6 +107,14 @@ test('text-layout wrappers use their platform-specific Pretext packages', () => 
   assert.match(
     webTextLayoutBackendSource,
     /from\s*['"]@chenglou\/pretext['"]/,
+  )
+  assert.match(
+    nativeTextLayoutBackendSource,
+    /const WHITE_SPACE = ['"]normal['"] as const/,
+  )
+  assert.match(
+    webTextLayoutBackendSource,
+    /const WHITE_SPACE = ['"]pre-wrap['"] as const/,
   )
 })
 
@@ -641,10 +663,40 @@ test('one invisible exact-geometry probe resolves the todo text width', () => {
   )
 })
 
+test('todo text layout tokens and binding currentness distinguish every renderer generation', () => {
+  const createToken = getExecutableFunction<
+    (todoId: string, editGeneration: number, widthRevision: number) => string
+  >('createTodoTextLayoutToken')
+  const isCurrentBinding = getExecutableFunction<
+    (
+      bindings: Map<string, unknown>,
+      todoId: string,
+      candidate: unknown,
+    ) => boolean
+  >('isCurrentTodoTextLayoutBinding')
+
+  const base = createToken('todo-1', 0, 0)
+  assert.equal(createToken('todo-1', 0, 0), base)
+  assert.notEqual(createToken('todo-2', 0, 0), base)
+  assert.notEqual(createToken('todo-1', 1, 0), base)
+  assert.notEqual(createToken('todo-1', 0, 1), base)
+
+  const bindings = new Map<string, unknown>()
+  const stale = { key: base }
+  const current = { key: createToken('todo-1', 1, 0) }
+  bindings.set('todo-1', stale)
+  assert.equal(isCurrentBinding(bindings, 'todo-1', stale), true)
+  bindings.set('todo-1', current)
+  assert.equal(isCurrentBinding(bindings, 'todo-1', stale), false)
+  assert.equal(isCurrentBinding(bindings, 'todo-1', current), true)
+  bindings.delete('todo-1')
+  assert.equal(isCurrentBinding(bindings, 'todo-1', current), false)
+})
+
 test('renderer layout corrects predictions without stale edit heights or loops', () => {
   assert.match(
     appSource,
-    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?@layout="onTodoTextLayout\(todo\.id, \$event\)"/,
+    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
   )
 
   const onTodoTextLayout = getFunctionSource('onTodoTextLayout')
@@ -683,10 +735,18 @@ test('renderer layout corrects predictions without stale edit heights or loops',
   )
 })
 
-test('probe width changes remount text so Web renderer corrections return', () => {
+test('per-Todo bindings remount edits and width changes while rejecting stale renderer events', () => {
   assert.match(
     appSource,
     /const todoTextLayoutRevision = ref\(0\)/,
+  )
+  assert.match(
+    appSource,
+    /const todoTextEditGenerations = new Map<string, number>\(\)/,
+  )
+  assert.match(
+    appSource,
+    /const todoTextLayoutBindings = new Map<string, TodoTextLayoutBinding>\(\)/,
   )
 
   const updateTodoTextWidth = getFunctionSource('updateTodoTextWidth')
@@ -699,12 +759,67 @@ test('probe width changes remount text so Web renderer corrections return', () =
   assert.notEqual(correctionReset, -1)
   assert.notEqual(revisionIncrement, -1)
   assert.ok(correctionReset < revisionIncrement)
+  assert.match(updateTodoTextWidth, /todoTextLayoutBindings\.clear\(\)/)
 
-  const todoTextLayoutKey = getFunctionSource('todoTextLayoutKey')
-  assert.match(todoTextLayoutKey, /todoTextLayoutRevision\.value/)
+  const refreshAfterEdit = getFunctionSource(
+    'refreshTodoTextLayoutAfterEdit',
+  )
+  assert.match(
+    refreshAfterEdit,
+    /todoTextEditGenerations\.get\(todoId\)\s*\?\?\s*0/,
+  )
+  assert.match(
+    refreshAfterEdit,
+    /todoTextEditGenerations\.set\(todoId,\s*[^)]*\+\s*1\)/,
+  )
+  assert.match(refreshAfterEdit, /todoTextLayoutBindings\.delete\(todoId\)/)
+
+  const getBinding = getFunctionSource('getTodoTextLayoutBinding')
+  assert.match(
+    getBinding,
+    /createTodoTextLayoutToken\([\s\S]*?todoId[\s\S]*?todoTextEditGenerations\.get\(todoId\)\s*\?\?\s*0[\s\S]*?todoTextLayoutRevision\.value/,
+  )
+  assert.match(
+    getBinding,
+    /if \(currentBinding\?\.key === key\) return currentBinding/,
+  )
+  assert.match(
+    getBinding,
+    /isCurrentTodoTextLayoutBinding\(\s*todoTextLayoutBindings,\s*todoId,\s*binding,?\s*\)/,
+  )
+  assert.match(
+    getBinding,
+    /if\s*\(\s*!isCurrentTodoTextLayoutBinding[\s\S]*?\) return[\s\S]*?onTodoTextLayout\(todoId, event\)/,
+  )
+
+  const submitComposer = getFunctionSource('submitComposer')
+  const editRefresh = submitComposer.indexOf(
+    'refreshTodoTextLayoutAfterEdit(composerIntent.value.todoId)',
+  )
+  const correctionClear = submitComposer.indexOf(
+    'clearCorrectedTodoHeight(composerIntent.value.todoId)',
+  )
+  const timelineAssignment = submitComposer.indexOf(
+    'timeline.value = nextTimeline',
+  )
+  assert.notEqual(editRefresh, -1)
+  assert.notEqual(correctionClear, -1)
+  assert.notEqual(timelineAssignment, -1)
+  assert.ok(editRefresh < timelineAssignment)
+  assert.ok(correctionClear < timelineAssignment)
+
+  const removeTodo = getFunctionSource('removeTodo')
+  const removedBindingInvalidation = removeTodo.indexOf(
+    'todoTextLayoutBindings.delete(id)',
+  )
+  const todoRemoval = removeTodo.indexOf('day.todos = day.todos.filter')
+  assert.notEqual(removedBindingInvalidation, -1)
+  assert.notEqual(todoRemoval, -1)
+  assert.ok(removedBindingInvalidation < todoRemoval)
+
   assert.match(
     appSource,
-    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="todoTextLayoutKey\(todo\.id\)"[\s\S]*?@layout="onTodoTextLayout\(todo\.id, \$event\)"/,
+    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
   )
 })
 
@@ -762,7 +877,12 @@ test('multiline todo CSS is uncapped and the measurement probe is inert', () => 
   assert.match(todoTextRule, /width:\s*100%/)
   assert.match(todoTextRule, /flex-shrink:\s*0/)
   assert.match(todoTextRule, /line-height:\s*20px/)
-  assert.match(todoTextRule, /word-break:\s*break-word/)
+  assert.match(todoTextRule, /white-space:\s*normal/)
+  assert.match(todoTextRule, /word-break:\s*break-all/)
+  assert.doesNotMatch(
+    appCss,
+    /white-space:\s*pre-wrap|word-break:\s*break-word/,
+  )
   assert.doesNotMatch(todoTextRule, /max-height|max-lines|text-overflow|ellipsis/)
   assert.match(probeRule, /position:\s*absolute/)
   assert.match(probeRule, /width:\s*94%/)
@@ -772,6 +892,10 @@ test('multiline todo CSS is uncapped and the measurement probe is inert', () => 
   assert.match(
     appCss,
     /\.todo-body:active\s+\.todo-text\s*\{[^}]*(?:opacity|color):/s,
+  )
+  assert.match(
+    webHost,
+    /\.todo-text:not\(\[l-e-name\]\)\s*\{[\s\S]*?white-space:\s*pre-wrap;[\s\S]*?word-break:\s*break-word;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?\}/,
   )
 })
 
