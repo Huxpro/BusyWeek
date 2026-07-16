@@ -22,7 +22,11 @@ export function rowHeightFromLayoutEvent(event: unknown): number | null {
   const height = detail?.size?.height
   const lineCount = detail?.lineCount
 
-  if (typeof lineCount !== 'number' || lineCount < 1) {
+  if (
+    typeof lineCount !== 'number' ||
+    !Number.isFinite(lineCount) ||
+    lineCount < 1
+  ) {
     return null
   }
 

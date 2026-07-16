@@ -26,6 +26,24 @@ test('returns null when a text layout event has no valid line count', () => {
   assert.equal(rowHeightFromLayoutEvent({}), null)
   assert.equal(
     rowHeightFromLayoutEvent({
+      detail: { lineCount: Number.NaN, size: { height: 80 } },
+    }),
+    null,
+  )
+  assert.equal(
+    rowHeightFromLayoutEvent({
+      detail: { lineCount: Number.POSITIVE_INFINITY, size: { height: 80 } },
+    }),
+    null,
+  )
+  assert.equal(
+    rowHeightFromLayoutEvent({
+      detail: { lineCount: Number.NEGATIVE_INFINITY, size: { height: 80 } },
+    }),
+    null,
+  )
+  assert.equal(
+    rowHeightFromLayoutEvent({
       detail: { lineCount: 0, size: { height: 80 } },
     }),
     null,
