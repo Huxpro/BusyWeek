@@ -194,24 +194,13 @@
 
     <script>
       // Rspeedy's Lynx CSS pipeline intentionally omits browser media queries.
-      // Inject the legacy desktop adaptation into the web runtime's open
-      // shadow root after the app stylesheet has mounted. This keeps native
-      // layout unchanged while letting the browser own responsive behaviour.
+      // Inject the Web overrides as soon as the runtime opens its shadow root,
+      // before the first text nodes connect and report layout. This keeps
+      // native layout unchanged while the browser owns responsive behaviour.
       ;(function installWebEnhancements() {
         var host = document.querySelector('lynx-view')
         if (!host) return
-        function inject() {
-          var root = host.shadowRoot
-          if (!root || !root.querySelector('.app')) {
-            requestAnimationFrame(inject)
-            return
-          }
-          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
-          // constants do not yet enable the element-level event bridge. A
-          // listener on the custom element activates its existing lynxinput
-          // forwarding before the composer can receive real keystrokes.
-          var textarea = root.querySelector('#addpage-ta')
-          if (textarea) textarea.addEventListener('lynxinput', function () {})
+        function installResponsiveStyles(root) {
           if (root.getElementById('busyweek-web-responsive')) return
           var style = document.createElement('style')
           style.id = 'busyweek-web-responsive'
@@ -330,6 +319,28 @@
             }
           `
           root.appendChild(style)
+        }
+        function inject() {
+          var root = host.shadowRoot
+          if (!root) {
+            requestAnimationFrame(inject)
+            return
+          }
+          installResponsiveStyles(root)
+          if (!root.querySelector('.app')) {
+            requestAnimationFrame(inject)
+            return
+          }
+          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
+          // constants do not yet enable the element-level event bridge. A
+          // listener on the custom element activates its existing lynxinput
+          // forwarding before the composer can receive real keystrokes.
+          var textarea = root.querySelector('#addpage-ta')
+          if (!textarea) {
+            requestAnimationFrame(inject)
+            return
+          }
+          textarea.addEventListener('lynxinput', function () {})
         }
         inject()
       })()

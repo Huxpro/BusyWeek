@@ -144,7 +144,77 @@ test('the assembled web runtime maps Lynx textarea to x-textarea', () => {
 
 test('the web host enables the x-textarea lynxinput bridge before typing', () => {
   assert.match(webHost, /querySelector\(['"]#addpage-ta['"]\)/)
-  assert.match(webHost, /addEventListener\(['"]lynxinput['"]/)
+  assert.match(
+    webHost,
+    /addEventListener\(['"]lynxinput['"]/,
+  )
+})
+
+test('the web host installs wrapping styles before waiting for app content', () => {
+  const enhancementStart = webHost.indexOf(
+    '(function installWebEnhancements()',
+  )
+  const enhancementEnd = webHost.indexOf('</script>', enhancementStart)
+  assert.notEqual(enhancementStart, -1)
+  assert.notEqual(enhancementEnd, -1)
+
+  const enhancement = webHost.slice(enhancementStart, enhancementEnd)
+  const installerStart = enhancement.indexOf(
+    'function installResponsiveStyles(root)',
+  )
+  const injectStart = enhancement.indexOf('function inject()')
+  assert.notEqual(installerStart, -1)
+  assert.notEqual(injectStart, -1)
+  assert.ok(installerStart < injectStart)
+
+  const installer = enhancement.slice(installerStart, injectStart)
+  assert.match(
+    installer,
+    /getElementById\(['"]busyweek-web-responsive['"]\)[\s\S]*?return/,
+  )
+  assert.match(
+    installer,
+    /style\.id\s*=\s*['"]busyweek-web-responsive['"]/,
+  )
+  assert.match(installer, /root\.appendChild\(style\)/)
+
+  const inject = enhancement.slice(injectStart)
+  const rootRead = inject.indexOf('var root = host.shadowRoot')
+  const rootWait = inject.indexOf('if (!root)')
+  const installStyles = inject.indexOf('installResponsiveStyles(root)')
+  const appWait = inject.indexOf("if (!root.querySelector('.app'))")
+  const textareaSetup = inject.indexOf(
+    "var textarea = root.querySelector('#addpage-ta')",
+  )
+  const textareaWait = inject.indexOf('if (!textarea)')
+  const textareaListener = inject.indexOf(
+    "textarea.addEventListener('lynxinput'",
+  )
+  for (const index of [
+    rootRead,
+    rootWait,
+    installStyles,
+    appWait,
+    textareaSetup,
+    textareaWait,
+    textareaListener,
+  ]) {
+    assert.notEqual(index, -1)
+  }
+  assert.ok(rootRead < rootWait)
+  assert.ok(rootWait < installStyles)
+  assert.ok(installStyles < appWait)
+  assert.ok(appWait < textareaSetup)
+  assert.ok(textareaSetup < textareaWait)
+  assert.ok(textareaWait < textareaListener)
+  assert.match(
+    inject.slice(appWait, textareaSetup),
+    /requestAnimationFrame\(inject\)[\s\S]*?return/,
+  )
+  assert.match(
+    inject.slice(textareaWait, textareaListener),
+    /requestAnimationFrame\(inject\)[\s\S]*?return/,
+  )
 })
 
 test('web persistence uses localStorage when the native module is unavailable', async () => {
