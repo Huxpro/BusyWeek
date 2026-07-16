@@ -21,6 +21,10 @@ const dayPickerCss = readFileSync(
 )
 const storeSource = readFileSync(new URL('../src/store.ts', import.meta.url), 'utf8')
 const webHost = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8')
+const webTodoLongPressSource = readFileSync(
+  new URL('../web/todo-longpress.js', import.meta.url),
+  'utf8',
+)
 const assembleWebSource = readFileSync(
   new URL('../scripts/assemble-web.mjs', import.meta.url),
   'utf8',
@@ -188,7 +192,7 @@ test('the Web enhancement module imports the todo long-press installer', () => {
   )
 })
 
-test('the Web host installs todo long press as soon as the shadow root exists', () => {
+test('the Web host bridges todo long press through the public global-event API', () => {
   const enhancementStart = webHost.indexOf(
     '(function installWebEnhancements()',
   )
@@ -200,10 +204,25 @@ test('the Web host installs todo long press as soon as the shadow root exists', 
   const injectStart = enhancement.indexOf('function inject()')
   assert.notEqual(injectStart, -1)
 
+  assert.match(
+    enhancement,
+    /var dayKey = target\.getAttribute\(['"]data-day-key['"]\)/,
+  )
+  assert.match(
+    enhancement,
+    /var todoId = target\.getAttribute\(['"]data-todo-id['"]\)/,
+  )
+  assert.match(
+    enhancement,
+    /host\.sendGlobalEvent\(\s*['"]busyweekTodoLongPress['"]\s*,\s*\[dayKey, todoId\]\s*\)/,
+  )
+
   const inject = enhancement.slice(injectStart)
   const rootRead = inject.indexOf('var root = host.shadowRoot')
   const rootWait = inject.indexOf('if (!root)')
-  const installLongPress = inject.indexOf('installTodoLongPress(root)')
+  const installLongPress = inject.indexOf(
+    'installTodoLongPress(root, notifyTodoLongPress)',
+  )
   const installStyles = inject.indexOf('installResponsiveStyles(root)')
   const appWait = inject.indexOf("if (!root.querySelector('.app'))")
   const textareaSetup = inject.indexOf(
@@ -225,6 +244,7 @@ test('the Web host installs todo long press as soon as the shadow root exists', 
   assert.ok(installLongPress < installStyles)
   assert.ok(installStyles < appWait)
   assert.ok(appWait < textareaSetup)
+  assert.doesNotMatch(webTodoLongPressSource, /CustomEvent|dispatchEvent/)
 })
 
 test('the Web assembler copies the todo long-press module beside index.html', () => {
@@ -538,6 +558,8 @@ test('long-pressing only the todo body opens the full editor', () => {
     todoBodyTag,
     /@longpress\.stop="openTodoEditor\(day\.key, todo\)"/,
   )
+  assert.match(todoBodyTag, /:data-day-key="day\.key"/)
+  assert.match(todoBodyTag, /:data-todo-id="todo\.id"/)
   assert.doesNotMatch(todoBodyTag, /@tap(?:\.|=|\s)/)
   assert.match(
     appSource,
@@ -552,6 +574,75 @@ test('long-pressing only the todo body opens the full editor', () => {
     /<view\s+class="todo-body"[^>]*>[\s\S]*?<text[^>]*class="bw-text todo-text"[^>]*>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>[\s\S]*?<\/view>/,
   )
   assert.doesNotMatch(appSource, /class="todo-input"/)
+})
+
+test('the app resolves valid Web long-press identifiers against the current timeline', () => {
+  const resolveTarget = getExecutableFunction<
+    (
+      timeline: Record<string, { todos: { id: string; text: string }[] }>,
+      dayKey: unknown,
+      todoId: unknown,
+    ) => { dayKey: string; todo: { id: string; text: string } } | null
+  >('resolveTodoLongPressTarget')
+  const todo = { id: 'todo-7', text: 'move me' }
+  const timeline = { '2026-07-16': { todos: [todo] } }
+
+  assert.deepEqual(
+    resolveTarget(timeline, '2026-07-16', 'todo-7'),
+    { dayKey: '2026-07-16', todo },
+  )
+  assert.equal(resolveTarget(timeline, null, 'todo-7'), null)
+  assert.equal(resolveTarget(timeline, '2026-07-16', 7), null)
+  assert.equal(resolveTarget(timeline, '2026-07-17', 'todo-7'), null)
+  assert.equal(resolveTarget(timeline, '2026-07-16', 'missing'), null)
+})
+
+test('the app subscribes and unsubscribes the Web todo long-press global event', () => {
+  assert.match(
+    appSource,
+    /const BUSYWEEK_TODO_LONG_PRESS_EVENT = ['"]busyweekTodoLongPress['"]/,
+  )
+  assert.match(
+    appSource,
+    /emitter\.addListener\(\s*BUSYWEEK_TODO_LONG_PRESS_EVENT\s*,\s*onWebTodoLongPress\s*\)/,
+  )
+  assert.match(
+    appSource,
+    /emitter\.removeListener\?\.\(\s*BUSYWEEK_TODO_LONG_PRESS_EVENT\s*,\s*onWebTodoLongPress\s*\)/,
+  )
+  const handler = getFunctionSource('onWebTodoLongPress')
+  assert.match(
+    handler,
+    /resolveTodoLongPressTarget\(\s*timeline\.value\s*,\s*dayKey\s*,\s*todoId\s*\)/,
+  )
+  assert.match(
+    handler,
+    /openTodoEditor\(target\.dayKey, target\.todo\)/,
+  )
+})
+
+test('global-event binding falls back to NativeApp when Web Core exposes an empty JS module', () => {
+  const getEmitter = getExecutableFunction<
+    (runtime: unknown) => { addListener: (...args: unknown[]) => void } | null
+  >('getGlobalEventEmitter')
+  const nativeEmitter = { addListener() {} }
+  const jsEmitter = { addListener() {} }
+
+  assert.equal(
+    getEmitter({
+      getJSModule: () => ({}),
+      getNativeApp: () => ({ tt: { GlobalEventEmitter: nativeEmitter } }),
+    }),
+    nativeEmitter,
+  )
+  assert.equal(
+    getEmitter({
+      getJSModule: () => jsEmitter,
+      getNativeApp: () => ({ tt: { GlobalEventEmitter: nativeEmitter } }),
+    }),
+    jsEmitter,
+  )
+  assert.equal(getEmitter({ getJSModule: () => ({}) }), null)
 })
 
 test('todo rows retain their divider and tap-isolation styling', () => {

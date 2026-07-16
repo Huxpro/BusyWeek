@@ -202,6 +202,20 @@
       ;(function installWebEnhancements() {
         var host = document.querySelector('lynx-view')
         if (!host) return
+        function notifyTodoLongPress(firing) {
+          var target = firing && firing.target
+          if (!target || typeof target.getAttribute !== 'function') return
+          var dayKey = target.getAttribute('data-day-key')
+          var todoId = target.getAttribute('data-todo-id')
+          if (
+            typeof dayKey !== 'string' ||
+            dayKey.length === 0 ||
+            typeof todoId !== 'string' ||
+            todoId.length === 0 ||
+            typeof host.sendGlobalEvent !== 'function'
+          ) return
+          host.sendGlobalEvent('busyweekTodoLongPress', [dayKey, todoId])
+        }
         function installResponsiveStyles(root) {
           if (root.getElementById('busyweek-web-responsive')) return
           var style = document.createElement('style')
@@ -328,7 +342,7 @@
             requestAnimationFrame(inject)
             return
           }
-          installTodoLongPress(root)
+          installTodoLongPress(root, notifyTodoLongPress)
           installResponsiveStyles(root)
           if (!root.querySelector('.app')) {
             requestAnimationFrame(inject)

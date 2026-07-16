@@ -275,34 +275,7 @@ class FakeEventTarget {
   }
 }
 
-class FakeCustomEvent {
-  type: string
-  detail: unknown
-  bubbles: boolean
-  composed: boolean
-  cancelable: boolean
-  target: FakeElement | null = null
-
-  constructor(
-    type: string,
-    init: {
-      detail?: unknown
-      bubbles?: boolean
-      composed?: boolean
-      cancelable?: boolean
-    } = {},
-  ) {
-    this.type = type
-    this.detail = init.detail
-    this.bubbles = init.bubbles ?? false
-    this.composed = init.composed ?? false
-    this.cancelable = init.cancelable ?? false
-  }
-}
-
-class FakeWindow extends FakeEventTarget {
-  CustomEvent = FakeCustomEvent
-}
+class FakeWindow extends FakeEventTarget {}
 
 class FakeDocument extends FakeEventTarget {
   defaultView: FakeWindow
@@ -316,7 +289,6 @@ class FakeDocument extends FakeEventTarget {
 class FakeElement extends FakeEventTarget {
   ownerDocument: FakeDocument
   classes: Set<string>
-  dispatchedEvents: FakeCustomEvent[] = []
   setPointerCaptureCount = 0
 
   constructor(ownerDocument: FakeDocument, classes: string[] = []) {
@@ -327,13 +299,6 @@ class FakeElement extends FakeEventTarget {
 
   matches(selector: string) {
     return selector === '.todo-body' && this.classes.has('todo-body')
-  }
-
-  dispatchEvent(event: FakeCustomEvent) {
-    event.target = this
-    this.dispatchedEvents.push(event)
-    this.emit(event.type, event)
-    return true
   }
 
   setPointerCapture() {
@@ -349,6 +314,10 @@ function createInstallerHarness() {
   const todoBody = new FakeElement(documentTarget, ['todo-body'])
   const child = new FakeElement(documentTarget)
   const outside = new FakeElement(documentTarget)
+  const longPresses: unknown[] = []
+  function onLongPress(firing: unknown) {
+    longPresses.push(firing)
+  }
   const timerOptions = {
     setTimer: clock.setTimer,
     clearTimer: clock.clearTimer,
@@ -380,6 +349,8 @@ function createInstallerHarness() {
     child,
     clock,
     documentTarget,
+    longPresses,
+    onLongPress,
     outside,
     pointerEvent,
     root,
@@ -390,31 +361,34 @@ function createInstallerHarness() {
   }
 }
 
-test('installer dispatches one Lynx-compatible longpress at 500ms from the original todo body', () => {
+test('installer calls its host callback exactly once at 500ms with the original todo body', () => {
   const harness = createInstallerHarness()
-  const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+  const cleanup = installTodoLongPress(
+    harness.root,
+    harness.onLongPress,
+    harness.timerOptions,
+  )
 
   const pointerDown = harness.start({ clientX: 17, clientY: 29 })
   harness.clock.tick(499)
-  assert.equal(harness.todoBody.dispatchedEvents.length, 0)
+  assert.equal(harness.longPresses.length, 0)
 
   harness.clock.tick(1)
-  assert.equal(harness.todoBody.dispatchedEvents.length, 1)
-  const event = harness.todoBody.dispatchedEvents[0]
-  assert.ok(event instanceof FakeCustomEvent)
-  assert.equal(event.type, 'longpress')
-  assert.deepEqual(event.detail, { clientX: 17, clientY: 29 })
-  assert.equal(event.bubbles, false)
-  assert.equal(event.composed, false)
-  assert.equal(event.cancelable, true)
-  assert.equal(event.target, harness.todoBody)
+  assert.deepEqual(harness.longPresses, [
+    {
+      pointerId: 1,
+      target: harness.todoBody,
+      x: 17,
+      y: 29,
+    },
+  ])
   assert.equal(pointerDown.defaultPrevented, false)
   assert.equal(harness.todoBody.setPointerCaptureCount, 0)
   assert.equal(harness.root.setPointerCaptureCount, 0)
   assert.ok(harness.root.additions.every(({ capture }) => capture))
 
   harness.clock.tick(500)
-  assert.equal(harness.todoBody.dispatchedEvents.length, 1)
+  assert.equal(harness.longPresses.length, 1)
   cleanup()
 })
 
@@ -427,7 +401,11 @@ test('installer ignores paths without a todo body, non-primary pointers, and non
 
   for (const configure of cases) {
     const harness = createInstallerHarness()
-    const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+    const cleanup = installTodoLongPress(
+      harness.root,
+      harness.onLongPress,
+      harness.timerOptions,
+    )
     const overrides = Object.fromEntries(
       Object.entries(configure).map(([key, value]) => [key, value(harness)]),
     )
@@ -435,14 +413,18 @@ test('installer ignores paths without a todo body, non-primary pointers, and non
     harness.start(overrides)
     assert.equal(harness.clock.pendingCount(), 0)
     harness.clock.tick(500)
-    assert.equal(harness.todoBody.dispatchedEvents.length, 0)
+    assert.equal(harness.longPresses.length, 0)
     cleanup()
   }
 })
 
 test('installer safely ignores missing, invalid, or throwing composed paths', () => {
   const harness = createInstallerHarness()
-  const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+  const cleanup = installTodoLongPress(
+    harness.root,
+    harness.onLongPress,
+    harness.timerOptions,
+  )
   const events = [
     { ...harness.pointerEvent(), composedPath: undefined },
     { ...harness.pointerEvent(), composedPath: () => null },
@@ -483,7 +465,11 @@ test('installer cancels pending long press for every matching pointer and lifecy
 
   for (const [name, cancel] of cancellations) {
     const harness = createInstallerHarness()
-    const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+    const cleanup = installTodoLongPress(
+      harness.root,
+      harness.onLongPress,
+      harness.timerOptions,
+    )
     const pointerDown = harness.start()
     assert.equal(pointerDown.defaultPrevented, false, name)
     assert.equal(harness.clock.pendingCount(), 1, name)
@@ -492,14 +478,18 @@ test('installer cancels pending long press for every matching pointer and lifecy
     harness.clock.tick(500)
 
     assert.equal(harness.clock.pendingCount(), 0, name)
-    assert.equal(harness.todoBody.dispatchedEvents.length, 0, name)
+    assert.equal(harness.longPresses.length, 0, name)
     cleanup()
   }
 })
 
 test('installer does not prevent pointer movement while tracking a long press', () => {
   const harness = createInstallerHarness()
-  const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+  const cleanup = installTodoLongPress(
+    harness.root,
+    harness.onLongPress,
+    harness.timerOptions,
+  )
   harness.start()
   const move = harness.pointerEvent({ clientX: 35, clientY: 45 })
 
@@ -512,7 +502,11 @@ test('installer does not prevent pointer movement while tracking a long press', 
 
 test('installer prevents contextmenu only when its composed path contains a todo body', () => {
   const harness = createInstallerHarness()
-  const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+  const cleanup = installTodoLongPress(
+    harness.root,
+    harness.onLongPress,
+    harness.timerOptions,
+  )
   const onTodo = harness.pointerEvent()
   const outside = harness.pointerEvent({
     composedPath: () => [harness.outside, harness.root],
@@ -528,7 +522,11 @@ test('installer prevents contextmenu only when its composed path contains a todo
 
 test('installer guards duplicate roots and cleanup is idempotent before reinstall', () => {
   const harness = createInstallerHarness()
-  const firstCleanup = installTodoLongPress(harness.root, harness.timerOptions)
+  const firstCleanup = installTodoLongPress(
+    harness.root,
+    harness.onLongPress,
+    harness.timerOptions,
+  )
   const listenerCounts = {
     root: harness.root.addCount,
     document: harness.documentTarget.addCount,
@@ -538,6 +536,7 @@ test('installer guards duplicate roots and cleanup is idempotent before reinstal
 
   const duplicateCleanup = installTodoLongPress(
     harness.root,
+    harness.onLongPress,
     harness.timerOptions,
   )
   assert.equal(duplicateCleanup, firstCleanup)
@@ -560,6 +559,7 @@ test('installer guards duplicate roots and cleanup is idempotent before reinstal
 
   const reinstalledCleanup = installTodoLongPress(
     harness.root,
+    harness.onLongPress,
     harness.timerOptions,
   )
   assert.notEqual(reinstalledCleanup, firstCleanup)
@@ -568,26 +568,15 @@ test('installer guards duplicate roots and cleanup is idempotent before reinstal
   assert.equal(harness.windowTarget.listenerCount('blur'), 1)
   harness.start()
   harness.clock.tick(500)
-  assert.equal(harness.todoBody.dispatchedEvents.length, 1)
+  assert.equal(harness.longPresses.length, 1)
   reinstalledCleanup()
 })
 
-test('installer absorbs unavailable or failing realm CustomEvent support', () => {
-  for (const CustomEventConstructor of [
-    undefined,
-    class {
-      constructor() {
-        throw new Error('CustomEvent unsupported')
-      }
-    },
-  ]) {
-    const harness = createInstallerHarness()
-    harness.windowTarget.CustomEvent = CustomEventConstructor as any
-    const cleanup = installTodoLongPress(harness.root, harness.timerOptions)
+test('installer requires an explicit host callback', () => {
+  const harness = createInstallerHarness()
 
-    harness.start()
-    assert.doesNotThrow(() => harness.clock.tick(500))
-    assert.equal(harness.todoBody.dispatchedEvents.length, 0)
-    cleanup()
-  }
+  assert.throws(
+    () => installTodoLongPress(harness.root, undefined as any),
+    /onLongPress must be a function/,
+  )
 })

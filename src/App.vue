@@ -49,8 +49,17 @@ type TodoTextLayoutBinding = {
   key: string
   onLayout: (event: unknown) => void
 }
+type TodoLongPressTarget = { dayKey: string; todo: Todo }
+type GlobalEventEmitterLike = {
+  addListener: (eventName: string, listener: (...args: any[]) => void) => void
+  removeListener?: (
+    eventName: string,
+    listener: (...args: any[]) => void,
+  ) => void
+}
 
 const TODO_WIDTH_FALLBACK = 240
+const BUSYWEEK_TODO_LONG_PRESS_EVENT = 'busyweekTodoLongPress'
 
 // --- reactive state (ported from the original `data` object) ---------------
 const state = ref<AppState>('LIST')
@@ -112,25 +121,82 @@ function onKeyboardStatus(status: string, height: number) {
 function onComposerKeyboard(event: NativeKeyboardEvent) {
   keyboardHeight.value = getElementKeyboardHeight(event)
 }
-let removeKbListener: (() => void) | undefined
-function bindKeyboard() {
+function resolveTodoLongPressTarget(
+  sourceTimeline: Timeline,
+  dayKey: unknown,
+  todoId: unknown,
+): TodoLongPressTarget | null {
+  if (
+    typeof dayKey !== 'string' ||
+    dayKey.length === 0 ||
+    typeof todoId !== 'string' ||
+    todoId.length === 0
+  ) return null
+
+  const todos = sourceTimeline[dayKey]?.todos
+  if (!Array.isArray(todos)) return null
+  const todo = todos.find((candidate) => candidate?.id === todoId)
+  return todo ? { dayKey, todo } : null
+}
+
+function onWebTodoLongPress(dayKey: unknown, todoId: unknown) {
+  const target = resolveTodoLongPressTarget(
+    timeline.value,
+    dayKey,
+    todoId
+  )
+  if (!target) return
+  void openTodoEditor(target.dayKey, target.todo)
+}
+
+function getGlobalEventEmitter(
+  runtime: unknown,
+): GlobalEventEmitterLike | null {
+  if (
+    (typeof runtime !== 'object' && typeof runtime !== 'function') ||
+    runtime === null
+  ) return null
+
+  const candidate = runtime as {
+    getJSModule?: (name: string) => GlobalEventEmitterLike | undefined
+    getNativeApp?: () => {
+      tt?: { GlobalEventEmitter?: GlobalEventEmitterLike }
+    }
+  }
+  const jsModuleEmitter = candidate.getJSModule?.('GlobalEventEmitter')
+  if (typeof jsModuleEmitter?.addListener === 'function') {
+    return jsModuleEmitter
+  }
+
+  const nativeAppEmitter = candidate.getNativeApp?.()?.tt?.GlobalEventEmitter
+  return typeof nativeAppEmitter?.addListener === 'function'
+    ? nativeAppEmitter
+    : null
+}
+
+let removeGlobalEventListeners: (() => void) | undefined
+function bindGlobalEvents() {
   // Guarded: on Lynx-for-Web the runtime resizes <lynx-view> to the visual
-  // viewport (web/index.html) and does not emit this event, so this no-ops.
+  // viewport (web/index.html), while its host sends todo long presses through
+  // the same public GlobalEventEmitter bridge used by native host events.
   try {
     if (typeof lynx === 'undefined') return
-    const emitter = (lynx as any).getJSModule?.('GlobalEventEmitter')
-    if (!emitter?.addListener) return
+    const emitter = getGlobalEventEmitter(lynx)
+    if (!emitter) return
     emitter.addListener('keyboardstatuschanged', onKeyboardStatus)
-    removeKbListener = () =>
+    emitter.addListener(BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress)
+    removeGlobalEventListeners = () => {
       emitter.removeListener?.('keyboardstatuschanged', onKeyboardStatus)
+      emitter.removeListener?.(BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress)
+    }
   } catch {
-    /* GlobalEventEmitter unavailable — web handles avoidance separately */
+    /* GlobalEventEmitter unavailable — element-native interactions remain. */
   }
 }
 
 // --- load & persist --------------------------------------------------------
 onMounted(async () => {
-  bindKeyboard()
+  bindGlobalEvents()
   await nextTick()
   measureTodoWidthProbe()
   const stored = await loadTimeline()
@@ -138,7 +204,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  removeKbListener?.()
+  removeGlobalEventListeners?.()
   lastTodoLayoutHeights.clear()
   clearTodoTextMeasurementCache()
 })
@@ -644,6 +710,8 @@ function removeTodo(dayKey: string, id: string) {
               </view>
               <view
                 class="todo-body"
+                :data-day-key="day.key"
+                :data-todo-id="todo.id"
                 @longpress.stop="openTodoEditor(day.key, todo)"
               >
                 <text

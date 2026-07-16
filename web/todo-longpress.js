@@ -105,7 +105,11 @@ function findTodoBody(event) {
   return null
 }
 
-export function installTodoLongPress(root, testOptions = {}) {
+export function installTodoLongPress(
+  root,
+  onLongPress,
+  testOptions = {},
+) {
   if (
     (typeof root !== 'object' && typeof root !== 'function') ||
     root === null ||
@@ -113,6 +117,9 @@ export function installTodoLongPress(root, testOptions = {}) {
     typeof root.removeEventListener !== 'function'
   ) {
     throw new TypeError('root must be an EventTarget')
+  }
+  if (typeof onLongPress !== 'function') {
+    throw new TypeError('onLongPress must be a function')
   }
 
   const existingCleanup = installedRoots.get(root)
@@ -122,32 +129,8 @@ export function installTodoLongPress(root, testOptions = {}) {
   const ownerWindow = ownerDocument?.defaultView
   const options = testOptions ?? {}
 
-  function dispatchLongPress({ target, x, y }) {
-    try {
-      const targetDocument = target.ownerDocument ?? ownerDocument
-      const CustomEventConstructor = targetDocument?.defaultView?.CustomEvent
-      if (
-        typeof CustomEventConstructor !== 'function' ||
-        typeof target.dispatchEvent !== 'function'
-      ) {
-        return
-      }
-
-      target.dispatchEvent(
-        new CustomEventConstructor('longpress', {
-          detail: { clientX: x, clientY: y },
-          bubbles: false,
-          composed: false,
-          cancelable: true,
-        }),
-      )
-    } catch {
-      // A host without realm-safe CustomEvent support cannot synthesize it.
-    }
-  }
-
   const gesture = createTodoLongPressGesture({
-    onLongPress: dispatchLongPress,
+    onLongPress,
     setTimer: options.setTimer,
     clearTimer: options.clearTimer,
   })
