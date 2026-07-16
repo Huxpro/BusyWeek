@@ -33,6 +33,26 @@ function readOptionalSource(relativePath: string): string {
   return existsSync(sourceUrl) ? readFileSync(sourceUrl, 'utf8') : ''
 }
 
+function getFunctionSource(name: string): string {
+  const signature = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`)
+  const match = signature.exec(appSource)
+  assert.ok(match, `expected App.vue to define ${name}()`)
+
+  const start = match.index
+  const bodyStart = appSource.indexOf('{', start)
+  assert.notEqual(bodyStart, -1, `expected ${name}() to have a body`)
+
+  let depth = 0
+  for (let index = bodyStart; index < appSource.length; index += 1) {
+    if (appSource[index] === '{') depth += 1
+    if (appSource[index] !== '}') continue
+    depth -= 1
+    if (depth === 0) return appSource.slice(start, index + 1)
+  }
+
+  assert.fail(`expected ${name}() to have a closing brace`)
+}
+
 const nativeTextLayoutBackendSource = readOptionalSource(
   '../src/textLayoutBackend.lynx.ts',
 )
@@ -334,28 +354,32 @@ test('the composer keeps its picker and adds a legacy-compatible quick-day scrol
   )
 })
 
-test('only the todo body starts editing and the final row has no duplicate divider', () => {
+test('long-pressing only the todo body opens the full editor', () => {
+  const todoBodyTag = appSource.match(/<view\s+class="todo-body"[^>]*>/)?.[0]
+
+  assert.ok(todoBodyTag)
+  assert.match(
+    todoBodyTag,
+    /@longpress\.stop="openTodoEditor\(day\.key, todo\)"/,
+  )
+  assert.doesNotMatch(todoBodyTag, /@tap(?:\.|=|\s)/)
   assert.match(
     appSource,
     /class="checkbox-hit"[\s\S]*?@tap\.stop="checkTodo\(todo\)"/,
   )
   assert.match(
     appSource,
-    /class="todo-body"[^>]*@tap="startEdit\(todo\)"/s,
-  )
-  assert.doesNotMatch(
-    appSource,
-    /class="bw-text todo-text"[^>]*@tap="startEdit\(todo\)"/s,
+    /class="delete"[^>]*@tap\.stop="removeTodo\(day\.key, todo\.id\)"/s,
   )
   assert.match(
     appSource,
-    /class="delete"[^>]*@tap\.stop="removeTodo\(day\.key, todo\.id\)"/s,
+    /<view\s+class="todo-body"[^>]*>[\s\S]*?<text[^>]*class="bw-text todo-text"[^>]*>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>[\s\S]*?<\/view>/,
   )
+  assert.doesNotMatch(appSource, /class="todo-input"/)
+})
+
+test('todo rows retain their divider and tap-isolation styling', () => {
   assert.doesNotMatch(appCss, /\.todo:active/)
-  assert.doesNotMatch(
-    appCss,
-    /\.todo--editing\s*\{[^}]*background-color:/s,
-  )
   assert.match(
     appSource,
     /'todo--last':\s*todoIndex\s*===\s*day\.todos\.length\s*-\s*1/,
@@ -366,48 +390,146 @@ test('only the todo body starts editing and the final row has no duplicate divid
   )
 })
 
-test('todo editing routes both native keyboard events into timeline avoidance', () => {
-  assert.match(appSource, /keepTodoEditAboveKeyboard/)
-  assert.match(appSource, /const editKeyboardHeight = ref\(0\)/)
+test('the full composer owns create and edit drafts and labels', () => {
   assert.match(
     appSource,
-    /<input[\s\S]*?v-else[\s\S]*?@focus="onEditFocus\(todo\.id\)"[\s\S]*?@keyboard="onEditKeyboard\(todo\.id, \$event\)"[\s\S]*?@keyboardheightchange="onEditKeyboard\(todo\.id, \$event\)"[\s\S]*?\/>/,
+    /from ['"]\.\/todoComposer\.js['"]/,
+  )
+  assert.match(appSource, /\btype ComposerIntent\b/)
+  assert.match(appSource, /\bcreateComposerDraft\b/)
+  assert.match(appSource, /\bcommitComposerDraft\b/)
+  assert.match(
+    appSource,
+    /const composerIntent = ref<ComposerIntent>\(\{ kind: ['"]create['"] \}\)/,
+  )
+  assert.match(appSource, /const composerText = ref\(['"]['"]\)/)
+  assert.match(
+    appSource,
+    /const composerDate = ref\(getTodayDate\(\)\)/,
   )
   assert.match(
     appSource,
-    /function onKeyboardStatus\([\s\S]*?editingId\.value[\s\S]*?setEditKeyboardHeight/,
+    /const composerTitle = computed\([\s\S]*?kind === ['"]edit['"]\s*\? ['"]编辑事项['"]\s*:\s*['"]添加事项['"]/,
+  )
+  assert.match(
+    appSource,
+    /const composerSubmitLabel = computed\([\s\S]*?kind === ['"]edit['"]\s*\? ['"]保存['"]\s*:\s*['"]添加['"]/,
+  )
+  assert.match(appSource, /class="bw-text addpage-title">\{\{ composerTitle \}\}/)
+  assert.match(
+    appSource,
+    /class="bw-text addpage-submit-text">\{\{ composerSubmitLabel \}\}/,
+  )
+  assert.match(appSource, /v-model="composerText"/)
+  assert.match(appSource, /v-model="composerDate"/)
+})
+
+test('composer drafts are assigned before native setValue and focus', () => {
+  const openComposer = getFunctionSource('openComposer')
+  const openCreateComposer = getFunctionSource('openCreateComposer')
+  const openTodoEditor = getFunctionSource('openTodoEditor')
+
+  assert.match(
+    openComposer,
+    /createComposerDraft\(timeline\.value, intent, getTodayDate\(\)\)/,
+  )
+  const intentAssignment = openComposer.indexOf('composerIntent.value = intent')
+  const textAssignment = openComposer.indexOf('composerText.value = draft.text')
+  const dateAssignment = openComposer.indexOf('composerDate.value = draft.date')
+  const stateOpen = openComposer.indexOf("state.value = 'INPUT'")
+  const tick = openComposer.indexOf('await nextTick()')
+  const setValue = openComposer.indexOf('setComposerValue(composerText.value)')
+  const focus = openComposer.indexOf('focusComposer()')
+
+  for (const [label, index] of [
+    ['intent assignment', intentAssignment],
+    ['text assignment', textAssignment],
+    ['date assignment', dateAssignment],
+    ['state open', stateOpen],
+    ['nextTick', tick],
+    ['setValue', setValue],
+    ['focus', focus],
+  ] as const) {
+    assert.notEqual(index, -1, `expected openComposer() ${label}`)
+  }
+  assert.ok(intentAssignment < textAssignment)
+  assert.ok(textAssignment < dateAssignment)
+  assert.ok(dateAssignment < stateOpen)
+  assert.ok(stateOpen < tick)
+  assert.ok(tick < setValue)
+  assert.ok(setValue < focus)
+
+  assert.match(
+    openCreateComposer,
+    /openComposer\(\{ kind: ['"]create['"] \}\)/,
+  )
+  assert.match(
+    openTodoEditor,
+    /openComposer\(\{[\s\S]*?kind: ['"]edit['"][\s\S]*?todoId: todo\.id[\s\S]*?sourceDate: dayKey[\s\S]*?\}\)/,
   )
 })
 
-test('timeline gains a temporary keyboard spacer with delayed race-safe cleanup', () => {
-  assert.match(appSource, /id="app-root"\s+class="app"/)
+test('submitting commits once while cancel and back only discard the draft', () => {
+  const submitComposer = getFunctionSource('submitComposer')
+  const closeComposer = getFunctionSource('closeComposer')
+
+  assert.equal(
+    [...submitComposer.matchAll(/\bcommitComposerDraft\s*\(/g)].length,
+    1,
+  )
+  assert.equal(
+    [...submitComposer.matchAll(/\btimeline\.value\s*=/g)].length,
+    1,
+  )
+  assert.match(
+    submitComposer,
+    /const nextTimeline = commitComposerDraft\([\s\S]*?timeline\.value = nextTimeline/,
+  )
+  assert.match(submitComposer, /today: getTodayDate\(\)/)
+  assert.match(submitComposer, /idFactory: genId/)
+  assert.match(submitComposer, /closeComposer\(\)/)
+  assert.doesNotMatch(closeComposer, /commitComposerDraft/)
+  assert.match(closeComposer, /dismissKb\(\)/)
+  assert.match(closeComposer, /dayPickerOpen\.value = false/)
+  assert.match(closeComposer, /datePickerOpen\.value = false/)
+  assert.match(closeComposer, /state\.value = ['"]LIST['"]/)
   assert.match(
     appSource,
-    /<view class="timeline-spacer"\s*\/>\s*<view\s+class="edit-keyboard-spacer"\s+:style="editKeyboardSpacerStyle"\s*\/>/s,
+    /class="addpage-back"\s+@tap="closeComposer"/,
   )
   assert.match(
     appSource,
-    /const editKeyboardSpacerStyle = computed\([\s\S]*?editKeyboardSpacerHeight\.value/,
-  )
-  assert.match(appSource, /setTimeout\([\s\S]*?320/)
-  assert.match(appSource, /editAvoidanceGeneration/)
-  assert.match(
-    appCss,
-    /\.edit-keyboard-spacer\s*\{[^}]*height:\s*0[^}]*width:\s*100%/s,
+    /function onAddTouchEnd\([\s\S]*?closeComposer\(\)/,
   )
 })
 
-test('unmount invalidates in-flight edit keyboard avoidance work', () => {
-  const start = appSource.indexOf('onUnmounted(() => {')
-  const end = appSource.indexOf('\n})', start)
-  const unmountBlock = appSource.slice(start, end + 3)
+test('inline edit state and keyboard avoidance are absent', () => {
+  assert.doesNotMatch(appSource, /\beditingId\b/)
+  assert.doesNotMatch(appSource, /edit-keyboard-spacer/)
+  assert.doesNotMatch(appSource, /\beditKeyboard(?:Height|SpacerHeight|CleanupTimer)\b/)
+  assert.doesNotMatch(appSource, /\beditAvoidanceGeneration\b/)
+  assert.doesNotMatch(appSource, /\b(?:schedule|cancel)EditKeyboardCleanup\b/)
+  assert.doesNotMatch(appSource, /\bsetEditKeyboardHeight\b/)
+  assert.doesNotMatch(appSource, /\bvFocus\b|v-focus/)
+  assert.doesNotMatch(
+    appSource,
+    /\b(?:startEdit|finishEdit|onEditFocus|onEditKeyboard)\b/,
+  )
+  assert.doesNotMatch(appSource, /nativeInput|todoKeyboardAvoidance/)
+})
 
-  assert.notEqual(start, -1)
-  assert.notEqual(end, -1)
-  assert.match(unmountBlock, /editAvoidanceGeneration \+= 1/)
-  assert.match(unmountBlock, /editingId\.value = null/)
-  assert.match(unmountBlock, /editKeyboardHeight\.value = 0/)
-  assert.match(unmountBlock, /editKeyboardSpacerHeight\.value = 0/)
+test('native keyboard updates remain scoped to the full composer', () => {
+  const onKeyboardStatus = getFunctionSource('onKeyboardStatus')
+
+  assert.match(
+    onKeyboardStatus,
+    /keyboardHeight\.value = status === ['"]on['"] \? height : 0/,
+  )
+  assert.doesNotMatch(onKeyboardStatus, /editing|Edit/)
+  assert.match(
+    appSource,
+    /<textarea[\s\S]*?id="addpage-ta"[\s\S]*?@keyboard="onComposerKeyboard"[\s\S]*?@keyboardheightchange="onComposerKeyboard"[\s\S]*?\/>/,
+  )
 })
 
 test('Clear-style motion gives retained todos and day cards explicit slots', () => {

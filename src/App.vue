@@ -9,7 +9,6 @@ import {
 } from 'vue-lynx'
 
 import './App.css'
-import { syncNativeInputOnMount } from './nativeInput.js'
 import {
   getElementKeyboardHeight,
   type NativeKeyboardEvent,
@@ -18,7 +17,11 @@ import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
 import { getVisibleDays } from './timelineView.js'
-import { keepTodoEditAboveKeyboard } from './todoKeyboardAvoidance.js'
+import {
+  commitComposerDraft,
+  createComposerDraft,
+  type ComposerIntent,
+} from './todoComposer.js'
 import type { Timeline, Todo } from './types.js'
 import {
   getDateDiff,
@@ -38,11 +41,15 @@ type AppState = 'LIST' | 'INPUT'
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
 const showCompleted = ref(true)
-const editingId = ref<string | null>(null)
-
-// the "new todo" being composed on the add page
-const newTodoText = ref('')
-const newTodoDate = ref(getTodayDate())
+const composerIntent = ref<ComposerIntent>({ kind: 'create' })
+const composerText = ref('')
+const composerDate = ref(getTodayDate())
+const composerTitle = computed(() =>
+  composerIntent.value.kind === 'edit' ? '编辑事项' : '添加事项',
+)
+const composerSubmitLabel = computed(() =>
+  composerIntent.value.kind === 'edit' ? '保存' : '添加',
+)
 
 // cross-platform pickers (built from Lynx primitives — work on web + native)
 const dayPickerOpen = ref(false)
@@ -53,28 +60,20 @@ const datePickerOpen = ref(false)
 // on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
 
-// Edit inputs live inside the main timeline instead of the full-screen
-// composer. Their keyboard needs extra scroll range plus an explicit scroll
-// adjustment; Lynx does not perform either automatically for built-in input.
-const editKeyboardHeight = ref(0)
-const editKeyboardSpacerHeight = ref(0)
-let editAvoidanceGeneration = 0
-let editKeyboardCleanupTimer: ReturnType<typeof setTimeout> | undefined
-
 // Fast relative-day choices complement (rather than replace) the full day and
 // calendar pickers. Fixed choices keep the strip predictable on small screens.
 const quickDayOffsets = [0, 1, 2, 3, 4, 5, 6, 7]
 const selectedDayOffset = computed(() =>
-  getDateDiff(newTodoDate.value, getTodayDate()),
+  getDateDiff(composerDate.value, getTodayDate()),
 )
 
 // day-type + weekday label for the currently chosen date
 const dayTypeLabel = computed(
-  () => `${getDayType(newTodoDate.value)} ${getDay(newTodoDate.value)}`,
+  () => `${getDayType(composerDate.value)} ${getDay(composerDate.value)}`,
 )
 // short "M月D日" for the date field
 const prettyDate = computed(() => {
-  const { month0, day } = parseDate(newTodoDate.value)
+  const { month0, day } = parseDate(composerDate.value)
   return `${month0 + 1}月${day}日`
 })
 
@@ -84,12 +83,7 @@ const prettyDate = computed(() => {
 // Lynx CSS px), so it maps 1:1 onto paddingBottom.
 // https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
 function onKeyboardStatus(status: string, height: number) {
-  const nextHeight = status === 'on' ? height : 0
-  if (editingId.value) {
-    setEditKeyboardHeight(editingId.value, nextHeight)
-  } else {
-    keyboardHeight.value = nextHeight
-  }
+  keyboardHeight.value = status === 'on' ? height : 0
 }
 function onComposerKeyboard(event: NativeKeyboardEvent) {
   keyboardHeight.value = getElementKeyboardHeight(event)
@@ -119,12 +113,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   removeKbListener?.()
-  editAvoidanceGeneration += 1
-  editingId.value = null
-  editKeyboardHeight.value = 0
-  editKeyboardSpacerHeight.value = 0
-  if (editKeyboardCleanupTimer) clearTimeout(editKeyboardCleanupTimer)
-  editKeyboardCleanupTimer = undefined
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -138,9 +126,6 @@ const motionLayout = computed(() =>
 )
 const dayListStyle = computed(() => ({
   height: `${motionLayout.value.height}px`,
-}))
-const editKeyboardSpacerStyle = computed(() => ({
-  height: `${editKeyboardSpacerHeight.value}px`,
 }))
 
 function daySlotStyle(dayKey: string) {
@@ -184,20 +169,38 @@ function genId(): string {
 }
 
 // --- actions ---------------------------------------------------------------
-async function openInput() {
-  newTodoText.value = ''
-  newTodoDate.value = getTodayDate()
+async function openComposer(intent: ComposerIntent) {
+  const draft = createComposerDraft(timeline.value, intent, getTodayDate())
+  composerIntent.value = intent
+  composerText.value = draft.text
+  composerDate.value = draft.date
+  dayPickerOpen.value = false
+  datePickerOpen.value = false
+  keyboardHeight.value = 0
   state.value = 'INPUT'
   await nextTick()
-  setComposerValue(newTodoText.value)
+  setComposerValue(composerText.value)
   focusComposer()
 }
-function closeInput() {
-  state.value = 'LIST'
+
+async function openCreateComposer() {
+  await openComposer({ kind: 'create' })
 }
-function toggleInput() {
-  if (state.value === 'LIST') openInput()
-  else closeInput()
+
+async function openTodoEditor(dayKey: string, todo: Todo) {
+  await openComposer({
+    kind: 'edit',
+    todoId: todo.id,
+    sourceDate: dayKey,
+  })
+}
+
+function closeComposer() {
+  dismissKb()
+  dayPickerOpen.value = false
+  datePickerOpen.value = false
+  keyboardHeight.value = 0
+  state.value = 'LIST'
 }
 
 // keyboard dismiss: blur the textarea (hides the soft keyboard)
@@ -270,8 +273,7 @@ function onAddTouchEnd(e: {
   const up = swipeStartY - t.clientY
   const dx = Math.abs(t.clientX - swipeStartX)
   if (up > 80 && up > dx) {
-    dismissKb()
-    closeInput()
+    closeComposer()
   }
 }
 
@@ -286,147 +288,25 @@ function openDatePicker() {
 }
 
 function pickQuickDay(offset: number) {
-  newTodoDate.value = getDiffDate(offset)
+  composerDate.value = getDiffDate(offset)
 }
 
-function addTodo() {
-  dismissKb()
-  const date = newTodoDate.value
-  const dayType = getDateDiff(date, getTodayDate())
-  const text = newTodoText.value.trim() || '写点啥呀！'
-
-  const tl = timeline.value
-  if (!tl[date]) {
-    tl[date] = { date, todos: [] }
-  }
-  tl[date].todos.push({ id: genId(), date, dayType, done: false, text })
-  closeInput()
+function submitComposer() {
+  const nextTimeline = commitComposerDraft(
+    timeline.value,
+    composerIntent.value,
+    { text: composerText.value, date: composerDate.value },
+    { today: getTodayDate(), idFactory: genId },
+  )
+  timeline.value = nextTimeline
+  closeComposer()
 }
 
 function checkTodo(todo: Todo) {
   todo.done = !todo.done
 }
 
-// tap a todo's body → swap to the edit <input>; v-focus (below) focuses it
-// on mount so it edits in a single tap.
-function startEdit(todo: Todo) {
-  cancelEditKeyboardCleanup()
-  editAvoidanceGeneration += 1
-  editingId.value = todo.id
-}
-
-function cancelEditKeyboardCleanup() {
-  if (!editKeyboardCleanupTimer) return
-  clearTimeout(editKeyboardCleanupTimer)
-  editKeyboardCleanupTimer = undefined
-}
-
-// Keep the dummy until iOS finishes its keyboard dismissal animation. Clearing
-// the scroll range immediately on blur can clamp the list before the keyboard
-// has left the screen and produces a visible jump.
-function scheduleEditKeyboardCleanup() {
-  cancelEditKeyboardCleanup()
-  const generation = ++editAvoidanceGeneration
-  editKeyboardCleanupTimer = setTimeout(() => {
-    if (generation !== editAvoidanceGeneration) return
-    editKeyboardHeight.value = 0
-    editKeyboardSpacerHeight.value = 0
-    editKeyboardCleanupTimer = undefined
-  }, 320)
-}
-
-function setEditKeyboardHeight(todoId: string, height: number) {
-  if (editingId.value !== todoId) return
-
-  if (!Number.isFinite(height) || height <= 0) {
-    scheduleEditKeyboardCleanup()
-    return
-  }
-
-  cancelEditKeyboardCleanup()
-  editKeyboardHeight.value = height
-  // Expand first so even the last row has enough range when measurement and
-  // scrollTo run. The measured plan can reduce this for a viewport whose
-  // bottom already sits above the screen bottom.
-  editKeyboardSpacerHeight.value = height
-  const generation = ++editAvoidanceGeneration
-
-  if (typeof lynx === 'undefined') return
-
-  void keepTodoEditAboveKeyboard({
-    inputId: todoId,
-    keyboardHeight: height,
-    nextTick,
-    createSelectorQuery: () =>
-      (lynx as unknown as { createSelectorQuery: () => any })
-        .createSelectorQuery(),
-    isCurrent: () =>
-      generation === editAvoidanceGeneration && editingId.value === todoId,
-    onSpacerHeight: (spacerHeight) => {
-      if (
-        generation === editAvoidanceGeneration &&
-        editingId.value === todoId
-      ) {
-        editKeyboardSpacerHeight.value = spacerHeight
-      }
-    },
-  }).catch(() => {
-    /* input disappeared or the host lacks a query method — never red-screen */
-  })
-}
-
-function onEditFocus(todoId: string) {
-  if (editingId.value !== todoId || editKeyboardHeight.value <= 0) return
-  setEditKeyboardHeight(todoId, editKeyboardHeight.value)
-}
-
-function onEditKeyboard(todoId: string, event: NativeKeyboardEvent) {
-  setEditKeyboardHeight(todoId, getElementKeyboardHeight(event))
-}
-
-// Seed and focus the edit input after it exists in the native tree. vue-lynx
-// 0.4.0 only pushes the mounted `value` attribute, which iOS ignores once the
-// control is live, so setValue must run before focus (vue-lynx #203).
-const vFocus = {
-  mounted(
-    el: { focus?: () => void },
-    binding: { value?: { id?: string; value?: string } },
-  ) {
-    const id = binding.value?.id
-    if (!id) return
-
-    void syncNativeInputOnMount({
-      el,
-      id,
-      value: binding.value?.value ?? '',
-      nextTick,
-      createSelectorQuery:
-        typeof lynx === 'undefined'
-          ? undefined
-          : () =>
-              (lynx as unknown as { createSelectorQuery: () => any })
-                .createSelectorQuery(),
-    }).catch(() => {
-      /* ignore — falls back to tapping the field again */
-    })
-  },
-}
-
-function finishEdit(dayKey: string, todo: Todo) {
-  if (editingId.value !== todo.id) return
-  editingId.value = null
-  scheduleEditKeyboardCleanup()
-  todo.text = todo.text.trim()
-  if (!todo.text) {
-    removeTodo(dayKey, todo.id)
-  }
-}
-
 function removeTodo(dayKey: string, id: string) {
-  if (editingId.value === id) {
-    editingId.value = null
-    scheduleEditKeyboardCleanup()
-  }
   const day = timeline.value[dayKey]
   if (!day) return
   day.todos = day.todos.filter((todo) => todo.id !== id)
@@ -520,7 +400,6 @@ function removeTodo(dayKey: string, id: string) {
             <view
               class="todo"
               :class="{
-                'todo--editing': editingId === todo.id,
                 'todo--last': todoIndex === day.todos.length - 1,
               }"
             >
@@ -539,28 +418,15 @@ function removeTodo(dayKey: string, id: string) {
                   >
                 </view>
               </view>
-              <view class="todo-body" @tap="startEdit(todo)">
-                <!-- display as text; a single tap swaps to the input, which
-                     v-focus focuses immediately (the original's v-todo-focus
-                     pattern) so editing takes one tap. -->
+              <view
+                class="todo-body"
+                @longpress.stop="openTodoEditor(day.key, todo)"
+              >
                 <text
-                  v-if="editingId !== todo.id"
                   class="bw-text todo-text"
                   :class="{ 'todo-text--done': todo.done }"
                   >{{ todo.text }}</text
                 >
-                <input
-                  v-else
-                  v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
-                  :id="'edit-' + todo.id"
-                  class="todo-input"
-                  v-model="todo.text"
-                  @focus="onEditFocus(todo.id)"
-                  @keyboard="onEditKeyboard(todo.id, $event)"
-                  @keyboardheightchange="onEditKeyboard(todo.id, $event)"
-                  @blur="finishEdit(day.key, todo)"
-                  @confirm="finishEdit(day.key, todo)"
-                />
               </view>
               <view
                 class="delete"
@@ -585,15 +451,11 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="timeline-spacer" />
-      <view
-        class="edit-keyboard-spacer"
-        :style="editKeyboardSpacerStyle"
-      />
       </view>
     </scroll-view>
 
     <!-- ===== Floating action button (list mode) ===== -->
-    <view v-if="state === 'LIST'" class="fab" @tap="openInput">
+    <view v-if="state === 'LIST'" class="fab" @tap="openCreateComposer">
       <text class="bw-text fab-icon">＋</text>
     </view>
 
@@ -612,10 +474,10 @@ function removeTodo(dayKey: string, id: string) {
       @touchend="onAddTouchEnd"
     >
       <view class="addpage-bar">
-        <view class="addpage-back" @tap="closeInput">
+        <view class="addpage-back" @tap="closeComposer">
           <text class="bw-text addpage-back-text">‹</text>
         </view>
-        <text class="bw-text addpage-title">添加事项</text>
+        <text class="bw-text addpage-title">{{ composerTitle }}</text>
       </view>
 
       <view class="addpage-input-wrap" @tap="focusComposer">
@@ -623,7 +485,7 @@ function removeTodo(dayKey: string, id: string) {
           id="addpage-ta"
           ref="taEl"
           class="addpage-input"
-          v-model="newTodoText"
+          v-model="composerText"
           placeholder="又有事情忙啦？"
           @keyboard="onComposerKeyboard"
           @keyboardheightchange="onComposerKeyboard"
@@ -664,8 +526,8 @@ function removeTodo(dayKey: string, id: string) {
             <text class="bw-text addpage-field-text">{{ prettyDate }}</text>
             <text class="bw-text addpage-field-caret">📅</text>
           </view>
-          <view class="addpage-submit" @tap="addTodo">
-            <text class="bw-text addpage-submit-text">添加</text>
+          <view class="addpage-submit" @tap="submitComposer">
+            <text class="bw-text addpage-submit-text">{{ composerSubmitLabel }}</text>
           </view>
         </view>
       </view>
@@ -674,12 +536,12 @@ function removeTodo(dayKey: string, id: string) {
     <!-- ===== Cross-platform pickers (Lynx primitives; web + native) ===== -->
     <DayPickerSheet
       :open="dayPickerOpen"
-      v-model="newTodoDate"
+      v-model="composerDate"
       @close="dayPickerOpen = false"
     />
     <DatePickerSheet
       :open="datePickerOpen"
-      v-model="newTodoDate"
+      v-model="composerDate"
       @close="datePickerOpen = false"
     />
   </view>
