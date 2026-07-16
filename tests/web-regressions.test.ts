@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import { loadTimeline, saveTimeline } from '../src/store.ts'
@@ -20,6 +20,73 @@ const dayPickerCss = readFileSync(
 )
 const storeSource = readFileSync(new URL('../src/store.ts', import.meta.url), 'utf8')
 const webHost = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8')
+const lynxConfigSource = readFileSync(
+  new URL('../lynx.config.ts', import.meta.url),
+  'utf8',
+)
+const packageJson = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+) as { dependencies?: Record<string, string> }
+
+function readOptionalSource(relativePath: string): string {
+  const sourceUrl = new URL(relativePath, import.meta.url)
+  return existsSync(sourceUrl) ? readFileSync(sourceUrl, 'utf8') : ''
+}
+
+const nativeTextLayoutBackendSource = readOptionalSource(
+  '../src/textLayoutBackend.lynx.ts',
+)
+const webTextLayoutBackendSource = readOptionalSource(
+  '../src/textLayoutBackend.web.ts',
+)
+
+test('Rspeedy maps the exact text-layout virtual request per environment', () => {
+  assert.match(
+    lynxConfigSource,
+    /import\s*\{\s*fileURLToPath\s*\}\s*from\s*['"]node:url['"]/,
+  )
+  assert.match(
+    lynxConfigSource,
+    /lynx:\s*\{[\s\S]*?resolve:\s*\{[\s\S]*?alias:\s*\{[\s\S]*?['"]@busyweek\/text-layout-backend\$['"]:\s*fileURLToPath\(\s*new URL\(\s*['"]\.\/src\/textLayoutBackend\.lynx\.ts['"]\s*,\s*import\.meta\.url\s*,?\s*\)\s*,?\s*\)/,
+  )
+  assert.match(
+    lynxConfigSource,
+    /web:\s*\{[\s\S]*?resolve:\s*\{[\s\S]*?alias:\s*\{[\s\S]*?['"]@busyweek\/text-layout-backend\$['"]:\s*fileURLToPath\(\s*new URL\(\s*['"]\.\/src\/textLayoutBackend\.web\.ts['"]\s*,\s*import\.meta\.url\s*,?\s*\)\s*,?\s*\)/,
+  )
+})
+
+test('both text-layout wrappers expose the stable measurement contract', () => {
+  for (const source of [
+    nativeTextLayoutBackendSource,
+    webTextLayoutBackendSource,
+  ]) {
+    assert.match(source, /export function measureTodoText\(/)
+    assert.match(source, /export function clearTodoTextMeasurementCache\(/)
+  }
+})
+
+test('text-layout wrappers use their platform-specific Pretext packages', () => {
+  assert.match(
+    nativeTextLayoutBackendSource,
+    /from\s*['"]lynx-pretext['"]/,
+  )
+  assert.match(
+    webTextLayoutBackendSource,
+    /from\s*['"]@chenglou\/pretext['"]/,
+  )
+})
+
+test('the Web text-layout wrapper guards Canvas capabilities and package failures', () => {
+  assert.match(webTextLayoutBackendSource, /OffscreenCanvas/)
+  assert.match(webTextLayoutBackendSource, /Intl[\s\S]*?Segmenter/)
+  assert.match(webTextLayoutBackendSource, /catch\s*\{/)
+  assert.match(webTextLayoutBackendSource, /catch\s*\{[\s\S]*?return null/)
+})
+
+test('text-layout backends use pinned Pretext package versions', () => {
+  assert.equal(packageJson.dependencies?.['lynx-pretext'], '0.0.1')
+  assert.equal(packageJson.dependencies?.['@chenglou/pretext'], '0.0.8')
+})
 
 test('the assembled web runtime maps Lynx textarea to x-textarea', () => {
   const client = readFileSync(
