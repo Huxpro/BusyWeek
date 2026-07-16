@@ -192,7 +192,9 @@
       })()
     </script>
 
-    <script>
+    <script type="module">
+      import { installTodoLongPress } from './todo-longpress.js'
+
       // Rspeedy's Lynx CSS pipeline intentionally omits browser media queries.
       // Inject the Web overrides as soon as the runtime opens its shadow root,
       // before the first text nodes connect and report layout. This keeps
@@ -326,6 +328,7 @@
             requestAnimationFrame(inject)
             return
           }
+          installTodoLongPress(root)
           installResponsiveStyles(root)
           if (!root.querySelector('.app')) {
             requestAnimationFrame(inject)

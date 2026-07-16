@@ -21,6 +21,10 @@ const dayPickerCss = readFileSync(
 )
 const storeSource = readFileSync(new URL('../src/store.ts', import.meta.url), 'utf8')
 const webHost = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8')
+const assembleWebSource = readFileSync(
+  new URL('../scripts/assemble-web.mjs', import.meta.url),
+  'utf8',
+)
 const lynxConfigSource = readFileSync(
   new URL('../lynx.config.ts', import.meta.url),
   'utf8',
@@ -32,6 +36,25 @@ const packageJson = JSON.parse(
 function readOptionalSource(relativePath: string): string {
   const sourceUrl = new URL(relativePath, import.meta.url)
   return existsSync(sourceUrl) ? readFileSync(sourceUrl, 'utf8') : ''
+}
+
+function getWebEnhancementScript(): { attributes: string; body: string } {
+  const enhancementStart = webHost.indexOf(
+    '(function installWebEnhancements()',
+  )
+  const scriptStart = webHost.lastIndexOf('<script', enhancementStart)
+  const bodyStart = webHost.indexOf('>', scriptStart) + 1
+  const scriptEnd = webHost.indexOf('</script>', enhancementStart)
+
+  assert.notEqual(enhancementStart, -1)
+  assert.notEqual(scriptStart, -1)
+  assert.notEqual(bodyStart, 0)
+  assert.notEqual(scriptEnd, -1)
+
+  return {
+    attributes: webHost.slice(scriptStart + '<script'.length, bodyStart - 1),
+    body: webHost.slice(bodyStart, scriptEnd),
+  }
 }
 
 function getFunctionSource(name: string): string {
@@ -147,6 +170,67 @@ test('the web host enables the x-textarea lynxinput bridge before typing', () =>
   assert.match(
     webHost,
     /addEventListener\(['"]lynxinput['"]/,
+  )
+})
+
+test('the Web enhancement script is an ES module', () => {
+  const enhancementScript = getWebEnhancementScript()
+
+  assert.match(enhancementScript.attributes, /\btype=["']module["']/)
+})
+
+test('the Web enhancement module imports the todo long-press installer', () => {
+  const enhancementScript = getWebEnhancementScript()
+
+  assert.match(
+    enhancementScript.body,
+    /import\s*\{\s*installTodoLongPress\s*\}\s*from\s*["']\.\/todo-longpress\.js["']/,
+  )
+})
+
+test('the Web host installs todo long press as soon as the shadow root exists', () => {
+  const enhancementStart = webHost.indexOf(
+    '(function installWebEnhancements()',
+  )
+  const enhancementEnd = webHost.indexOf('</script>', enhancementStart)
+  assert.notEqual(enhancementStart, -1)
+  assert.notEqual(enhancementEnd, -1)
+
+  const enhancement = webHost.slice(enhancementStart, enhancementEnd)
+  const injectStart = enhancement.indexOf('function inject()')
+  assert.notEqual(injectStart, -1)
+
+  const inject = enhancement.slice(injectStart)
+  const rootRead = inject.indexOf('var root = host.shadowRoot')
+  const rootWait = inject.indexOf('if (!root)')
+  const installLongPress = inject.indexOf('installTodoLongPress(root)')
+  const installStyles = inject.indexOf('installResponsiveStyles(root)')
+  const appWait = inject.indexOf("if (!root.querySelector('.app'))")
+  const textareaSetup = inject.indexOf(
+    "var textarea = root.querySelector('#addpage-ta')",
+  )
+
+  for (const index of [
+    rootRead,
+    rootWait,
+    installLongPress,
+    installStyles,
+    appWait,
+    textareaSetup,
+  ]) {
+    assert.notEqual(index, -1)
+  }
+  assert.ok(rootRead < rootWait)
+  assert.ok(rootWait < installLongPress)
+  assert.ok(installLongPress < installStyles)
+  assert.ok(installStyles < appWait)
+  assert.ok(appWait < textareaSetup)
+})
+
+test('the Web assembler copies the todo long-press module beside index.html', () => {
+  assert.match(
+    assembleWebSource,
+    /copyFile\(\s*path\.join\(root,\s*["']web["'],\s*["']todo-longpress\.js["']\),\s*path\.join\(dist,\s*["']todo-longpress\.js["']\),?\s*\)/,
   )
 })
 
