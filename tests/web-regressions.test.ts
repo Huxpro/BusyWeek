@@ -126,6 +126,17 @@ test('both text-layout wrappers expose the stable measurement contract', () => {
   }
 })
 
+test('only native enables renderer layout correction', () => {
+  assert.match(
+    nativeTextLayoutBackendSource,
+    /export const supportsRendererLayoutCorrection = true/,
+  )
+  assert.match(
+    webTextLayoutBackendSource,
+    /export const supportsRendererLayoutCorrection = false/,
+  )
+})
+
 test('text-layout wrappers use their platform-specific Pretext packages', () => {
   assert.match(
     nativeTextLayoutBackendSource,
@@ -137,7 +148,7 @@ test('text-layout wrappers use their platform-specific Pretext packages', () => 
   )
   assert.match(
     nativeTextLayoutBackendSource,
-    /const WHITE_SPACE = ['"]normal['"] as const/,
+    /const WHITE_SPACE = ['"]pre-wrap['"] as const/,
   )
   assert.match(
     webTextLayoutBackendSource,
@@ -167,6 +178,13 @@ test('the assembled web runtime maps Lynx textarea to x-textarea', () => {
   )
 
   assert.match(client, /textarea\s*:\s*["']x-textarea["']/)
+})
+
+test('the Web runtime pins the current textarea preview artifact', () => {
+  assert.equal(
+    packageJson.dependencies?.['@lynx-js/web-core'],
+    'https://pkg.pr.new/@lynx-js/web-core@043cd321bd84da9cb3c3cf928e3888b561f207c6',
+  )
 })
 
 test('the web host enables the x-textarea lynxinput bridge before typing', () => {
@@ -604,12 +622,18 @@ test('the app subscribes and unsubscribes the Web todo long-press global event',
   )
   assert.match(
     appSource,
-    /emitter\.addListener\(\s*BUSYWEEK_TODO_LONG_PRESS_EVENT\s*,\s*onWebTodoLongPress\s*\)/,
+    /import\s*\{[\s\S]*?bindGlobalEventListenersWhenReady[\s\S]*?\}\s*from\s*['"]\.\/globalEventBinding\.js['"]/,
+  )
+  const bindGlobalEvents = getFunctionSource('bindGlobalEvents')
+  assert.match(
+    bindGlobalEvents,
+    /removeGlobalEventListeners\s*=\s*bindGlobalEventListenersWhenReady\(/,
   )
   assert.match(
-    appSource,
-    /emitter\.removeListener\?\.\(\s*BUSYWEEK_TODO_LONG_PRESS_EVENT\s*,\s*onWebTodoLongPress\s*\)/,
+    bindGlobalEvents,
+    /\[\s*BUSYWEEK_TODO_LONG_PRESS_EVENT\s*,\s*onWebTodoLongPress\s*\]/,
   )
+  assert.match(appSource, /onUnmounted\(\(\)\s*=>\s*\{[\s\S]*?removeGlobalEventListeners\?\.\(\)/)
   const handler = getFunctionSource('onWebTodoLongPress')
   assert.match(
     handler,
@@ -734,6 +758,18 @@ test('composer drafts are assigned before native setValue and focus', () => {
     openTodoEditor,
     /openComposer\(\{[\s\S]*?kind: ['"]edit['"][\s\S]*?todoId: todo\.id[\s\S]*?sourceDate: dayKey[\s\S]*?\}\)/,
   )
+})
+
+test('closing the composer invalidates pending post-mount focus work', () => {
+  const openComposer = getFunctionSource('openComposer')
+  const closeComposer = getFunctionSource('closeComposer')
+
+  assert.match(openComposer, /const generation = \+\+composerOpenGeneration/)
+  assert.match(
+    openComposer,
+    /await nextTick\(\)[\s\S]*?generation !== composerOpenGeneration[\s\S]*?state\.value !== ['"]INPUT['"][\s\S]*?return/,
+  )
+  assert.match(closeComposer, /composerOpenGeneration \+= 1/)
 })
 
 test('submitting commits once while cancel and back only discard the draft', () => {
@@ -941,7 +977,11 @@ test('todo text layout tokens and binding currentness distinguish every renderer
 test('renderer layout corrects predictions without stale edit heights or loops', () => {
   assert.match(
     appSource,
-    /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
+    /<text[\s\S]*?v-if="supportsRendererLayoutCorrection"[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
+  )
+  assert.match(
+    appSource,
+    /<text[\s\S]*?v-else[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>/,
   )
 
   const onTodoTextLayout = getFunctionSource('onTodoTextLayout')
@@ -961,7 +1001,7 @@ test('renderer layout corrects predictions without stale edit heights or loops',
 
   const submitComposer = getFunctionSource('submitComposer')
   const correctionClear = submitComposer.indexOf(
-    'clearCorrectedTodoHeight(composerIntent.value.todoId)',
+    'clearCorrectedTodoHeight(todoId)',
   )
   const timelineAssignment = submitComposer.indexOf(
     'timeline.value = nextTimeline',
@@ -1039,10 +1079,10 @@ test('per-Todo bindings remount edits and width changes while rejecting stale re
 
   const submitComposer = getFunctionSource('submitComposer')
   const editRefresh = submitComposer.indexOf(
-    'refreshTodoTextLayoutAfterEdit(composerIntent.value.todoId)',
+    'refreshTodoTextLayoutAfterEdit(todoId)',
   )
   const correctionClear = submitComposer.indexOf(
-    'clearCorrectedTodoHeight(composerIntent.value.todoId)',
+    'clearCorrectedTodoHeight(todoId)',
   )
   const timelineAssignment = submitComposer.indexOf(
     'timeline.value = nextTimeline',
@@ -1055,7 +1095,7 @@ test('per-Todo bindings remount edits and width changes while rejecting stale re
 
   const removeTodo = getFunctionSource('removeTodo')
   const removedBindingInvalidation = removeTodo.indexOf(
-    'todoTextLayoutBindings.delete(id)',
+    'forgetTodoLayout(id)',
   )
   const todoRemoval = removeTodo.indexOf('day.todos = day.todos.filter')
   assert.notEqual(removedBindingInvalidation, -1)
@@ -1065,6 +1105,22 @@ test('per-Todo bindings remount edits and width changes while rejecting stale re
   assert.match(
     appSource,
     /<text[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
+  )
+})
+
+test('deleting a Todo releases every retained text-layout entry', () => {
+  const forgetTodoLayout = getFunctionSource('forgetTodoLayout')
+  const removeTodo = getFunctionSource('removeTodo')
+  const submitComposer = getFunctionSource('submitComposer')
+
+  assert.match(forgetTodoLayout, /todoTextLayoutBindings\.delete\(todoId\)/)
+  assert.match(forgetTodoLayout, /todoTextEditGenerations\.delete\(todoId\)/)
+  assert.match(forgetTodoLayout, /lastTodoLayoutHeights\.delete\(todoId\)/)
+  assert.match(forgetTodoLayout, /clearCorrectedTodoHeight\(todoId\)/)
+  assert.match(removeTodo, /forgetTodoLayout\(id\)/)
+  assert.match(
+    submitComposer,
+    /editedTodoStillExists[\s\S]*?refreshTodoTextLayoutAfterEdit[\s\S]*?else[\s\S]*?forgetTodoLayout/,
   )
 })
 

@@ -4,6 +4,8 @@ declare module '@busyweek/text-layout-backend' {
     textHeight: number
   }
 
+  export const supportsRendererLayoutCorrection: boolean
+
   export function measureTodoText(
     text: string,
     width: number,

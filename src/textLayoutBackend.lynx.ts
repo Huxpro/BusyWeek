@@ -10,8 +10,12 @@ export interface TodoTextMeasurement {
   textHeight: number
 }
 
+export const supportsRendererLayoutCorrection = true
+
 const PLATFORM_FONT = '15px sans-serif'
-const WHITE_SPACE = 'normal' as const
+// Lynx text preserves explicit line feeds from the composer. Predict those
+// hard breaks up front; the renderer `layout` event still corrects glyph edges.
+const WHITE_SPACE = 'pre-wrap' as const
 const LINE_HEIGHT = 20
 
 const preparedTextCache = new Map<string, PreparedText>()

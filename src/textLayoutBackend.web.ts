@@ -10,6 +10,11 @@ export interface TodoTextMeasurement {
   textHeight: number
 }
 
+// XTextTruncation's Web `layout` event currently contains a Proxy in detail,
+// which cannot cross Web Core's MessagePort boundary. Canvas/Pretext is the
+// Web authority until that upstream event payload becomes structured-cloneable.
+export const supportsRendererLayoutCorrection = false
+
 type TextMeasurementGlobals = {
   OffscreenCanvas?: unknown
   Intl?: {

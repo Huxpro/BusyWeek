@@ -10,6 +10,7 @@ import {
 import {
   clearTodoTextMeasurementCache,
   measureTodoText,
+  supportsRendererLayoutCorrection,
 } from '@busyweek/text-layout-backend'
 
 import './App.css'
@@ -17,6 +18,10 @@ import {
   getElementKeyboardHeight,
   type NativeKeyboardEvent,
 } from './nativeKeyboard.js'
+import {
+  bindGlobalEventListenersWhenReady,
+  type GlobalEventEmitterLike,
+} from './globalEventBinding.js'
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
@@ -50,14 +55,6 @@ type TodoTextLayoutBinding = {
   onLayout: (event: unknown) => void
 }
 type TodoLongPressTarget = { dayKey: string; todo: Todo }
-type GlobalEventEmitterLike = {
-  addListener: (eventName: string, listener: (...args: any[]) => void) => void
-  removeListener?: (
-    eventName: string,
-    listener: (...args: any[]) => void,
-  ) => void
-}
-
 const TODO_WIDTH_FALLBACK = 240
 const BUSYWEEK_TODO_LONG_PRESS_EVENT = 'busyweekTodoLongPress'
 
@@ -85,7 +82,8 @@ const datePickerOpen = ref(false)
 const keyboardHeight = ref(0)
 
 // Pretext gives the background thread an immediate layout prediction. Native
-// renderer measurements below remain authoritative for font/bidi/emoji edges.
+// renderer measurements below remain authoritative for font/bidi/emoji edges;
+// Web avoids its non-cloneable renderer `layout` event and trusts Canvas.
 const todoTextWidth = ref(TODO_WIDTH_FALLBACK)
 const correctedTodoHeights = ref<Record<string, number>>({})
 const todoTextLayoutRevision = ref(0)
@@ -181,14 +179,13 @@ function bindGlobalEvents() {
   // the same public GlobalEventEmitter bridge used by native host events.
   try {
     if (typeof lynx === 'undefined') return
-    const emitter = getGlobalEventEmitter(lynx)
-    if (!emitter) return
-    emitter.addListener('keyboardstatuschanged', onKeyboardStatus)
-    emitter.addListener(BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress)
-    removeGlobalEventListeners = () => {
-      emitter.removeListener?.('keyboardstatuschanged', onKeyboardStatus)
-      emitter.removeListener?.(BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress)
-    }
+    removeGlobalEventListeners = bindGlobalEventListenersWhenReady({
+      resolveEmitter: () => getGlobalEventEmitter(lynx),
+      listeners: [
+        ['keyboardstatuschanged', onKeyboardStatus],
+        [BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress],
+      ],
+    })
   } catch {
     /* GlobalEventEmitter unavailable — element-native interactions remain. */
   }
@@ -432,8 +429,18 @@ function clearCorrectedTodoHeight(todoId: string) {
   correctedTodoHeights.value = nextHeights
 }
 
+function forgetTodoLayout(todoId: string) {
+  todoTextLayoutBindings.delete(todoId)
+  todoTextEditGenerations.delete(todoId)
+  lastTodoLayoutHeights.delete(todoId)
+  clearCorrectedTodoHeight(todoId)
+}
+
 // --- actions ---------------------------------------------------------------
+let composerOpenGeneration = 0
+
 async function openComposer(intent: ComposerIntent) {
+  const generation = ++composerOpenGeneration
   const draft = createComposerDraft(timeline.value, intent, getTodayDate())
   composerIntent.value = intent
   composerText.value = draft.text
@@ -443,6 +450,10 @@ async function openComposer(intent: ComposerIntent) {
   keyboardHeight.value = 0
   state.value = 'INPUT'
   await nextTick()
+  if (
+    generation !== composerOpenGeneration ||
+    state.value !== 'INPUT'
+  ) return
   setComposerValue(composerText.value)
   focusComposer()
 }
@@ -460,6 +471,7 @@ async function openTodoEditor(dayKey: string, todo: Todo) {
 }
 
 function closeComposer() {
+  composerOpenGeneration += 1
   dismissKb()
   dayPickerOpen.value = false
   datePickerOpen.value = false
@@ -565,8 +577,16 @@ function submitComposer() {
     { today: getTodayDate(), idFactory: genId },
   )
   if (composerIntent.value.kind === 'edit') {
-    refreshTodoTextLayoutAfterEdit(composerIntent.value.todoId)
-    clearCorrectedTodoHeight(composerIntent.value.todoId)
+    const todoId = composerIntent.value.todoId
+    const editedTodoStillExists = Object.values(nextTimeline).some((day) =>
+      day.todos.some((todo) => todo.id === todoId),
+    )
+    if (editedTodoStillExists) {
+      refreshTodoTextLayoutAfterEdit(todoId)
+      clearCorrectedTodoHeight(todoId)
+    } else {
+      forgetTodoLayout(todoId)
+    }
   }
   timeline.value = nextTimeline
   closeComposer()
@@ -579,7 +599,7 @@ function checkTodo(todo: Todo) {
 function removeTodo(dayKey: string, id: string) {
   const day = timeline.value[dayKey]
   if (!day) return
-  todoTextLayoutBindings.delete(id)
+  forgetTodoLayout(id)
   day.todos = day.todos.filter((todo) => todo.id !== id)
   if (day.todos.length === 0) {
     delete timeline.value[dayKey]
@@ -715,10 +735,18 @@ function removeTodo(dayKey: string, id: string) {
                 @longpress.stop="openTodoEditor(day.key, todo)"
               >
                 <text
+                  v-if="supportsRendererLayoutCorrection"
                   class="bw-text todo-text"
                   :key="getTodoTextLayoutBinding(todo.id).key"
                   :class="{ 'todo-text--done': todo.done }"
                   @layout="getTodoTextLayoutBinding(todo.id).onLayout"
+                  >{{ todo.text }}</text
+                >
+                <text
+                  v-else
+                  class="bw-text todo-text"
+                  :key="getTodoTextLayoutBinding(todo.id).key"
+                  :class="{ 'todo-text--done': todo.done }"
                   >{{ todo.text }}</text
                 >
               </view>
