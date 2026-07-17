@@ -281,6 +281,13 @@ function todoRowStyle(dayKey: string, todoId: string) {
   return { height: `${height}px` }
 }
 
+function inlineTodoInputStyle(todo: Todo) {
+  const textHeight = measureTodoText(todo.text, todoTextWidth.value)?.textHeight ?? 0
+  const contentHeight = Math.max(0, TODO_MIN_ROW_HEIGHT - 16)
+  const paddingTop = Math.max(0, (contentHeight - textHeight) / 2)
+  return { paddingTop: `${paddingTop}px` }
+}
+
 function resolveTodoLayoutHeight(dayKey: string, todoId: string): number {
   const height = motionLayout.value.days[dayKey]?.todoHeights[todoId]
 
@@ -782,7 +789,6 @@ function removeTodo(dayKey: string, id: string) {
             class="todo-body"
             @layoutchange="onTodoWidthProbeLayout"
           />
-          <view class="todo-edit" />
           <view class="delete" />
         </view>
       </view>
@@ -879,6 +885,7 @@ function removeTodo(dayKey: string, id: string) {
                   v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
                   :id="'edit-' + todo.id"
                   class="todo-input"
+                  :style="inlineTodoInputStyle(todo)"
                   v-model="todo.text"
                   @input="onInlineEditInput(todo)"
                   @focus="onEditFocus(todo.id)"
@@ -887,13 +894,6 @@ function removeTodo(dayKey: string, id: string) {
                   @blur="finishEdit(day.key, todo)"
                   @confirm="finishEdit(day.key, todo)"
                 />
-              </view>
-              <view
-                class="todo-edit"
-                accessibility-label="编辑事项"
-                @tap.stop="startEdit(todo)"
-              >
-                <text class="bw-text todo-edit-text">编辑</text>
               </view>
               <view
                 class="delete"

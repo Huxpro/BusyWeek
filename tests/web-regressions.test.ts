@@ -597,17 +597,10 @@ test('tap edits inline while long press alone opens the full editor', () => {
   assert.match(appSource, /<textarea[\s\S]*?class="todo-input"[\s\S]*?v-model="todo\.text"/)
 })
 
-test('Web exposes a visible fallback for inline editing', () => {
-  assert.match(
-    appSource,
-    /class="todo-edit"[\s\S]*?accessibility-label="编辑事项"[\s\S]*?@tap\.stop="startEdit\(todo\)"/,
-  )
-  assert.match(appSource, /class="bw-text todo-edit-text">编辑<\/text>/)
-  assert.match(appCss, /\.todo-edit\s*\{[^}]*display:\s*none/s)
-  assert.match(
-    webHost,
-    /\.todo-edit:not\(\[l-e-name\]\)\s*\{[^}]*display:\s*flex\s*!important/s,
-  )
+test('editing uses the Todo body without a separate edit button', () => {
+  assert.doesNotMatch(appSource, /class="todo-edit"|todo-edit-text/)
+  assert.doesNotMatch(appCss, /\.todo-edit\b|\.todo-edit-text\b/)
+  assert.doesNotMatch(webHost, /\.todo-edit\b/)
 })
 
 test('the app resolves valid Web long-press identifiers against the current timeline', () => {
@@ -1224,6 +1217,11 @@ test('multiline inline editor preserves measured row geometry', () => {
   assert.match(appCss, /\.todo-input\s*\{[^}]*line-height:\s*20px/s)
   assert.match(appSource, /@input="onInlineEditInput\(todo\)"/)
   assert.match(getFunctionSource('onInlineEditInput'), /clearCorrectedTodoHeight\(todo\.id\)/)
+  assert.match(appSource, /:style="inlineTodoInputStyle\(todo\)"/)
+  assert.match(
+    getFunctionSource('inlineTodoInputStyle'),
+    /Math\.max\(0, \(contentHeight - textHeight\) \/ 2\)/,
+  )
 })
 
 test('Clear-style removal keeps the departing layer above movers and avoids empty-state pushdown', () => {

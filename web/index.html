@@ -232,22 +232,6 @@
             }
             .todo-body:not([l-e-name]) { cursor: pointer; }
 
-            .todo-edit:not([l-e-name]) {
-              display: flex !important;
-              cursor: pointer;
-              transition: background-color 160ms ease, color 160ms ease;
-            }
-            .todo-edit:not([l-e-name]):hover {
-              background-color: rgba(3, 169, 244, 0.09);
-            }
-            .todo-edit:not([l-e-name]):focus-visible {
-              outline: 2px solid #0288d1;
-              outline-offset: -2px;
-            }
-            .todo-edit:not([l-e-name]):active {
-              background-color: rgba(3, 169, 244, 0.16);
-            }
-
             @media all and (min-width: 640px) {
               .timeline:not([l-e-name]) {
                 width: min(760px, calc(100vw - 48px)) !important;
