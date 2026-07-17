@@ -3,7 +3,7 @@ import test from 'node:test'
 
 import {
   DANCER_FRAME_COUNT,
-  createLongPressArbiter,
+  createTapSequenceArbiter,
   dancerFrameAt,
   dancerProfile,
   spriteTransform,
@@ -31,16 +31,20 @@ test('exclusion intervals remain ordered and within the copy column', () => {
   }
 })
 
-test('long-press arbitration cancels short touches and fires once after winning', async () => {
+test('tap arbitration requires two quick taps and resets after winning', () => {
   let wins = 0
-  const arbiter = createLongPressArbiter(() => { wins += 1 }, 15)
-  arbiter.start()
-  arbiter.cancel()
-  await new Promise((resolve) => setTimeout(resolve, 20))
+  let time = 0
+  const arbiter = createTapSequenceArbiter(() => { wins += 1 }, 2, 600, () => time)
+  assert.equal(arbiter.tap(), false)
   assert.equal(wins, 0)
-  arbiter.start()
-  await new Promise((resolve) => setTimeout(resolve, 20))
+  time = 601
+  assert.equal(arbiter.tap(), false)
+  assert.equal(wins, 0)
+  time = 900
+  assert.equal(arbiter.tap(), true)
   assert.equal(wins, 1)
-  assert.equal(arbiter.cancel(), true)
+  time = 901
+  assert.equal(arbiter.tap(), false)
+  assert.equal(wins, 1)
   arbiter.dispose()
 })

@@ -55,7 +55,7 @@ import dancerSprite from './assets/busyweek-dancer.png'
 import {
   DANCER_FPS,
   DANCER_LOOP_MS,
-  createLongPressArbiter,
+  createTapSequenceArbiter,
   dancerFrameAt,
   dancerProfile,
   spriteTransform,
@@ -233,7 +233,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopDancer()
-  subtitleLongPress.dispose()
+  subtitleTapSequence.dispose()
   removeGlobalEventListeners?.()
   lastTodoLayoutHeights.clear()
   clearTodoTextMeasurementCache()
@@ -375,9 +375,8 @@ function onAppStatusChanged(status: unknown) {
   const value = typeof status === 'string' ? status : (status as { status?: unknown } | null)?.status
   dancerPaused.value = value === 'background' || value === 'inactive' || value === 'hide'
 }
-const subtitleLongPress = createLongPressArbiter(startDancer)
-function onSubtitleTouchStart() { subtitleLongPress.start() }
-function onSubtitleTouchEnd() { subtitleLongPress.cancel() }
+const subtitleTapSequence = createTapSequenceArbiter(startDancer)
+function onSubtitleTap() { subtitleTapSequence.tap() }
 
 // --- helpers exposed to the template ---------------------------------------
 function isToday(dateStr: string): boolean {
@@ -809,9 +808,7 @@ function removeTodo(dayKey: string, id: string) {
           <text class="bw-text logo">BusyWeek!</text>
           <text
             class="bw-text logo-accent"
-            @touchstart.stop="onSubtitleTouchStart"
-            @touchend.stop="onSubtitleTouchEnd"
-            @touchcancel.stop="onSubtitleTouchEnd"
+            @tap.stop="onSubtitleTap"
           >好忙啊</text>
         </view>
         <view

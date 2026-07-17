@@ -1,7 +1,7 @@
 export const DANCER_FRAME_COUNT = 16
 export const DANCER_FPS = 12
 export const DANCER_LOOP_MS = 4_000
-export const DANCER_LONG_PRESS_MS = 1_500
+export const DANCER_TAP_WINDOW_MS = 600
 
 export type DancerInterval = { left: number; right: number }
 
@@ -31,25 +31,28 @@ export function spriteTransform(frame: number): string {
   return `translate(${-25 * (safe % 4)}%, ${-25 * Math.floor(safe / 4)}%)`
 }
 
-export function createLongPressArbiter(
+export function createTapSequenceArbiter(
   onWin: () => void,
-  delay = DANCER_LONG_PRESS_MS,
+  requiredTaps = 2,
+  windowMs = DANCER_TAP_WINDOW_MS,
+  now: () => number = Date.now,
 ) {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let won = false
+  let tapCount = 0
+  let lastTapAt = Number.NEGATIVE_INFINITY
   return {
-    start() {
-      if (timer) clearTimeout(timer)
-      won = false
-      timer = setTimeout(() => { timer = undefined; won = true; onWin() }, delay)
+    tap() {
+      const tappedAt = now()
+      tapCount = tappedAt - lastTapAt <= windowMs ? tapCount + 1 : 1
+      lastTapAt = tappedAt
+      if (tapCount < requiredTaps) return false
+      tapCount = 0
+      lastTapAt = Number.NEGATIVE_INFINITY
+      onWin()
+      return true
     },
-    cancel() {
-      if (timer) clearTimeout(timer)
-      timer = undefined
-      const result = won
-      won = false
-      return result
+    dispose() {
+      tapCount = 0
+      lastTapAt = Number.NEGATIVE_INFINITY
     },
-    dispose() { if (timer) clearTimeout(timer); timer = undefined; won = false },
   }
 }
