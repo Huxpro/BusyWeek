@@ -7,7 +7,8 @@
 // Run *after* `rspeedy build`, which produces `dist/main.web.bundle`. This:
 //   1. copies the @lynx-js/web-core prod runtime into `dist/static/`
 //   2. copies the host page (`web/index.html`) to `dist/index.html`
-//   3. copies the original web app into `dist/legacy/`, stubbing its (long
+//   3. copies the Web long-press enhancement beside the host page
+//   4. copies the original web app into `dist/legacy/`, stubbing its (long
 //      dead) LeanCloud SDK so it boots without the CDN
 //
 // The Lynx runtime is bundled locally (no CDN) and all URLs are relative.
@@ -41,6 +42,10 @@ const runtimeSrc = path.join(
 await mkdir(dist, { recursive: true })
 await cp(runtimeSrc, path.join(dist, 'static'), { recursive: true })
 await copyFile(path.join(root, 'web', 'index.html'), path.join(dist, 'index.html'))
+await copyFile(
+  path.join(root, 'web', 'todo-longpress.js'),
+  path.join(dist, 'todo-longpress.js'),
+)
 
 // Web app icons + PWA manifest (cross-platform home-screen / favicon support).
 await cp(path.join(root, 'web', 'icons'), path.join(dist, 'icons'), {
@@ -87,6 +92,7 @@ await writeFile(appJsPath, patched)
 
 console.log('✓ Assembled static web site in dist/')
 console.log('  - dist/index.html        (Lynx host page,  served at /)')
+console.log('  - dist/todo-longpress.js (Web long-press enhancement)')
 console.log('  - dist/main.web.bundle   (Lynx app)')
 console.log('  - dist/static/           (Lynx web runtime)')
 console.log('  - dist/legacy/           (original web edition, served at /legacy/)')
