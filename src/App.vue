@@ -9,6 +9,7 @@ import {
 } from 'vue-lynx'
 import {
   clearTodoTextMeasurementCache,
+  type DancerCopyBand,
   layoutDancerCopy,
   measureTodoText,
   supportsRendererLayoutCorrection,
@@ -26,7 +27,11 @@ import {
 } from './globalEventBinding.js'
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
-import { createTimelineMotionLayout } from './timelineMotion.js'
+import {
+  DAY_GAP,
+  DAY_HEADER_HEIGHT,
+  createTimelineMotionLayout,
+} from './timelineMotion.js'
 import { keepTodoEditAboveKeyboard } from './todoKeyboardAvoidance.js'
 import {
   TODO_MIN_ROW_HEIGHT,
@@ -57,7 +62,7 @@ import {
   DANCER_LOOP_MS,
   createTapSequenceArbiter,
   dancerFrameAt,
-  dancerProfile,
+  dancerIntervalsForText,
   spriteTransform,
 } from './dancerEffect.js'
 
@@ -338,17 +343,44 @@ const emptyHint = computed(() =>
     ? '打开右上角查看已完成'
     : '点右下角 + 添加事项吧',
 )
-const dancerCopy = computed(() => {
-  const todoCopy = visibleDays.value.flatMap((day) => day.todos.map((todo) => todo.text)).join(' · ')
-  const text = todoCopy || '时间会走，事情会做完。忙里偷闲，跟着节拍轻轻跳一会儿。'
-  return layoutDancerCopy(text, dancerProfile(dancerFrame.value), 320)
-})
 const dancerSpriteStyle = computed(() => ({ transform: spriteTransform(dancerFrame.value) }))
-function dancerLeftStyle(index: number) {
-  return { width: `${dancerProfile(dancerFrame.value)[index]?.left * 100 || 0}%` }
+type DancerTodoLayout = {
+  bands: DancerCopyBand[]
+  intervals: readonly { left: number; right: number }[]
 }
-function dancerRightStyle(index: number) {
-  const right = dancerProfile(dancerFrame.value)[index]?.right ?? 1
+const dancerTodoLayouts = computed(() => {
+  const layouts: Record<string, DancerTodoLayout> = {}
+  if (!dancerActive.value) return layouts
+  for (const day of visibleDays.value) {
+    const dayLayout = motionLayout.value.days[day.key]
+    if (!dayLayout) continue
+    for (const todo of day.todos) {
+      const measurement = measureTodoText(todo.text, todoTextWidth.value)
+      const lineCount = measurement?.lineCount ?? 1
+      const rowTop = dayLayout.offset + DAY_GAP + DAY_HEADER_HEIGHT + (dayLayout.todoOffsets[todo.id] ?? 0)
+      const textTop = rowTop + 8
+      const geometry = dancerIntervalsForText(
+        textTop,
+        lineCount,
+        20,
+        dancerFrame.value,
+        todoTextWidth.value,
+      )
+      if (!geometry.affected) continue
+      layouts[todo.id] = {
+        intervals: geometry.intervals,
+        bands: layoutDancerCopy(todo.text, geometry.intervals, todoTextWidth.value),
+      }
+    }
+  }
+  return layouts
+})
+function dancerTodoLeftStyle(todoId: string, index: number) {
+  const left = dancerTodoLayouts.value[todoId]?.intervals[index]?.left ?? 1
+  return { width: `${left * 100}%` }
+}
+function dancerTodoRightStyle(todoId: string, index: number) {
+  const right = dancerTodoLayouts.value[todoId]?.intervals[index]?.right ?? 1
   return { width: `${(1 - right) * 100}%` }
 }
 
@@ -843,20 +875,12 @@ function removeTodo(dayKey: string, id: string) {
       <view class="timeline-content">
       <view
         v-if="dancerActive"
-        class="dancer-overlay"
-        accessibility-label="BusyWeek 跳舞彩蛋，点按关闭"
-        @tap.stop="stopDancer"
+        class="dancer-timeline-layer"
+        accessibility-label="BusyWeek 跳舞彩蛋"
+        user-interaction-enabled="false"
       >
-        <view class="dancer-stage">
-          <view class="dancer-copy" accessibility-element="false">
-            <view v-for="(band, index) in dancerCopy" :key="index" class="dancer-copy-band">
-              <text class="bw-text dancer-copy-line dancer-copy-line--left" :style="dancerLeftStyle(index)">{{ band.left?.text }}</text>
-              <text class="bw-text dancer-copy-line dancer-copy-line--right" :style="dancerRightStyle(index)">{{ band.right?.text }}</text>
-            </view>
-          </view>
-          <view class="dancer-sprite-window" accessibility-element="false">
-            <image class="dancer-sprite-sheet" :src="dancerSprite" :style="dancerSpriteStyle" />
-          </view>
+        <view class="dancer-sprite-window" accessibility-element="false">
+          <image class="dancer-sprite-sheet" :src="dancerSprite" :style="dancerSpriteStyle" />
         </view>
       </view>
       <!-- Hidden exact-geometry row: its body is the real text column width,
@@ -949,11 +973,34 @@ function removeTodo(dayKey: string, id: string) {
                 @tap.stop="startEdit(todo)"
                 @longpress.stop="openTodoEditor(day.key, todo)"
               >
+                <view
+                  v-if="editingId !== todo.id && dancerTodoLayouts[todo.id]"
+                  class="dancer-todo-text"
+                  :class="{ 'todo-text--done': todo.done }"
+                >
+                  <view
+                    v-for="(band, bandIndex) in dancerTodoLayouts[todo.id].bands"
+                    :key="bandIndex"
+                    class="dancer-todo-band"
+                  >
+                    <text
+                      class="bw-text dancer-todo-line"
+                      :style="dancerTodoLeftStyle(todo.id, bandIndex)"
+                    >{{ band.left?.text }}</text>
+                    <text
+                      class="bw-text dancer-todo-line dancer-todo-line--right"
+                      :style="dancerTodoRightStyle(todo.id, bandIndex)"
+                    >{{ band.right?.text }}</text>
+                  </view>
+                </view>
                 <text
                   v-if="editingId !== todo.id && supportsRendererLayoutCorrection"
                   class="bw-text todo-text"
                   :key="getTodoTextLayoutBinding(todo.id).key"
-                  :class="{ 'todo-text--done': todo.done }"
+                  :class="{
+                    'todo-text--done': todo.done,
+                    'todo-text--dancer-hidden': dancerTodoLayouts[todo.id],
+                  }"
                   @layout="getTodoTextLayoutBinding(todo.id).onLayout"
                   >{{ todo.text }}</text
                 >
@@ -961,7 +1008,10 @@ function removeTodo(dayKey: string, id: string) {
                   v-else-if="editingId !== todo.id"
                   class="bw-text todo-text"
                   :key="getTodoTextLayoutBinding(todo.id).key"
-                  :class="{ 'todo-text--done': todo.done }"
+                  :class="{
+                    'todo-text--done': todo.done,
+                    'todo-text--dancer-hidden': dancerTodoLayouts[todo.id],
+                  }"
                   >{{ todo.text }}</text
                 >
                 <textarea

@@ -5,6 +5,7 @@ import {
   DANCER_FRAME_COUNT,
   createTapSequenceArbiter,
   dancerFrameAt,
+  dancerIntervalsForText,
   dancerProfile,
   spriteTransform,
 } from '../src/dancerEffect.ts'
@@ -29,6 +30,21 @@ test('exclusion intervals remain ordered and within the copy column', () => {
       assert.ok(interval.right < 1)
     }
   }
+})
+
+test('real Todo lines only receive exclusion geometry where the dancer overlaps', () => {
+  const above = dancerIntervalsForText(0, 1, 20, 0)
+  assert.equal(above.affected, false)
+  assert.deepEqual(above.intervals, [{ left: 1, right: 1 }])
+
+  const crossing = dancerIntervalsForText(28, 4, 20, 0)
+  assert.equal(crossing.affected, true)
+  assert.deepEqual(crossing.intervals[0], { left: 1, right: 1 })
+  assert.ok(crossing.intervals[1].left < crossing.intervals[1].right)
+
+  const narrow = dancerIntervalsForText(58, 1, 20, 0, 200)
+  assert.ok(narrow.intervals[0].left < crossing.intervals[1].left)
+  assert.ok(narrow.intervals[0].right > crossing.intervals[1].right)
 })
 
 test('tap arbitration requires two quick taps and resets after winning', () => {
