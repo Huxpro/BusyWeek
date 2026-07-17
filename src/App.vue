@@ -463,6 +463,11 @@ async function openCreateComposer() {
 }
 
 async function openTodoEditor(dayKey: string, todo: Todo) {
+  if (
+    state.value === 'INPUT' &&
+    composerIntent.value.kind === 'edit' &&
+    composerIntent.value.todoId === todo.id
+  ) return
   await openComposer({
     kind: 'edit',
     todoId: todo.id,
@@ -660,6 +665,7 @@ function removeTodo(dayKey: string, id: string) {
             class="todo-body"
             @layoutchange="onTodoWidthProbeLayout"
           />
+          <view class="todo-edit" />
           <view class="delete" />
         </view>
       </view>
@@ -732,6 +738,7 @@ function removeTodo(dayKey: string, id: string) {
                 class="todo-body"
                 :data-day-key="day.key"
                 :data-todo-id="todo.id"
+                @tap.stop="openTodoEditor(day.key, todo)"
                 @longpress.stop="openTodoEditor(day.key, todo)"
               >
                 <text
@@ -749,6 +756,13 @@ function removeTodo(dayKey: string, id: string) {
                   :class="{ 'todo-text--done': todo.done }"
                   >{{ todo.text }}</text
                 >
+              </view>
+              <view
+                class="todo-edit"
+                accessibility-label="编辑事项"
+                @tap.stop="openTodoEditor(day.key, todo)"
+              >
+                <text class="bw-text todo-edit-text">编辑</text>
               </view>
               <view
                 class="delete"

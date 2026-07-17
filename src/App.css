@@ -319,6 +319,24 @@
 .todo-body:active .todo-text { opacity: 0.68; }
 .todo-text--done { color: #c2c9d0; text-decoration: line-through; }
 
+/* The Todo body accepts tap and long-press. The Web host also reveals this
+   explicit fallback so pointer users never have to discover a touch gesture.
+   Keep the node in the width probe as well. */
+.todo-edit {
+  display: none;
+  flex-shrink: 0;
+  width: 42px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 17px;
+}
+.todo-edit-text {
+  color: #7d9bb1;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .delete {
   width: 34px;
   height: 34px;

@@ -568,17 +568,20 @@ test('the composer keeps its picker and adds a legacy-compatible quick-day scrol
   )
 })
 
-test('long-pressing only the todo body opens the full editor', () => {
+test('tapping or long-pressing only the todo body opens the full editor', () => {
   const todoBodyTag = appSource.match(/<view\s+class="todo-body"[^>]*>/)?.[0]
 
   assert.ok(todoBodyTag)
+  assert.match(
+    todoBodyTag,
+    /@tap\.stop="openTodoEditor\(day\.key, todo\)"/,
+  )
   assert.match(
     todoBodyTag,
     /@longpress\.stop="openTodoEditor\(day\.key, todo\)"/,
   )
   assert.match(todoBodyTag, /:data-day-key="day\.key"/)
   assert.match(todoBodyTag, /:data-todo-id="todo\.id"/)
-  assert.doesNotMatch(todoBodyTag, /@tap(?:\.|=|\s)/)
   assert.match(
     appSource,
     /class="checkbox-hit"[\s\S]*?@tap\.stop="checkTodo\(todo\)"/,
@@ -592,6 +595,19 @@ test('long-pressing only the todo body opens the full editor', () => {
     /<view\s+class="todo-body"[^>]*>[\s\S]*?<text[^>]*class="bw-text todo-text"[^>]*>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>[\s\S]*?<\/view>/,
   )
   assert.doesNotMatch(appSource, /class="todo-input"/)
+})
+
+test('Web exposes a visible edit fallback alongside body tap and long press', () => {
+  assert.match(
+    appSource,
+    /class="todo-edit"[\s\S]*?accessibility-label="编辑事项"[\s\S]*?@tap\.stop="openTodoEditor\(day\.key, todo\)"/,
+  )
+  assert.match(appSource, /class="bw-text todo-edit-text">编辑<\/text>/)
+  assert.match(appCss, /\.todo-edit\s*\{[^}]*display:\s*none/s)
+  assert.match(
+    webHost,
+    /\.todo-edit:not\(\[l-e-name\]\)\s*\{[^}]*display:\s*flex\s*!important/s,
+  )
 })
 
 test('the app resolves valid Web long-press identifiers against the current timeline', () => {
@@ -757,6 +773,15 @@ test('composer drafts are assigned before native setValue and focus', () => {
   assert.match(
     openTodoEditor,
     /openComposer\(\{[\s\S]*?kind: ['"]edit['"][\s\S]*?todoId: todo\.id[\s\S]*?sourceDate: dayKey[\s\S]*?\}\)/,
+  )
+})
+
+test('a long press followed by its click does not reopen the same editor', () => {
+  const openTodoEditor = getFunctionSource('openTodoEditor')
+
+  assert.match(
+    openTodoEditor,
+    /state\.value === ['"]INPUT['"][\s\S]*?composerIntent\.value\.kind === ['"]edit['"][\s\S]*?composerIntent\.value\.todoId === todo\.id[\s\S]*?return/,
   )
 })
 
@@ -1227,14 +1252,21 @@ test('todo insertion and removal are owned by an explicit Vue transition group',
   assert.match(appCss, /\.todo-leave-to/)
 })
 
-test('desktop CSS preserves the legacy centered timeline and floating composer', () => {
+test('desktop CSS preserves the centered timeline and anchors a bounded composer', () => {
   assert.match(webHost, /busyweek-web-responsive/)
   assert.match(webHost, /@media[^\{]*\(min-width:\s*640px\)/)
-  assert.match(webHost, /\.timeline[^\{]*\{[^}]*width:\s*70%[^}]*margin-left:\s*15%/s)
-  assert.match(webHost, /\.addpage[^\{]*\{[^}]*width:\s*500px[^}]*height:\s*60%[^}]*right:\s*86px[^}]*bottom:\s*63px/s)
-  assert.match(webHost, /transform:\s*translateY\(100vh\)/)
-  assert.match(webHost, /@media[^\{]*\(min-width:\s*1000px\)/)
-  assert.match(webHost, /\.timeline[^\{]*\{[^}]*width:\s*57%[^}]*margin-left:\s*21\.5%/s)
+  assert.match(
+    webHost,
+    /\.timeline:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*min\(760px,\s*calc\(100vw\s*-\s*48px\)\)\s*!important[^}]*margin-left:\s*max\(24px,\s*calc\(50vw\s*-\s*380px\)\)\s*!important/s,
+  )
+  assert.match(
+    webHost,
+    /\.addpage:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*min\(540px,\s*calc\(100vw\s*-\s*48px\)\)[^}]*height:\s*min\(720px,\s*calc\(100vh\s*-\s*96px\)\)[^}]*left:\s*max\(24px,\s*calc\(50vw\s*-\s*270px\)\)\s*!important[^}]*top:\s*max\(48px,\s*calc\(50vh\s*-\s*360px\)\)\s*!important/s,
+  )
+  assert.match(
+    webHost,
+    /\.addpage--open:not\(\[l-e-name\]\)\s*\{[^}]*opacity:\s*1[^}]*visibility:\s*visible[^}]*pointer-events:\s*auto/s,
+  )
 })
 
 test('the Web menu opens from the left and desktop pickers become anchored panels', () => {
@@ -1248,7 +1280,7 @@ test('the Web menu opens from the left and desktop pickers become anchored panel
   )
   assert.match(
     webHost,
-    /\.sheet-panel:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*500px[^}]*align-self:\s*flex-end[^}]*margin-right:\s*86px[^}]*margin-bottom:\s*63px[^}]*border-radius:\s*18px/s,
+    /\.sheet-panel:not\(\[l-e-name\]\)\s*\{[^}]*width:\s*min\(540px,\s*calc\(100vw\s*-\s*48px\)\)\s*!important[^}]*align-self:\s*center[^}]*margin-right:\s*0[^}]*margin-bottom:\s*48px[^}]*border-radius:\s*18px/s,
   )
   assert.match(
     webHost,
