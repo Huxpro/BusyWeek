@@ -25,7 +25,10 @@ import {
 } from './globalEventBinding.js'
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
-import { createTimelineMotionLayout } from './timelineMotion.js'
+import {
+  createTimelineMotionLayout,
+  getAnchoredScrollTop,
+} from './timelineMotion.js'
 import { keepTodoEditAboveKeyboard } from './todoKeyboardAvoidance.js'
 import {
   TODO_MIN_ROW_HEIGHT,
@@ -64,6 +67,10 @@ const BUSYWEEK_TODO_LONG_PRESS_EVENT = 'busyweekTodoLongPress'
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
 const showCompleted = ref(true)
+const expandedDayKey = ref<string | null>(null)
+const timelineScrollTop = ref(0)
+const requestedTimelineScrollTop = ref(0)
+const reduceMotion = ref(false)
 const editingId = ref<string | null>(null)
 const composerIntent = ref<ComposerIntent>({ kind: 'create' })
 const composerText = ref('')
@@ -207,6 +214,10 @@ onMounted(async () => {
   measureTodoWidthProbe()
   const stored = await loadTimeline()
   timeline.value = stored ?? createStarterTimeline(getTodayDate())
+  expandedDayKey.value = visibleDays.value.some((day) => isToday(day.key))
+    ? getTodayDate()
+    : (visibleDays.value[0]?.key ?? null)
+  detectReducedMotion()
 })
 
 onUnmounted(() => {
@@ -223,6 +234,14 @@ watch(timeline, (tl) => saveTimeline(tl), { deep: true })
 const visibleDays = computed(() =>
   getVisibleDays(timeline.value, showCompleted.value),
 )
+watch(visibleDays, (days) => {
+  if (
+    expandedDayKey.value !== null &&
+    !days.some((day) => day.key === expandedDayKey.value)
+  ) {
+    expandedDayKey.value = days[0]?.key ?? null
+  }
+})
 const predictedTodoHeights = computed(() => {
   const heights: Record<string, number> = {}
 
@@ -248,6 +267,7 @@ const motionLayout = computed(() =>
   createTimelineMotionLayout(
     visibleDays.value,
     predictedTodoHeights.value,
+    expandedDayKey.value,
   ),
 )
 const dayListStyle = computed(() => ({
@@ -265,6 +285,52 @@ function daySlotStyle(dayKey: string) {
 function dayTodosStyle(dayKey: string) {
   const height = motionLayout.value.days[dayKey]?.todosHeight ?? 0
   return { height: `${height}px` }
+}
+
+function isDayExpanded(dayKey: string): boolean {
+  return expandedDayKey.value === dayKey
+}
+
+function onTimelineScroll(event: {
+  detail?: { scrollTop?: unknown; scrollY?: unknown }
+}) {
+  const value = event.detail?.scrollTop ?? event.detail?.scrollY
+  if (typeof value !== 'number' || !Number.isFinite(value)) return
+  timelineScrollTop.value = value
+  requestedTimelineScrollTop.value = value
+}
+
+async function toggleDay(dayKey: string) {
+  const before = motionLayout.value
+  expandedDayKey.value = isDayExpanded(dayKey) ? null : dayKey
+  const after = motionLayout.value
+  const anchoredTop = getAnchoredScrollTop(
+    timelineScrollTop.value,
+    before,
+    after,
+  )
+  if (Math.abs(anchoredTop - timelineScrollTop.value) <= 0.5) return
+
+  requestedTimelineScrollTop.value = anchoredTop
+  timelineScrollTop.value = anchoredTop
+  await nextTick()
+}
+
+function detectReducedMotion() {
+  try {
+    const runtime = lynx as unknown as {
+      getSystemInfoSync?: () => {
+        accessibility?: { reduceMotion?: boolean }
+        reduceMotion?: boolean
+      }
+    }
+    const info = runtime.getSystemInfoSync?.()
+    reduceMotion.value = Boolean(
+      info?.accessibility?.reduceMotion ?? info?.reduceMotion,
+    )
+  } catch {
+    /* Web applies the equivalent preference through its media query. */
+  }
 }
 
 function todoSlotStyle(dayKey: string, todoId: string) {
@@ -773,6 +839,9 @@ function removeTodo(dayKey: string, id: string) {
       class="timeline"
       scroll-orientation="vertical"
       :scroll-y="true"
+      :scroll-top="requestedTimelineScrollTop"
+      :class="{ 'reduce-motion': reduceMotion }"
+      @scroll="onTimelineScroll"
     >
       <view class="timeline-content">
       <!-- Hidden exact-geometry row: its body is the real text column width,
@@ -810,7 +879,14 @@ function removeTodo(dayKey: string, id: string) {
           :style="daySlotStyle(day.key)"
         >
         <view class="day-group">
-          <view class="day-header">
+          <view
+            class="day-header"
+            accessibility-element="true"
+            accessibility-role="button"
+            :accessibility-label="`${getDayType(day.key)}，${isDayExpanded(day.key) ? '已展开' : '已折叠'}`"
+            :aria-expanded="isDayExpanded(day.key) ? 'true' : 'false'"
+            @tap="toggleDay(day.key)"
+          >
             <view class="day-type-wrap">
               <view v-if="isToday(day.key)" class="today-dot" />
               <text
@@ -819,13 +895,21 @@ function removeTodo(dayKey: string, id: string) {
                 >{{ getDayType(day.key) }}</text
               >
             </view>
-            <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
+            <view class="day-header-meta">
+              <text class="bw-text day-date">{{ day.key }} · {{ getDay(day.key) }}</text>
+              <text
+                class="bw-text day-disclosure"
+                :class="{ 'day-disclosure--expanded': isDayExpanded(day.key) }"
+                >›</text
+              >
+            </view>
           </view>
 
           <TransitionGroup
             name="todo"
             tag="view"
             class="day-todos"
+            :class="{ 'day-todos--collapsed': !isDayExpanded(day.key) }"
             :style="dayTodosStyle(day.key)"
             :duration="{ enter: 280, leave: 200 }"
           >

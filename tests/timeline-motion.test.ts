@@ -5,6 +5,7 @@ import {
   DAY_GAP,
   DAY_HEADER_HEIGHT,
   createTimelineMotionLayout,
+  getAnchoredScrollTop,
 } from '../src/timelineMotion.ts'
 import { TODO_MIN_ROW_HEIGHT } from '../src/todoTextLayout.ts'
 import type { VisibleDay } from '../src/timelineView.ts'
@@ -121,4 +122,54 @@ test('sanitizes missing and invalid row heights to the minimum', () => {
     small: 260,
   })
   assert.equal(dayLayout.todosHeight, 6 * TODO_MIN_ROW_HEIGHT)
+})
+
+test('accordion derives the exact open height while retaining collapsed rows', () => {
+  const days = [
+    day('2026-07-15', ['short', 'multiline']),
+    day('2026-07-16', ['later']),
+  ]
+  const layout = createTimelineMotionLayout(days, {
+    short: 52,
+    multiline: 132,
+    later: 72,
+  }, '2026-07-15')
+
+  assert.equal(layout.days['2026-07-15'].todosHeight, 184)
+  assert.equal(layout.days['2026-07-15'].expandedTodosHeight, 184)
+  assert.equal(layout.days['2026-07-16'].todosHeight, 0)
+  assert.equal(layout.days['2026-07-16'].expandedTodosHeight, 72)
+  assert.deepEqual(layout.days['2026-07-16'].todoHeights, { later: 72 })
+  assert.equal(
+    layout.height,
+    2 * DAY_GAP + 2 * DAY_HEADER_HEIGHT + 184,
+  )
+})
+
+test('an interrupted accordion sequence settles on the latest open day', () => {
+  const days = [
+    day('2026-07-15', ['a']),
+    day('2026-07-16', ['b']),
+    day('2026-07-17', ['c']),
+  ]
+
+  const firstTap = createTimelineMotionLayout(days, {}, '2026-07-16')
+  const rapidSecondTap = createTimelineMotionLayout(days, {}, '2026-07-17')
+
+  assert.equal(firstTap.days['2026-07-16'].expanded, true)
+  assert.equal(rapidSecondTap.days['2026-07-16'].todosHeight, 0)
+  assert.equal(rapidSecondTap.days['2026-07-17'].todosHeight, 52)
+})
+
+test('adjusts the scroll anchor by the exact height change above it', () => {
+  const days = [
+    day('2026-07-15', ['a', 'b']),
+    day('2026-07-16', ['c']),
+    day('2026-07-17', ['d']),
+  ]
+  const before = createTimelineMotionLayout(days, { a: 52, b: 112 }, '2026-07-15')
+  const after = createTimelineMotionLayout(days, { a: 52, b: 112 }, '2026-07-16')
+
+  assert.equal(getAnchoredScrollTop(260, before, after), 148)
+  assert.equal(getAnchoredScrollTop(20, before, after), 20)
 })

@@ -906,7 +906,7 @@ test('todo heights are predicted through the platform facade and renderer geomet
   )
   assert.match(
     appSource,
-    /createTimelineMotionLayout\(\s*visibleDays\.value,\s*predictedTodoHeights\.value,?\s*\)/,
+    /createTimelineMotionLayout\(\s*visibleDays\.value,\s*predictedTodoHeights\.value,\s*expandedDayKey\.value,?\s*\)/,
   )
   assert.match(
     appSource,
