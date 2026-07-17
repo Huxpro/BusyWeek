@@ -568,13 +568,13 @@ test('the composer keeps its picker and adds a legacy-compatible quick-day scrol
   )
 })
 
-test('tapping or long-pressing only the todo body opens the full editor', () => {
+test('tap edits inline while long press alone opens the full editor', () => {
   const todoBodyTag = appSource.match(/<view\s+class="todo-body"[^>]*>/)?.[0]
 
   assert.ok(todoBodyTag)
   assert.match(
     todoBodyTag,
-    /@tap\.stop="openTodoEditor\(day\.key, todo\)"/,
+    /@tap\.stop="startEdit\(todo\)"/,
   )
   assert.match(
     todoBodyTag,
@@ -594,13 +594,13 @@ test('tapping or long-pressing only the todo body opens the full editor', () => 
     appSource,
     /<view\s+class="todo-body"[^>]*>[\s\S]*?<text[^>]*class="bw-text todo-text"[^>]*>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>[\s\S]*?<\/view>/,
   )
-  assert.doesNotMatch(appSource, /class="todo-input"/)
+  assert.match(appSource, /<textarea[\s\S]*?class="todo-input"[\s\S]*?v-model="todo\.text"/)
 })
 
-test('Web exposes a visible edit fallback alongside body tap and long press', () => {
+test('Web exposes a visible fallback for inline editing', () => {
   assert.match(
     appSource,
-    /class="todo-edit"[\s\S]*?accessibility-label="编辑事项"[\s\S]*?@tap\.stop="openTodoEditor\(day\.key, todo\)"/,
+    /class="todo-edit"[\s\S]*?accessibility-label="编辑事项"[\s\S]*?@tap\.stop="startEdit\(todo\)"/,
   )
   assert.match(appSource, /class="bw-text todo-edit-text">编辑<\/text>/)
   assert.match(appCss, /\.todo-edit\s*\{[^}]*display:\s*none/s)
@@ -852,29 +852,23 @@ test('native composer blur absorbs invocation failures', () => {
   )
 })
 
-test('inline edit state and keyboard avoidance are absent', () => {
-  assert.doesNotMatch(appSource, /\beditingId\b/)
-  assert.doesNotMatch(appSource, /edit-keyboard-spacer/)
-  assert.doesNotMatch(appSource, /\beditKeyboard(?:Height|SpacerHeight|CleanupTimer)\b/)
-  assert.doesNotMatch(appSource, /\beditAvoidanceGeneration\b/)
-  assert.doesNotMatch(appSource, /\b(?:schedule|cancel)EditKeyboardCleanup\b/)
-  assert.doesNotMatch(appSource, /\bsetEditKeyboardHeight\b/)
-  assert.doesNotMatch(appSource, /\bvFocus\b|v-focus/)
-  assert.doesNotMatch(
-    appSource,
-    /\b(?:startEdit|finishEdit|onEditFocus|onEditKeyboard)\b/,
-  )
-  assert.doesNotMatch(appSource, /nativeInput|todoKeyboardAvoidance/)
+test('inline edit restores native value seeding and keyboard avoidance', () => {
+  assert.match(appSource, /const editingId = ref/)
+  assert.match(appSource, /class="edit-keyboard-spacer"/)
+  assert.match(appSource, /\bsetEditKeyboardHeight\b/)
+  assert.match(appSource, /v-focus=/)
+  assert.match(appSource, /syncNativeInputOnMount/)
+  assert.match(appSource, /keepTodoEditAboveKeyboard/)
 })
 
-test('native keyboard updates remain scoped to the full composer', () => {
+test('native keyboard updates route to the active inline editor', () => {
   const onKeyboardStatus = getFunctionSource('onKeyboardStatus')
 
   assert.match(
     onKeyboardStatus,
-    /keyboardHeight\.value = status === ['"]on['"] \? height : 0/,
+    /if \(editingId\.value\) setEditKeyboardHeight\(editingId\.value, nextHeight\)/,
   )
-  assert.doesNotMatch(onKeyboardStatus, /editing|Edit/)
+  assert.match(onKeyboardStatus, /else keyboardHeight\.value = nextHeight/)
   assert.match(
     appSource,
     /<textarea[\s\S]*?id="addpage-ta"[\s\S]*?@keyboard="onComposerKeyboard"[\s\S]*?@keyboardheightchange="onComposerKeyboard"[\s\S]*?\/>/,
@@ -1002,11 +996,11 @@ test('todo text layout tokens and binding currentness distinguish every renderer
 test('renderer layout corrects predictions without stale edit heights or loops', () => {
   assert.match(
     appSource,
-    /<text[\s\S]*?v-if="supportsRendererLayoutCorrection"[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
+    /<text[\s\S]*?v-if="editingId !== todo\.id && supportsRendererLayoutCorrection"[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?@layout="getTodoTextLayoutBinding\(todo\.id\)\.onLayout"/,
   )
   assert.match(
     appSource,
-    /<text[\s\S]*?v-else[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>/,
+    /<text[\s\S]*?v-else-if="editingId !== todo\.id"[\s\S]*?class="bw-text todo-text"[\s\S]*?:key="getTodoTextLayoutBinding\(todo\.id\)\.key"[\s\S]*?>[\s\S]*?\{\{ todo\.text \}\}[\s\S]*?<\/text>/,
   )
 
   const onTodoTextLayout = getFunctionSource('onTodoTextLayout')
@@ -1225,10 +1219,11 @@ test('multiline todo CSS is uncapped and the measurement probe is inert', () => 
   )
 })
 
-test('obsolete inline-edit selectors are absent from app and Web host CSS', () => {
-  for (const source of [appCss, webHost]) {
-    assert.doesNotMatch(source, /\.(?:todo-input|todo--editing|edit-keyboard-spacer)\b/)
-  }
+test('multiline inline editor preserves measured row geometry', () => {
+  assert.match(appCss, /\.todo-input\s*\{[^}]*height:\s*100%/s)
+  assert.match(appCss, /\.todo-input\s*\{[^}]*line-height:\s*20px/s)
+  assert.match(appSource, /@input="onInlineEditInput\(todo\)"/)
+  assert.match(getFunctionSource('onInlineEditInput'), /clearCorrectedTodoHeight\(todo\.id\)/)
 })
 
 test('Clear-style removal keeps the departing layer above movers and avoids empty-state pushdown', () => {

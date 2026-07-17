@@ -14,6 +14,7 @@ import {
 } from '@busyweek/text-layout-backend'
 
 import './App.css'
+import { syncNativeInputOnMount } from './nativeInput.js'
 import {
   getElementKeyboardHeight,
   type NativeKeyboardEvent,
@@ -25,6 +26,7 @@ import {
 import { createStarterTimeline } from './starterTimeline.js'
 import { loadTimeline, saveTimeline } from './store.js'
 import { createTimelineMotionLayout } from './timelineMotion.js'
+import { keepTodoEditAboveKeyboard } from './todoKeyboardAvoidance.js'
 import {
   TODO_MIN_ROW_HEIGHT,
   rowHeightFromLayoutEvent,
@@ -62,6 +64,7 @@ const BUSYWEEK_TODO_LONG_PRESS_EVENT = 'busyweekTodoLongPress'
 const state = ref<AppState>('LIST')
 const timeline = ref<Timeline>({})
 const showCompleted = ref(true)
+const editingId = ref<string | null>(null)
 const composerIntent = ref<ComposerIntent>({ kind: 'create' })
 const composerText = ref('')
 const composerDate = ref(getTodayDate())
@@ -80,6 +83,10 @@ const datePickerOpen = ref(false)
 // bottom bar clear of the keyboard on native. The input element event works
 // on older iOS hosts; the global event remains as a newer-runtime fallback.
 const keyboardHeight = ref(0)
+const editKeyboardHeight = ref(0)
+const editKeyboardSpacerHeight = ref(0)
+let editAvoidanceGeneration = 0
+let editKeyboardCleanupTimer: ReturnType<typeof setTimeout> | undefined
 
 // Pretext gives the background thread an immediate layout prediction. Native
 // renderer measurements below remain authoritative for font/bidi/emoji edges;
@@ -114,7 +121,9 @@ const prettyDate = computed(() => {
 // Lynx CSS px), so it maps 1:1 onto paddingBottom.
 // https://lynxjs.org/api/elements/built-in/input.html#keyboard-avoidance
 function onKeyboardStatus(status: string, height: number) {
-  keyboardHeight.value = status === 'on' ? height : 0
+  const nextHeight = status === 'on' ? height : 0
+  if (editingId.value) setEditKeyboardHeight(editingId.value, nextHeight)
+  else keyboardHeight.value = nextHeight
 }
 function onComposerKeyboard(event: NativeKeyboardEvent) {
   keyboardHeight.value = getElementKeyboardHeight(event)
@@ -204,6 +213,8 @@ onUnmounted(() => {
   removeGlobalEventListeners?.()
   lastTodoLayoutHeights.clear()
   clearTodoTextMeasurementCache()
+  editAvoidanceGeneration += 1
+  if (editKeyboardCleanupTimer) clearTimeout(editKeyboardCleanupTimer)
 })
 
 watch(timeline, (tl) => saveTimeline(tl), { deep: true })
@@ -241,6 +252,9 @@ const motionLayout = computed(() =>
 )
 const dayListStyle = computed(() => ({
   height: `${motionLayout.value.height}px`,
+}))
+const editKeyboardSpacerStyle = computed(() => ({
+  height: `${editKeyboardSpacerHeight.value}px`,
 }))
 
 function daySlotStyle(dayKey: string) {
@@ -475,6 +489,105 @@ async function openTodoEditor(dayKey: string, todo: Todo) {
   })
 }
 
+function startEdit(todo: Todo) {
+  // A native long-press may be followed by a synthetic tap. Once the composer
+  // has opened, that tap must not replace it with the inline editor.
+  if (state.value !== 'LIST') return
+  cancelEditKeyboardCleanup()
+  editAvoidanceGeneration += 1
+  editingId.value = todo.id
+}
+
+function cancelEditKeyboardCleanup() {
+  if (!editKeyboardCleanupTimer) return
+  clearTimeout(editKeyboardCleanupTimer)
+  editKeyboardCleanupTimer = undefined
+}
+
+function scheduleEditKeyboardCleanup() {
+  cancelEditKeyboardCleanup()
+  const generation = ++editAvoidanceGeneration
+  editKeyboardCleanupTimer = setTimeout(() => {
+    if (generation !== editAvoidanceGeneration) return
+    editKeyboardHeight.value = 0
+    editKeyboardSpacerHeight.value = 0
+    editKeyboardCleanupTimer = undefined
+  }, 320)
+}
+
+function setEditKeyboardHeight(todoId: string, height: number) {
+  if (editingId.value !== todoId) return
+  if (!Number.isFinite(height) || height <= 0) {
+    scheduleEditKeyboardCleanup()
+    return
+  }
+  cancelEditKeyboardCleanup()
+  editKeyboardHeight.value = height
+  editKeyboardSpacerHeight.value = height
+  const generation = ++editAvoidanceGeneration
+  if (typeof lynx === 'undefined') return
+  void keepTodoEditAboveKeyboard({
+    inputId: todoId,
+    keyboardHeight: height,
+    nextTick,
+    createSelectorQuery: () =>
+      (lynx as unknown as { createSelectorQuery: () => any })
+        .createSelectorQuery(),
+    isCurrent: () =>
+      generation === editAvoidanceGeneration && editingId.value === todoId,
+    onSpacerHeight: (spacerHeight) => {
+      if (generation === editAvoidanceGeneration && editingId.value === todoId) {
+        editKeyboardSpacerHeight.value = spacerHeight
+      }
+    },
+  }).catch(() => {})
+}
+
+function onEditFocus(todoId: string) {
+  if (editingId.value === todoId && editKeyboardHeight.value > 0) {
+    setEditKeyboardHeight(todoId, editKeyboardHeight.value)
+  }
+}
+
+function onEditKeyboard(todoId: string, event: NativeKeyboardEvent) {
+  setEditKeyboardHeight(todoId, getElementKeyboardHeight(event))
+}
+
+const vFocus = {
+  mounted(el: { focus?: () => void }, binding: {
+    value?: { id?: string; value?: string }
+  }) {
+    const id = binding.value?.id
+    if (!id) return
+    void syncNativeInputOnMount({
+      el,
+      id,
+      value: binding.value?.value ?? '',
+      nextTick,
+      createSelectorQuery: typeof lynx === 'undefined' ? undefined : () =>
+        (lynx as unknown as { createSelectorQuery: () => any })
+          .createSelectorQuery(),
+    }).catch(() => {})
+  },
+}
+
+function onInlineEditInput(todo: Todo) {
+  clearCorrectedTodoHeight(todo.id)
+}
+
+function finishEdit(dayKey: string, todo: Todo) {
+  if (editingId.value !== todo.id) return
+  editingId.value = null
+  scheduleEditKeyboardCleanup()
+  todo.text = todo.text.trim()
+  if (!todo.text) {
+    removeTodo(dayKey, todo.id)
+    return
+  }
+  refreshTodoTextLayoutAfterEdit(todo.id)
+  clearCorrectedTodoHeight(todo.id)
+}
+
 function closeComposer() {
   composerOpenGeneration += 1
   dismissKb()
@@ -602,6 +715,10 @@ function checkTodo(todo: Todo) {
 }
 
 function removeTodo(dayKey: string, id: string) {
+  if (editingId.value === id) {
+    editingId.value = null
+    scheduleEditKeyboardCleanup()
+  }
   const day = timeline.value[dayKey]
   if (!day) return
   forgetTodoLayout(id)
@@ -716,6 +833,7 @@ function removeTodo(dayKey: string, id: string) {
               class="todo"
               :style="todoRowStyle(day.key, todo.id)"
               :class="{
+                'todo--editing': editingId === todo.id,
                 'todo--last': todoIndex === day.todos.length - 1,
               }"
             >
@@ -738,11 +856,11 @@ function removeTodo(dayKey: string, id: string) {
                 class="todo-body"
                 :data-day-key="day.key"
                 :data-todo-id="todo.id"
-                @tap.stop="openTodoEditor(day.key, todo)"
+                @tap.stop="startEdit(todo)"
                 @longpress.stop="openTodoEditor(day.key, todo)"
               >
                 <text
-                  v-if="supportsRendererLayoutCorrection"
+                  v-if="editingId !== todo.id && supportsRendererLayoutCorrection"
                   class="bw-text todo-text"
                   :key="getTodoTextLayoutBinding(todo.id).key"
                   :class="{ 'todo-text--done': todo.done }"
@@ -750,17 +868,30 @@ function removeTodo(dayKey: string, id: string) {
                   >{{ todo.text }}</text
                 >
                 <text
-                  v-else
+                  v-else-if="editingId !== todo.id"
                   class="bw-text todo-text"
                   :key="getTodoTextLayoutBinding(todo.id).key"
                   :class="{ 'todo-text--done': todo.done }"
                   >{{ todo.text }}</text
                 >
+                <textarea
+                  v-else
+                  v-focus="{ id: 'edit-' + todo.id, value: todo.text }"
+                  :id="'edit-' + todo.id"
+                  class="todo-input"
+                  v-model="todo.text"
+                  @input="onInlineEditInput(todo)"
+                  @focus="onEditFocus(todo.id)"
+                  @keyboard="onEditKeyboard(todo.id, $event)"
+                  @keyboardheightchange="onEditKeyboard(todo.id, $event)"
+                  @blur="finishEdit(day.key, todo)"
+                  @confirm="finishEdit(day.key, todo)"
+                />
               </view>
               <view
                 class="todo-edit"
                 accessibility-label="编辑事项"
-                @tap.stop="openTodoEditor(day.key, todo)"
+                @tap.stop="startEdit(todo)"
               >
                 <text class="bw-text todo-edit-text">编辑</text>
               </view>
@@ -787,6 +918,10 @@ function removeTodo(dayKey: string, id: string) {
       </view>
 
       <view class="timeline-spacer" />
+      <view
+        class="edit-keyboard-spacer"
+        :style="editKeyboardSpacerStyle"
+      />
       </view>
     </scroll-view>
 
