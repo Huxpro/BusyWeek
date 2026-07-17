@@ -3,6 +3,8 @@ declare module '@busyweek/text-layout-backend' {
     lineCount: number
     textHeight: number
   }
+  export interface DancerCopyLine { text: string; width: number }
+  export interface DancerCopyBand { left: DancerCopyLine | null; right: DancerCopyLine | null }
 
   export const supportsRendererLayoutCorrection: boolean
 
@@ -12,6 +14,7 @@ declare module '@busyweek/text-layout-backend' {
   ): TodoTextMeasurement | null
 
   export function clearTodoTextMeasurementCache(): void
+  export function layoutDancerCopy(text: string, intervals: readonly { left: number; right: number }[], width: number): DancerCopyBand[]
 }
 
 declare namespace lynx {

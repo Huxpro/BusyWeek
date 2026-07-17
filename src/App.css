@@ -107,6 +107,40 @@
   linear-direction: column;
   width: 100%;
 }
+.dancer-overlay {
+  position: fixed;
+  top: calc(66px + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 24px;
+  background-color: rgba(238, 241, 245, 0.94);
+}
+.dancer-stage { position: relative; width: 320px; height: 300px; }
+.dancer-sprite-window {
+  position: absolute;
+  top: 28px;
+  left: 80px;
+  width: 160px;
+  height: 160px;
+  overflow: hidden;
+}
+.dancer-sprite-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 640px;
+  transform-origin: top left;
+}
+.dancer-copy { position: absolute; top: 22px; left: 0; width: 320px; }
+.dancer-copy-band { display: flex; flex-direction: row; justify-content: space-between; height: 28px; }
+.dancer-copy-line { font-size: 14px; line-height: 22px; color: #52606d; overflow: hidden; }
+.dancer-copy-line--right { text-align: right; }
 .day-list {
   position: relative;
   width: 100%;

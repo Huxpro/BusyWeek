@@ -9,6 +9,7 @@ import {
 } from 'vue-lynx'
 import {
   clearTodoTextMeasurementCache,
+  layoutDancerCopy,
   measureTodoText,
   supportsRendererLayoutCorrection,
 } from '@busyweek/text-layout-backend'
@@ -50,6 +51,15 @@ import {
 } from './util.js'
 import DatePickerSheet from './components/DatePickerSheet.vue'
 import DayPickerSheet from './components/DayPickerSheet.vue'
+import dancerSprite from './assets/busyweek-dancer.png'
+import {
+  DANCER_FPS,
+  DANCER_LOOP_MS,
+  createLongPressArbiter,
+  dancerFrameAt,
+  dancerProfile,
+  spriteTransform,
+} from './dancerEffect.js'
 
 type AppState = 'LIST' | 'INPUT'
 type TodoTextLayoutBinding = {
@@ -78,6 +88,13 @@ const composerSubmitLabel = computed(() =>
 // cross-platform pickers (built from Lynx primitives — work on web + native)
 const dayPickerOpen = ref(false)
 const datePickerOpen = ref(false)
+const dancerActive = ref(false)
+const dancerFrame = ref(0)
+const dancerPaused = ref(false)
+const prefersReducedMotion = ref(false)
+let dancerStartedAt = 0
+let dancerTimer: ReturnType<typeof setInterval> | undefined
+let dancerDismissTimer: ReturnType<typeof setTimeout> | undefined
 
 // soft-keyboard height (device-independent px), used to lift the composer's
 // bottom bar clear of the keyboard on native. The input element event works
@@ -193,6 +210,7 @@ function bindGlobalEvents() {
       listeners: [
         ['keyboardstatuschanged', onKeyboardStatus],
         [BUSYWEEK_TODO_LONG_PRESS_EVENT, onWebTodoLongPress],
+        ['appstatuschanged', onAppStatusChanged],
       ],
     })
   } catch {
@@ -207,9 +225,15 @@ onMounted(async () => {
   measureTodoWidthProbe()
   const stored = await loadTimeline()
   timeline.value = stored ?? createStarterTimeline(getTodayDate())
+  try {
+    const matcher = (globalThis as unknown as { matchMedia?: (query: string) => { matches: boolean } }).matchMedia?.('(prefers-reduced-motion: reduce)')
+    prefersReducedMotion.value = matcher?.matches === true
+  } catch { /* Native runtimes do not expose matchMedia. */ }
 })
 
 onUnmounted(() => {
+  stopDancer()
+  subtitleLongPress.dispose()
   removeGlobalEventListeners?.()
   lastTodoLayoutHeights.clear()
   clearTodoTextMeasurementCache()
@@ -314,6 +338,46 @@ const emptyHint = computed(() =>
     ? '打开右上角查看已完成'
     : '点右下角 + 添加事项吧',
 )
+const dancerCopy = computed(() => {
+  const todoCopy = visibleDays.value.flatMap((day) => day.todos.map((todo) => todo.text)).join(' · ')
+  const text = todoCopy || '时间会走，事情会做完。忙里偷闲，跟着节拍轻轻跳一会儿。'
+  return layoutDancerCopy(text, dancerProfile(dancerFrame.value), 320)
+})
+const dancerSpriteStyle = computed(() => ({ transform: spriteTransform(dancerFrame.value) }))
+function dancerLeftStyle(index: number) {
+  return { width: `${dancerProfile(dancerFrame.value)[index]?.left * 100 || 0}%` }
+}
+function dancerRightStyle(index: number) {
+  const right = dancerProfile(dancerFrame.value)[index]?.right ?? 1
+  return { width: `${(1 - right) * 100}%` }
+}
+
+function stopDancer() {
+  dancerActive.value = false
+  if (dancerTimer) clearInterval(dancerTimer)
+  if (dancerDismissTimer) clearTimeout(dancerDismissTimer)
+  dancerTimer = undefined
+  dancerDismissTimer = undefined
+}
+function startDancer() {
+  if (dancerActive.value) { stopDancer(); return }
+  dancerActive.value = true
+  dancerStartedAt = Date.now()
+  dancerFrame.value = 0
+  if (!prefersReducedMotion.value) {
+    dancerTimer = setInterval(() => {
+      if (!dancerPaused.value) dancerFrame.value = dancerFrameAt(Date.now() - dancerStartedAt)
+    }, 1000 / DANCER_FPS)
+  }
+  dancerDismissTimer = setTimeout(stopDancer, DANCER_LOOP_MS)
+}
+function onAppStatusChanged(status: unknown) {
+  const value = typeof status === 'string' ? status : (status as { status?: unknown } | null)?.status
+  dancerPaused.value = value === 'background' || value === 'inactive' || value === 'hide'
+}
+const subtitleLongPress = createLongPressArbiter(startDancer)
+function onSubtitleTouchStart() { subtitleLongPress.start() }
+function onSubtitleTouchEnd() { subtitleLongPress.cancel() }
 
 // --- helpers exposed to the template ---------------------------------------
 function isToday(dateStr: string): boolean {
@@ -743,7 +807,12 @@ function removeTodo(dayKey: string, id: string) {
       <view class="app-bar">
         <view class="brand">
           <text class="bw-text logo">BusyWeek!</text>
-          <text class="bw-text logo-accent">好忙啊</text>
+          <text
+            class="bw-text logo-accent"
+            @touchstart.stop="onSubtitleTouchStart"
+            @touchend.stop="onSubtitleTouchEnd"
+            @touchcancel.stop="onSubtitleTouchEnd"
+          >好忙啊</text>
         </view>
         <view
           class="completed-toggle"
@@ -775,6 +844,24 @@ function removeTodo(dayKey: string, id: string) {
       :scroll-y="true"
     >
       <view class="timeline-content">
+      <view
+        v-if="dancerActive"
+        class="dancer-overlay"
+        accessibility-label="BusyWeek 跳舞彩蛋，点按关闭"
+        @tap.stop="stopDancer"
+      >
+        <view class="dancer-stage">
+          <view class="dancer-copy" accessibility-element="false">
+            <view v-for="(band, index) in dancerCopy" :key="index" class="dancer-copy-band">
+              <text class="bw-text dancer-copy-line dancer-copy-line--left" :style="dancerLeftStyle(index)">{{ band.left?.text }}</text>
+              <text class="bw-text dancer-copy-line dancer-copy-line--right" :style="dancerRightStyle(index)">{{ band.right?.text }}</text>
+            </view>
+          </view>
+          <view class="dancer-sprite-window" accessibility-element="false">
+            <image class="dancer-sprite-sheet" :src="dancerSprite" :style="dancerSpriteStyle" />
+          </view>
+        </view>
+      </view>
       <!-- Hidden exact-geometry row: its body is the real text column width,
            independent of screen width and responsive timeline sizing. -->
       <view
