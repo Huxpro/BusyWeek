@@ -45,14 +45,11 @@ Both editions are deployed side by side, so you can compare them live:
 
 | URL | Edition |
 | --- | --- |
-| **https://huangxuan.me/BusyWeek/** | Vue Lynx version (on the Lynx Web Platform via `@lynx-js/web-core`) |
-| **https://huangxuan.me/BusyWeek/legacy/** | the original Vue 0.12 web edition |
+| **https://huxpro.github.io/BusyWeek/** | Vue Lynx version (on the Lynx Web Platform via `@lynx-js/web-core`) |
+| **https://huxpro.github.io/BusyWeek/legacy/** | the original Vue 0.12 web edition |
 
-They are published by the [`deploy-pages`](.github/workflows/deploy-pages.yml)
-GitHub Actions workflow on every push to `master` (and via **Actions → Run
-workflow**). It requires **Settings → Pages → Build and deployment → Source:
-GitHub Actions**. The build emits a `CNAME`, so the custom domain
-(`huangxuan.me`) is preserved on every deploy.
+They are published from this repository through GitHub Pages under the
+`huxpro.github.io/BusyWeek` project path.
 
 To build the static site locally:
 
@@ -68,7 +65,6 @@ works under the GitHub Pages project subpath:
 - `legacy/` — the original web app (`/legacy/`), with its dead LeanCloud SDK
   stubbed so it boots without the CDN (login / cloud-sync are inert)
 - `.nojekyll` — so Pages serves the runtime folders verbatim
-- `CNAME` — preserves the `huangxuan.me` custom domain across deploys
 
 ### Project layout
 
@@ -120,7 +116,7 @@ The history of the original web app lives in [`legacy/`](./legacy). Highlights:
 - **V1.2.0** — IntelliScroll position system
 - **V1.0.0** — First release (Vue.js + NPM + Grunt)
 
-@2015 [黄玄 (Hux)](http://huangxuan.me/about/) ·
+@2015 [黄玄 (Hux)](https://huxpro.github.io/about/) ·
 [知乎](http://www.zhihu.com/people/huxpro) ·
-[博客](http://huangxuan.me) ·
+[博客](https://huxpro.github.io) ·
 [GitHub](https://github.com/huxpro)
