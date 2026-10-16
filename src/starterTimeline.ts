@@ -2,7 +2,7 @@ import type { Timeline } from './types.js'
 
 const STARTER_TODO_TEXTS = [
   '右上角可显示或隐藏已完成',
-  '点击文字编辑事项',
+  '长按事项可编辑内容和日期',
   '点击圆圈完成事项',
 ] as const
 

@@ -9,7 +9,7 @@ test('creates three pending instructional todos for the supplied date', () => {
 
   assert.deepEqual(todos.map((todo) => todo.text), [
     '右上角可显示或隐藏已完成',
-    '点击文字编辑事项',
+    '长按事项可编辑内容和日期',
     '点击圆圈完成事项',
   ])
   assert.ok(todos.every((todo) => todo.date === '2026-07-14'))

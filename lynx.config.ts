@@ -1,4 +1,5 @@
 import { defineConfig } from '@lynx-js/rspeedy'
+import { fileURLToPath } from 'node:url'
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin'
 import { pluginVueLynx } from 'vue-lynx/plugin'
@@ -6,9 +7,25 @@ import { pluginVueLynx } from 'vue-lynx/plugin'
 export default defineConfig({
   environments: {
     // Native (iOS/Android) bundle.
-    lynx: {},
+    lynx: {
+      resolve: {
+        alias: {
+          '@busyweek/text-layout-backend$': fileURLToPath(
+            new URL('./src/textLayoutBackend.lynx.ts', import.meta.url),
+          ),
+        },
+      },
+    },
     // Lynx Web Platform bundle.
-    web: {},
+    web: {
+      resolve: {
+        alias: {
+          '@busyweek/text-layout-backend$': fileURLToPath(
+            new URL('./src/textLayoutBackend.web.ts', import.meta.url),
+          ),
+        },
+      },
+    },
   },
   plugins: [
     pluginQRCode({

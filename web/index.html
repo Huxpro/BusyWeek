@@ -192,26 +192,31 @@
       })()
     </script>
 
-    <script>
+    <script type="module">
+      import { installTodoLongPress } from './todo-longpress.js'
+
       // Rspeedy's Lynx CSS pipeline intentionally omits browser media queries.
-      // Inject the legacy desktop adaptation into the web runtime's open
-      // shadow root after the app stylesheet has mounted. This keeps native
-      // layout unchanged while letting the browser own responsive behaviour.
+      // Inject the Web overrides as soon as the runtime opens its shadow root,
+      // before the first text nodes connect and report layout. This keeps
+      // native layout unchanged while the browser owns responsive behaviour.
       ;(function installWebEnhancements() {
         var host = document.querySelector('lynx-view')
         if (!host) return
-        function inject() {
-          var root = host.shadowRoot
-          if (!root || !root.querySelector('.app')) {
-            requestAnimationFrame(inject)
-            return
-          }
-          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
-          // constants do not yet enable the element-level event bridge. A
-          // listener on the custom element activates its existing lynxinput
-          // forwarding before the composer can receive real keystrokes.
-          var textarea = root.querySelector('#addpage-ta')
-          if (textarea) textarea.addEventListener('lynxinput', function () {})
+        function notifyTodoLongPress(firing) {
+          var target = firing && firing.target
+          if (!target || typeof target.getAttribute !== 'function') return
+          var dayKey = target.getAttribute('data-day-key')
+          var todoId = target.getAttribute('data-todo-id')
+          if (
+            typeof dayKey !== 'string' ||
+            dayKey.length === 0 ||
+            typeof todoId !== 'string' ||
+            todoId.length === 0 ||
+            typeof host.sendGlobalEvent !== 'function'
+          ) return
+          host.sendGlobalEvent('busyweekTodoLongPress', [dayKey, todoId])
+        }
+        function installResponsiveStyles(root) {
           if (root.getElementById('busyweek-web-responsive')) return
           var style = document.createElement('style')
           style.id = 'busyweek-web-responsive'
@@ -220,34 +225,51 @@
               color: rgba(255, 255, 255, 0.68);
             }
 
+            .app:not([l-e-name]) .todo-text:not([l-e-name]) {
+              white-space: pre-wrap;
+              word-break: break-word;
+              overflow-wrap: anywhere;
+            }
+            .todo-body:not([l-e-name]) { cursor: pointer; }
+
             @media all and (min-width: 640px) {
               .timeline:not([l-e-name]) {
-                width: 70%;
-                margin-left: 15%;
+                width: min(760px, calc(100vw - 48px)) !important;
+                margin-left: max(24px, calc(50vw - 380px)) !important;
+                margin-right: 0 !important;
               }
               .addpage:not([l-e-name]) {
-                width: 500px;
-                height: 60%;
-                left: auto;
-                right: 86px;
-                top: auto;
-                bottom: 63px;
-                border-radius: 14px;
+                width: min(540px, calc(100vw - 48px));
+                height: min(720px, calc(100vh - 96px));
+                left: max(24px, calc(50vw - 270px)) !important;
+                right: auto !important;
+                top: max(48px, calc(50vh - 360px)) !important;
+                bottom: auto !important;
+                border-radius: 18px;
                 overflow: hidden;
-                box-shadow: 0 18px 48px rgba(24, 65, 94, 0.28);
-                transform: translateY(100vh);
+                box-shadow: 0 24px 64px rgba(24, 65, 94, 0.32);
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                transition: opacity 180ms ease,
+                  visibility 0s linear 240ms;
               }
-              .addpage--open:not([l-e-name]) { transform: translateY(0); }
+              .addpage--open:not([l-e-name]) {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+                transition-delay: 0s;
+              }
               .addpage-bar:not([l-e-name]) {
                 height: 56px;
                 padding-top: 0;
               }
               .addpage-bottom:not([l-e-name]) { padding-bottom: 20px; }
               .sheet-panel:not([l-e-name]) {
-                width: 500px;
-                align-self: flex-end;
-                margin-right: 86px;
-                margin-bottom: 63px;
+                width: min(540px, calc(100vw - 48px)) !important;
+                align-self: center;
+                margin-right: 0;
+                margin-bottom: 48px;
                 border-radius: 18px;
                 padding-bottom: 12px;
                 overflow: hidden;
@@ -279,15 +301,7 @@
                 opacity: 0;
                 transition: opacity 180ms ease, background-color 180ms ease;
               }
-              .todo:hover .delete:not([l-e-name]),
-              .todo--editing .delete:not([l-e-name]) { opacity: 1; }
-            }
-
-            @media all and (min-width: 1000px) {
-              .timeline:not([l-e-name]) {
-                width: 57%;
-                margin-left: 21.5%;
-              }
+              .todo:hover .delete:not([l-e-name]) { opacity: 1; }
             }
 
             @media (prefers-reduced-motion: reduce) {
@@ -325,6 +339,29 @@
             }
           `
           root.appendChild(style)
+        }
+        function inject() {
+          var root = host.shadowRoot
+          if (!root) {
+            requestAnimationFrame(inject)
+            return
+          }
+          installTodoLongPress(root, notifyTodoLongPress)
+          installResponsiveStyles(root)
+          if (!root.querySelector('.app')) {
+            requestAnimationFrame(inject)
+            return
+          }
+          // #2971 maps <textarea> to <x-textarea>, but the PR preview's WASM
+          // constants do not yet enable the element-level event bridge. A
+          // listener on the custom element activates its existing lynxinput
+          // forwarding before the composer can receive real keystrokes.
+          var textarea = root.querySelector('#addpage-ta')
+          if (!textarea) {
+            requestAnimationFrame(inject)
+            return
+          }
+          textarea.addEventListener('lynxinput', function () {})
         }
         inject()
       })()
